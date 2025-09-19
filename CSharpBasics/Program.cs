@@ -104,7 +104,7 @@ class Program
         
         // Класове и обекти
         
-        var student = new Student(name="Emiliyan", age=36);
+        var student = new Person(name="Emiliyan", age=36);
         student.SayHello();
         
         // Работа с изключения

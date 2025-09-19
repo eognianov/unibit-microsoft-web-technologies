@@ -1,11 +1,18 @@
 namespace CSharpBasics;
 
-public class Student
+public interface ILivingBeing
+{
+    string Name { get; }
+    int Age { get; }
+}
+
+
+public class Person : ILivingBeing
 {
     private readonly string _name;
     private int _age;
 
-    public Student(string name, int age)
+    public Person(string name, int age)
     {
         _name = name;
         _age = age;
@@ -33,4 +40,9 @@ public class Student
     {
         throw new System.NotImplementedException();
     }
+}
+
+class Student(string name, int age) : Person(name, age)
+{
+    public List<string> Courses { get; set; } = new List<string>();
 }
