@@ -1,0 +1,41 @@
+@{
+    // C# variables
+    var userName = "John";
+    var isAdmin = true;
+    var items = new List<string> { "Apple", "Banana", "Cherry" };
+}
+
+
+<h1>Welcome, @userName!</h1>
+
+@* Conditional Rendering *@
+@if (isAdmin)
+{
+    <p style="color:green;">You have admin access.</p>
+}
+else
+{
+    <p style="color:blue;">You are a regular user.</p>
+}
+
+@* Loop Example *@
+<ul>
+    @for (int i = 0; i < items.Count; i++)
+    {
+        <li>Item @i: @items[i]</li>
+    }
+</ul>
+
+@* Inline expression *@
+<p>Today's date: @(DateTime.Now.ToString("MMMM dd, yyyy"))</p>
+
+@* Functions *@
+@functions {
+    string GetGreeting(string name) => $"Hello, {name}!";
+}
+
+<p>@GetGreeting(userName)</p>
+
+@* Comments *@
+@* This is a Razor comment and will not appear in HTML *@
+<!-- This is an HTML comment and will appear in the rendered page -->
