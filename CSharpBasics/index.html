@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Basic HTML with CSS</title>
+<!--    <link rel="stylesheet" href="styles.css">-->
+</head>
+<body>
+<header id="main-header">
+    <h1 class="title">My Example Site</h1>
+    <nav>
+        <ul class="nav-list">
+            <li><a href="#">Home</a></li>
+            <li><a href="#about">About</a></li>
+            <li><a href="#contact">Contact</a></li>
+        </ul>
+    </nav>
+</header>
+
+
+<main>
+    <section>
+        <h2>Welcome!</h2>
+        <p>This page demonstrates headings, lists, images, a form, a table, and semantic header/footer.</p>
+        <img src="https://fastly.picsum.photos/id/1042/200/300.jpg?hmac=rLBArBa4ahYhaKOp1GOxw6W77_v5daNsouqdh_bkoUs" alt="Example image" class="hero-image">
+    </section>
+
+
+    <section id="about">
+        <h3>Heading Levels</h3>
+        <h1>H1 — Page title</h1>
+        <h2>H2 — Section title</h2>
+        <h3>H3 — Subsection</h3>
+        <h4>H4 — Smaller heading</h4>
+        <h5>H5 — Even smaller</h5>
+        <h6>H6 — Tiniest heading</h6>
+    </section>
+
+
+    <section>
+        <h3>Unordered List</h3>
+        <ul>
+            <li>Fruits
+                <ul>
+                    <li>Apple</li>
+                    <li>Banana</li>
+                    <li>Orange</li>
+                </ul>
+            </li>
+            <li>Vegetables
+                <ul>
+                    <li>Carrot</li>
+                    <li>Spinach</li>
+                </ul>
+            </li>
+            <li>Dairy</li>
+        </ul>
+    </section>
+
+
+    <section>
+        <h3>Contact Form</h3>
+        <form action="#" method="post" class="contact-form">
+            <label for="name">Name: </label>
+            <input id="name" name="name" type="text"><br><br>
+
+
+            <label for="email">Email: </label>
+            <input id="email" name="email" type="email"><br><br>
+
+
+            <label for="topic">Topic: </label>
+            <select id="topic" name="topic">
+                <option>General question</option>
+                <option>Feedback</option>
+                <option>Support</option>
+            </select><br><br>
+
+
+            <label for="subscribe">
+                <input id="subscribe" name="subscribe" type="checkbox"> Subscribe to newsletter
+            </label><br><br>
+
+
+            <label for="message">Message: </label><br>
+            <textarea id="message" name="message" rows="5" cols="40"></textarea><br><br>
+
+
+            <button type="submit" class="btn-submit">Send message</button>
+        </form>
+    </section>
+
+
+    <section>
+        <h3>Sample Table</h3>
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>Item</th>
+                <th>Quantity</th>
+                <th>Price</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>Apples</td>
+                <td>10</td>
+                <td>$3.50</td>
+            </tr>
+            <tr>
+                <td>Bread</td>
+                <td>2</td>
+                <td>$4.00</td>
+            </tr>
+            <tr>
+                <td>Milk</td>
+                <td>1</td>
+                <td>$1.80</td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+</main>
+
+
+<footer>
+    <p>&copy; 2025 Example Site — Basic HTML with CSS</p>
+</footer>
+</body>
+</html>

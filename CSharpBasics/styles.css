@@ -1,0 +1,79 @@
+/* Tag selector */
+body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    background-color: #f9f9f9;
+}
+
+/* ID selector */
+#main-header {
+    background-color: #004080;
+    color: white;
+    padding: 15px;
+}
+
+/* Class selector */
+.title {
+    margin: 0;
+}
+
+/* Class selector for navigation list */
+.nav-list {
+    list-style-type: none;
+    padding: 0;
+}
+
+.nav-list li {
+    display: inline;
+    margin-right: 15px;
+}
+
+.nav-list a {
+    color: white;
+    text-decoration: none;
+}
+
+/* Image styling */
+.hero-image {
+    max-width: 100%;
+    height: auto;
+    border: 2px solid #ccc;
+}
+
+/* Form styling */
+.contact-form {
+    margin-top: 10px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    background-color: #fff;
+}
+
+.btn-submit {
+    background-color: #004080;
+    color: white;
+    padding: 8px 12px;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-submit:hover {
+    background-color: #0066cc;
+}
+
+/* Table styling */
+.data-table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.data-table th,
+.data-table td {
+    border: 1px solid #ccc;
+    padding: 8px;
+    text-align: left;
+}
+
+.data-table th {
+    background-color: #f0f0f0;
+}
