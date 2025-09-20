@@ -21,6 +21,7 @@
             <th>
                 @Html.DisplayNameFor(model => model.RepoUrl)
             </th>
+            <th>Students Count</th>
             <th></th>
         </tr>
     </thead>
@@ -35,6 +36,9 @@
             </td>
             <td>
                 @Html.DisplayFor(modelItem => item.RepoUrl)
+            </td>
+            <td>
+                @item.Students.Count
             </td>
             <td>
                 <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |

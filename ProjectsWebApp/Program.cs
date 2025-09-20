@@ -14,7 +14,11 @@ public class Program
         // Add services to the container.
         builder.Services.AddControllersWithViews();
         builder.Services.AddDbContext<AppDbContext>(options =>
-            options.UseSqlite(builder.Configuration.GetConnectionString("SQLite")));
+        {
+
+            options.UseSqlite(builder.Configuration.GetConnectionString("SQLite"));
+            options.UseLazyLoadingProxies();
+        });
         builder.Services.AddScoped<IStudentsService, StudentsService>();
         builder.Services.AddScoped<IProjectsService, ProjectsService>();
         

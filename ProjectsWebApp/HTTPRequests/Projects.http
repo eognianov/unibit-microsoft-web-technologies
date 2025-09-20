@@ -1,11 +1,7 @@
 POST http://localhost:5222/Projects/Create/
-Content-Type: application/json
+Content-Type: application/x-www-form-urlencoded
 
-{
-  "name": "Test Project",
-  "description": "desc",
-  "repoUrl": "https://github.com/eognianov/unibit-microsoft-web-technologies/"
-}
+name=Test1+Project&description=desc&repoUrl=https%3A%2F%2Fgithub.com%2Feognianov%2Funibit-microsoft-web-technologies%2F
 
 ###
 GET http://localhost:5222/Projects/
@@ -14,16 +10,13 @@ Accept: application/json
 
 ###
 
-PUT localhost:5222/Projects/update/30080d70-5d15-4b87-b1c1-6e0f579d27a6
-Content-Type: application/json
+POST localhost:5222/Projects/update/30080d70-5d15-4b87-b1c1-6e0f579d27a6
+Content-Type: application/x-www-form-urlencoded\
 
-{
-  "name": "Updated name",
-  "description": "Updated desc",
-  "repoUrl": "https://github.com/eognianov/unibit-microsoft-web-technologies/updated"
-}
+name=Test1+Projec+Updatedt&description=desc+updated&repoUrl=https%3A%2F%2Fgithub.com%2Feognianov%2Funibit-microsoft-web-technologies%2F
+
 
 
 ###
 
-DELETE http://localhost:5222/Projects/Delete/30080d70-5d15-4b87-b1c1-6e0f579d27a6
+POST http://localhost:5222/Projects/PostDelete/30080d70-5d15-4b87-b1c1-6e0f579d27a6

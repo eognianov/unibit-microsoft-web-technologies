@@ -16,13 +16,30 @@ public class StudentsController : Controller
 
     public IActionResult Index()
     {
-        var students = _studentsService.GetAllStudents().Select(s=> new StudentViewModel
+        var students = _studentsService.GetAllStudents();
+        var studentViewModels  = new List<StudentViewModel>();
+        foreach (var student in students)
         {
-            Id = s.Id,
-            Name = s.Name,
-            Number = s.Number,
-        });
-        return View(students);
+            var viewModel = new StudentViewModel
+            {
+                Id = student.Id,
+                Name = student.Name,
+                Number = student.Number,
+            };
+            if (student.Project != null)
+            {
+                viewModel.Project = new ProjectViewModel
+                {
+                    Id = student.Project.Id,
+                    Name = student.Project.Name,
+                    Description = student.Project.Description,
+                    RepoUrl = student.Project.RepoUrl,
+                };
+            }
+            
+            studentViewModels.Add(viewModel);
+        }
+        return View(studentViewModels);
     }
     
     public IActionResult Create()
@@ -87,12 +104,25 @@ public class StudentsController : Controller
             return NotFound();
         }
 
-        return View(new StudentViewModel
+        var studentViewModel = new StudentViewModel
         {
             Id = student.Id,
             Name = student.Name,
             Number = student.Number,
-        });
+        };
+
+        if (student.Project != null)
+        {
+            studentViewModel.Project = new ProjectViewModel
+            {
+                Id = student.Project.Id,
+                Name = student.Project.Name,
+                Description = student.Project.Description,
+                RepoUrl = student.Project.RepoUrl,
+            };
+        }
+
+        return View(studentViewModel);
 
     }
     

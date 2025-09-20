@@ -4,24 +4,19 @@ Accept: application/json
 ###
 
 POST http://localhost:5222/Students/Create/
-Content-Type: application/json
+Content-Type: application/x-www-form-urlencoded
 
-{
-  "name": "New student",
-  "number": "205knz"
-}
+name=name&number=number
+
 
 ### 
 
-PUT http://localhost:5222/Students/Update/a8425f67-88e0-4191-83ba-f5063d6b7811
-Content-Type: application/json
+POST http://localhost:5222/Students/Update/a8425f67-88e0-4191-83ba-f5063d6b7811
+Content-Type: application/x-www-form-urlencoded
 
-{
-  "name": "Updated name",
-  "number": "Updated number"
-}
+name=Updated+name&number=Updated+number
 
 
 ###
 
-DELETE http://localhost:5222/Students/Delete/a8425f67-88e0-4191-83ba-f5063d6b7811
+POST http://localhost:5222/Students/PostDelete/a8425f67-88e0-4191-83ba-f5063d6b7811

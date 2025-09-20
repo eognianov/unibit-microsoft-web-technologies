@@ -22,6 +22,12 @@ public class ProjectsController : Controller
             Name = p.Name,
             Description = p.Description,
             RepoUrl = p.RepoUrl,
+            Students = p.Students.Select(s=> new StudentViewModel
+            {
+                Id = s.Id,
+                Name = s.Name,
+                Number = s.Number,
+            }).ToList()
         }).ToList();
         return View(projectsViewModel);
     }
@@ -44,6 +50,12 @@ public class ProjectsController : Controller
             Name = project.Name,
             Description = project.Description,
             RepoUrl = project.RepoUrl,
+            Students = project.Students.Select(s=> new StudentViewModel
+            {
+                Id = s.Id,
+                Name = s.Name,
+                Number = s.Number,
+            }).ToList()
         });
     }
     
