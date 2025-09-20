@@ -1,22 +1,22 @@
 using System.ComponentModel.DataAnnotations;
+using ProjectsWebApp.Data.Entities;
 
-namespace ProjectsWebApp.Data.Entities;
+namespace ProjectsWebApp.Models.InputModels;
 
-public class Project
+public class ProjectInputModel
 {
-    public string Id { get; set; } = Guid.NewGuid().ToString();
-
     [Required]
     [MaxLength(100)]
     [MinLength(3)]
     public string Name { get; set; } = null!;
-    
+ 
     [MaxLength(4000)]
+    [MinLength(20)]
     public string? Description { get; set; }
 
+    [MaxLength(1000)]
     [Url]
     [RegularExpression("github\\.com/.*")]
-    [MaxLength(1000)]
     public string? RepoUrl { get; set; }
     
     public virtual List<Student> Students { get; set; } = new List<Student>();

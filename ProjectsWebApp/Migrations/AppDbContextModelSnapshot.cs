@@ -34,7 +34,7 @@ namespace ProjectsWebApp.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Projects");
+                    b.ToTable("Projects", (string)null);
                 });
 
             modelBuilder.Entity("ProjectsWebApp.Data.Entities.Student", b =>
@@ -58,7 +58,7 @@ namespace ProjectsWebApp.Migrations
 
                     b.HasIndex("ProjectId");
 
-                    b.ToTable("Students");
+                    b.ToTable("Students", (string)null);
                 });
 
             modelBuilder.Entity("ProjectsWebApp.Data.Entities.Student", b =>
