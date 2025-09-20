@@ -1,3 +1,4 @@
+using ProjectsWebApp.Data;
 using ProjectsWebApp.Data.Entities;
 using ProjectsWebApp.Models.InputModels;
 using ProjectsWebApp.Services.Contracts;
@@ -6,27 +7,56 @@ namespace ProjectsWebApp.Services;
 
 public class StudentsService: IStudentsService
 {
+    private readonly AppDbContext _dbContext;
+
+    public StudentsService(AppDbContext dbContext)
+    {
+        _dbContext = dbContext;
+    }
     public void AddStudent(StudentInputModel student)
     {
-        throw new NotImplementedException();
+        var newStudent = new Student
+        {
+            Name = student.Name,
+            Number = student.Number
+        };
+        _dbContext.Students.Add(newStudent);
+        _dbContext.SaveChanges();
     }
 
     public List<Student> GetAllStudents()
     {
-        throw new NotImplementedException();
+        return _dbContext.Students.ToList();
     }
 
-    public Student GetStudentById(string id)
+    public Student? GetStudentById(string id)
     {
-        throw new NotImplementedException();
+        var student = _dbContext.Students.FirstOrDefault(s => s.Id == id);
+        return student;
     }
 
     public void DeleteStudent(string id)
     {
-        throw new NotImplementedException();
+        var student = _dbContext.Students.FirstOrDefault(s => s.Id == id);
+        if (student != null)
+        {
+            _dbContext.Students.Remove(student);
+            _dbContext.SaveChanges();
+        }
     }
 
-    public void UpdateStudent(StudentInputModel student)
+    public void UpdateStudent(string id, StudentInputModel updatedStudent)
+    {
+        var existingStudent = GetStudentById(id);
+        if (existingStudent != null)
+        {
+            existingStudent.Name = updatedStudent.Name;
+            existingStudent.Number = updatedStudent.Number;
+            _dbContext.SaveChanges();
+        }
+    }
+
+    public void AddStudentsToProject(string projectId, List<string> studentIds)
     {
         throw new NotImplementedException();
     }

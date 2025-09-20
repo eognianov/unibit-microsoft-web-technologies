@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+using ProjectsWebApp.Data;
 using ProjectsWebApp.Data.Entities;
 using ProjectsWebApp.Models.InputModels;
 using ProjectsWebApp.Services.Contracts;
@@ -6,33 +8,54 @@ namespace ProjectsWebApp.Services;
 
 public class ProjectsService : IProjectsService
 {
+    private readonly AppDbContext _dbContext;
+
+    public ProjectsService(AppDbContext dbContext)
+    {
+        _dbContext = dbContext;
+    }
     public void AddProject(ProjectInputModel project)
     {
-        throw new NotImplementedException();
+        var newProject = new Project
+        {
+            Name = project.Name,
+            Description = project.Description,
+            RepoUrl = project.RepoUrl
+        };
+        _dbContext.Projects.Add(newProject);
+        _dbContext.SaveChanges();
     }
 
     public List<Project> GetAllProjects()
     {
-        throw new NotImplementedException();
+        return _dbContext.Projects.ToList();
     }
 
-    public Project GetProjectById(string id)
+    public Project? GetProjectById(string id)
     {
-        throw new NotImplementedException();
+        var project = _dbContext.Projects.FirstOrDefault(p => p.Id == id);
+        return project;
     }
 
     public void DeleteProject(string id)
     {
-        throw new NotImplementedException();
+        var project = _dbContext.Projects.FirstOrDefault(p => p.Id == id);
+        if (project != null)
+        {
+            _dbContext.Projects.Remove(project);
+            _dbContext.SaveChanges();
+        }
     }
 
-    public void UpdateProject(ProjectInputModel project)
+    public void UpdateProject(string projectId, ProjectInputModel updateProject)
     {
-        throw new NotImplementedException();
-    }
-
-    public void AddStudentsToProject(string projectId, List<string> studentIds)
-    {
-        throw new NotImplementedException();
+        var existingProject = _dbContext.Projects.FirstOrDefault(p => p.Id == projectId);
+        if (existingProject != null)
+        {
+            existingProject.Name = updateProject.Name;
+            existingProject.Description = updateProject.Description;
+            existingProject.RepoUrl = updateProject.RepoUrl;
+            _dbContext.SaveChanges();
+        }
     }
 }

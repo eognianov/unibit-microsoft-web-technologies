@@ -31,9 +31,9 @@ public class ProjectsController : Controller
         return Ok();
     }
 
-    public IActionResult Update(ProjectInputModel project)
+    public IActionResult Update(string id, ProjectInputModel project)
     {
-        _projectsService.UpdateProject(project);
+        _projectsService.UpdateProject(id, project);
         return Ok();
     }
 }

@@ -31,9 +31,9 @@ public class StudentsController : Controller
         return NoContent();
     }
 
-    public IActionResult Update(StudentInputModel studentInputModel)
+    public IActionResult Update(string id, StudentInputModel studentInputModel)
     {
-        _studentsService.UpdateStudent(studentInputModel);
+        _studentsService.UpdateStudent(id, studentInputModel);
         return Ok();
     }
 }

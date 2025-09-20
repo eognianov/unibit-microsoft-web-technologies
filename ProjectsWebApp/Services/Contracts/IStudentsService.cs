@@ -7,7 +7,9 @@ public interface IStudentsService
 {
     void AddStudent(StudentInputModel student);
     List<Student> GetAllStudents();
-    Student GetStudentById(string id);
+    Student? GetStudentById(string id);
     void DeleteStudent(string id);
-    void UpdateStudent(StudentInputModel student);
+    void UpdateStudent(string id, StudentInputModel student);
+    
+    void AddStudentsToProject(string projectId, List<string> studentIds);
 }

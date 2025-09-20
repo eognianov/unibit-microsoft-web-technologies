@@ -7,8 +7,7 @@ public interface IProjectsService
 {
     void AddProject(ProjectInputModel project);
     List<Project> GetAllProjects();
-    Project GetProjectById(string id);
+    Project? GetProjectById(string id);
     void DeleteProject(string id);
-    void UpdateProject(ProjectInputModel project);
-    void AddStudentsToProject(string projectId, List<string> studentIds);
+    void UpdateProject(string projectId, ProjectInputModel updatedProject);
 }
