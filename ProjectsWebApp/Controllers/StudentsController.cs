@@ -19,19 +19,22 @@ public class StudentsController : Controller
         return Ok(Json(students));
     }
     
-    public IActionResult Create(StudentInputModel student)
+    [HttpPost]
+    public IActionResult Create([FromBody]StudentInputModel student)
     {
         _studentsService.AddStudent(student);
         return Created();
     }
     
+    [HttpDelete]
     public IActionResult Delete(string id)
     {
         _studentsService.DeleteStudent(id);
         return NoContent();
     }
 
-    public IActionResult Update(string id, StudentInputModel studentInputModel)
+    [HttpPut]
+    public IActionResult Update([FromRoute]string id, [FromBody]StudentInputModel studentInputModel)
     {
         _studentsService.UpdateStudent(id, studentInputModel);
         return Ok();
