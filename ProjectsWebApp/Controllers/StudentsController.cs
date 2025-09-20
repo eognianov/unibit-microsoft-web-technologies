@@ -8,10 +8,12 @@ namespace ProjectsWebApp.Controllers;
 public class StudentsController : Controller
 {
     private readonly IStudentsService _studentsService;
+    private readonly IProjectsService _projectsService;
 
-    public StudentsController(IStudentsService studentsService)
+    public StudentsController(IStudentsService studentsService, IProjectsService projectsService)
     {
         _studentsService = studentsService;
+        _projectsService = projectsService;
     }
 
     public IActionResult Index()
@@ -54,12 +56,31 @@ public class StudentsController : Controller
         {
             return NotFound();
         }
-        return View(new StudentViewModel
+        
+        var projects = _projectsService.GetAllProjects().Select(p=> new ProjectViewModel
+        {
+            Id = p.Id,
+            Name = p.Name,
+        });
+        ViewBag.Projects = projects;
+
+        var studentViewModel = new StudentViewModel
         {
             Id = student.Id,
             Name = student.Name,
             Number = student.Number,
-        });
+        };
+        if (student.Project != null)
+        {
+            studentViewModel.Project = new ProjectViewModel
+            {
+                Id = student.Project.Id,
+                Name = student.Project.Name,
+                Description = student.Project.Description,
+                RepoUrl = student.Project.RepoUrl,
+            };
+        }
+        return View(studentViewModel);
     }
     
     [HttpPost]
@@ -130,6 +151,12 @@ public class StudentsController : Controller
     public IActionResult Edit([FromRoute]string id, StudentInputModel studentInputModel)
     {
         _studentsService.UpdateStudent(id, studentInputModel);
+        return RedirectToAction("Details", new {id});
+    }
+
+    public IActionResult AssignProject(string id, string projectId)
+    {
+        _studentsService.AddStudentToProject(projectId, id);
         return RedirectToAction("Details", new {id});
     }
 }

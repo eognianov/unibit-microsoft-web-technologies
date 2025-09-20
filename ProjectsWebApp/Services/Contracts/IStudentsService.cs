@@ -11,5 +11,5 @@ public interface IStudentsService
     void DeleteStudent(string id);
     void UpdateStudent(string id, StudentInputModel student);
     
-    void AddStudentsToProject(string projectId, List<string> studentIds);
+    void AddStudentToProject(string projectId, string studentId);
 }

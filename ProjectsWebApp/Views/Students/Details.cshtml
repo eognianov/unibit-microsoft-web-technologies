@@ -2,6 +2,7 @@
 
 @{
     ViewData["Title"] = "Details";
+    var selectItems = new SelectList(ViewBag.Projects, "Id", "Name");
 }
 
 <h1>Details</h1>
@@ -22,7 +23,22 @@
         <dd class = "col-sm-10">
             @Html.DisplayFor(model => model.Number)
         </dd>
+        <dt class = "col-sm-2">
+            @Html.DisplayNameFor(model => model.Project)
+        </dt>
+        <dd class = "col-sm-10">
+            @Html.DisplayFor(model => model.Project.Name)
+        </dd>
     </dl>
+    @if (Model.Project == null)
+    {
+        <p>This student is not assigned to any project</p>
+        <form method="post" asp-action="AssignProject" asp-route-id="@Model.Id">
+            <label for="project">Select Project:</label>
+            <select id="project" name="ProjectId" asp-items="selectItems"></select>
+            <input type="submit" value="Assign Project">
+        </form>
+    }
 </div>
 <div>
     <a asp-action="Edit" asp-route-id="@Model?.Id">Edit</a> |

@@ -56,8 +56,14 @@ public class StudentsService: IStudentsService
         }
     }
 
-    public void AddStudentsToProject(string projectId, List<string> studentIds)
+    public void AddStudentToProject(string projectId, string studentId)
     {
-        throw new NotImplementedException();
+        var student = _dbContext.Students.FirstOrDefault(s => s.Id == studentId);
+        var project = _dbContext.Projects.FirstOrDefault(p => p.Id == projectId);
+        if (student != null && project != null)
+        {
+            student.ProjectId = projectId;
+            _dbContext.SaveChanges();
+        }
     }
 }
