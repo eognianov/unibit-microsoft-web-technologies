@@ -11,7 +11,7 @@ public class StudentInputModel
     public string Name { get; set; } = null!;
     
     [MinLength(3)]
-    [MaxLength(5)]
+    [MaxLength(10)]
     public string Number { get; set; } = null!;
     
 }

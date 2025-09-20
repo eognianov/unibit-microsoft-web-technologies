@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using ProjectsWebApp.Models.InputModels;
+using ProjectsWebApp.Models.ViewModels;
 using ProjectsWebApp.Services.Contracts;
 
 namespace ProjectsWebApp.Controllers;
@@ -15,29 +16,90 @@ public class ProjectsController : Controller
     
     public IActionResult Index()
     {
-        var projects = _projectsService.GetAllProjects();
-        return Ok(Json(projects));
+        var projectsViewModel = _projectsService.GetAllProjects().Select(p => new ProjectViewModel
+        {
+            Id = p.Id,
+            Name = p.Name,
+            Description = p.Description,
+            RepoUrl = p.RepoUrl,
+        }).ToList();
+        return View(projectsViewModel);
+    }
+    
+    public IActionResult Create()
+    {
+        return View();
+    }
+    
+    public IActionResult Details(string id)
+    {
+        var project = _projectsService.GetProjectById(id);
+        if (project == null)
+        {
+            return NotFound();
+        }
+        return View(new ProjectViewModel
+        {
+            Id = project.Id,
+            Name = project.Name,
+            Description = project.Description,
+            RepoUrl = project.RepoUrl,
+        });
     }
     
     [HttpPost]
-    public IActionResult Create([FromBody]ProjectInputModel project)
+    public IActionResult Create(ProjectInputModel project)
     {
         _projectsService.AddProject(project);
-        return Created();
+        return RedirectToAction("Index");
     }
     
-    [HttpDelete]
+
     public IActionResult Delete(string id)
     {
+        var project = _projectsService.GetProjectById(id);
+        if (project == null)
+        {
+            return NotFound();
+        }
+        return View(new ProjectViewModel
+        {
+            Id = project.Id,
+            Name = project.Name,
+            Description = project.Description,
+            RepoUrl = project.RepoUrl,
+        });
+    }
+    
+    [HttpPost]
+    public IActionResult PostDelete(string id)
+    {
         _projectsService.DeleteProject(id);
-        return Ok();
+        return RedirectToAction("Index");
     }
 
+    public IActionResult Edit(string id)
+    {
+        var project = _projectsService.GetProjectById(id);
+        if (project == null)
+        {
+            return NotFound();
+        }
+
+        return View(new ProjectViewModel
+        {
+            Id = project.Id,
+            Name = project.Name,
+            Description = project.Description,
+            RepoUrl = project.RepoUrl,
+        });
+    }
     
-    [HttpPut]
-    public IActionResult Update([FromRoute]string id, [FromBody]ProjectInputModel project)
+    
+    [HttpPost]
+    public IActionResult Edit([FromRoute]string id, ProjectInputModel project)
     {
         _projectsService.UpdateProject(id, project);
-        return Ok();
+        return RedirectToAction("Details", new {id});
     }
 }
