@@ -17,7 +17,7 @@ public class Program
             options.UseSqlite(builder.Configuration.GetConnectionString("SQLite")));
         builder.Services.AddScoped<IStudentsService, StudentsService>();
         builder.Services.AddScoped<IProjectsService, ProjectsService>();
-
+        
         var app = builder.Build();
 
         // Configure the HTTP request pipeline.

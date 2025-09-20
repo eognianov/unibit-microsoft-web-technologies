@@ -19,19 +19,23 @@ public class ProjectsController : Controller
         return Ok(Json(projects));
     }
     
-    public IActionResult Create(ProjectInputModel project)
+    [HttpPost]
+    public IActionResult Create([FromBody]ProjectInputModel project)
     {
         _projectsService.AddProject(project);
         return Created();
     }
     
+    [HttpDelete]
     public IActionResult Delete(string id)
     {
         _projectsService.DeleteProject(id);
         return Ok();
     }
 
-    public IActionResult Update(string id, ProjectInputModel project)
+    
+    [HttpPut]
+    public IActionResult Update([FromRoute]string id, [FromBody]ProjectInputModel project)
     {
         _projectsService.UpdateProject(id, project);
         return Ok();
