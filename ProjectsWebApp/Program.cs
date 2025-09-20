@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using ProjectsWebApp.Data;
+using ProjectsWebApp.Services;
+using ProjectsWebApp.Services.Contracts;
 
 namespace ProjectsWebApp;
 
@@ -13,6 +15,8 @@ public class Program
         builder.Services.AddControllersWithViews();
         builder.Services.AddDbContext<AppDbContext>(options =>
             options.UseSqlite(builder.Configuration.GetConnectionString("SQLite")));
+        builder.Services.AddScoped<IStudentsService, StudentsService>();
+        builder.Services.AddScoped<IProjectsService, ProjectsService>();
 
         var app = builder.Build();
 
