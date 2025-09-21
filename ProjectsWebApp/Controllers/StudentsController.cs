@@ -86,6 +86,10 @@ public class StudentsController : Controller
     [HttpPost]
     public IActionResult Create(StudentInputModel student)
     {
+        if (!ModelState.IsValid)
+        {
+            return View(student);       
+        }
         _studentsService.AddStudent(student);
         return RedirectToAction("Index");
     }
