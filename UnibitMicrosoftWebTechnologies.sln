@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CSharpBasics", "CSharpBasic
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProjectsWebApp", "ProjectsWebApp\ProjectsWebApp.csproj", "{70C55860-6E6C-414F-BA11-EDC0EE0050B2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BasicHTTPServer", "BasicHTTPServer\BasicHTTPServer.csproj", "{3BDFB95F-A5E8-4A72-AF05-0235108CCB7A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{70C55860-6E6C-414F-BA11-EDC0EE0050B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{70C55860-6E6C-414F-BA11-EDC0EE0050B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{70C55860-6E6C-414F-BA11-EDC0EE0050B2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3BDFB95F-A5E8-4A72-AF05-0235108CCB7A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3BDFB95F-A5E8-4A72-AF05-0235108CCB7A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3BDFB95F-A5E8-4A72-AF05-0235108CCB7A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3BDFB95F-A5E8-4A72-AF05-0235108CCB7A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
