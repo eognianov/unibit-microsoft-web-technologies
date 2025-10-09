@@ -22,6 +22,15 @@ public class Program
         app.UseHttpsRedirection();
         app.UseStaticFiles();
 
+        app.Use(async (context, next) =>
+        {
+            Console.WriteLine("Before call of inline middleware");
+            await next.Invoke(context);
+            Console.WriteLine("After call of inline middleware");
+        });
+
+        app.UseCustomMiddleware();
+
         app.UseRouting();
 
         app.UseAuthorization();
