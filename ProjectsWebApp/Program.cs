@@ -29,11 +29,20 @@ public class Program
         {
             app.UseExceptionHandler("/Home/Error");
             // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-            app.UseHsts();
+            // app.UseHsts();
         }
 
-        app.UseHttpsRedirection();
+        // app.UseHttpsRedirection();
         app.UseStaticFiles();
+        
+        // app.Use(async (context, next) =>
+        // {
+        //     Console.WriteLine("Before");
+        //     Console.WriteLine(context.Request.Path);
+        //     context.Response.Headers.Append("Some-Header", "Test Header");
+        //     await next.Invoke();
+        //     Console.WriteLine("After");
+        // });
 
         app.UseRouting();
 
