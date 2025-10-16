@@ -8,7 +8,7 @@ public class HomeController : Controller
 {
     public IActionResult Index()
     {
-        return Ok("Index page");
+        return View();
     }
 
     public IActionResult Info()

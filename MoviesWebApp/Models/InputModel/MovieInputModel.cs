@@ -18,7 +18,7 @@ public class MovieInputModel
     public string? Director { get; set; } = String.Empty;
     
     [Required]
-    [MinLength(1)]
+    [MinLength(2)]
     public List<string> Actors { get; set; }
     
     [Required]

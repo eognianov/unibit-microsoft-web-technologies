@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using MoviesWebApp.Models.InputModel;
+using MoviesWebApp.Models.ViewModels;
 
 namespace MoviesWebApp.Controllers;
 
@@ -7,13 +8,22 @@ public class MoviesController: Controller
 {
     public ActionResult Index()
     {
-        return Ok("All Movies");
+        var indexViewModel = new MoviesIndexViewModel
+        {
+            Title = "Inception",
+            Movies = new List<string>
+            {
+                "movie 1",
+                "movie 2",
+            }
+        };
+        return View(indexViewModel);
     }
 
     [HttpGet]
     public ActionResult Create()
     {
-        return Ok("Create Movies page");
+        return View();
     }
 
     [HttpPost]
@@ -23,19 +33,8 @@ public class MoviesController: Controller
         {
             return Ok($"Movie with name: {inputModel.Name} created");
         }
-        
-        var errors = ModelState
-            .Where(e => e.Value.Errors.Count > 0)
-            .ToDictionary(
-                e => e.Key,
-                e => e.Value.Errors.Select(err => err.ErrorMessage).ToArray()
-            );
-        
-        return BadRequest(new
-        {
-            Message = "Validation failed",
-            Errors = errors
-        });
+
+        return View(inputModel);
     }
 
     [HttpGet]
