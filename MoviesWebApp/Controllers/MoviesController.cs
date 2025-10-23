@@ -33,20 +33,11 @@ public class MoviesController: Controller
     {
         if (ModelState.IsValid)
         {
-            try
-            {
-                _dbContext.Movies.Add(movieInput);
-                _dbContext.SaveChanges();
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-                throw;
-            }
             
+            _movieService.CreateMovie(movieInput);
         }
 
-        return View(movieInput);
+        return Ok($"Movie created @{movieInput.Id}");
     }
 
     [HttpGet]

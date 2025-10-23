@@ -14,4 +14,13 @@
         <PrivateAssets>all</PrivateAssets>
       </PackageReference>
     </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Migrations\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Remove="Migrations\MoviesAppDbContextModelSnapshot.cs" />
+      <Compile Remove="Migrations\20251023123920_initial.Designer.cs" />
+    </ItemGroup>
 </Project>

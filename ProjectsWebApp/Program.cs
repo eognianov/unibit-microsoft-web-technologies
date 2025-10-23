@@ -17,7 +17,7 @@ public class Program
         {
 
             options.UseSqlite(builder.Configuration.GetConnectionString("SQLite"));
-            options.UseLazyLoadingProxies();
+            options.UseLazyLoadingProxies(false);
         });
         builder.Services.AddScoped<IStudentsService, StudentsService>();
         builder.Services.AddScoped<IProjectsService, ProjectsService>();

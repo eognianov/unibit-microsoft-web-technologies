@@ -22,8 +22,8 @@ public class MovieService: IMovieService
     }
     public void CreateMovie(Movie movieInputModel)
     {
-        Console.WriteLine("Before call service");
-        
+        _context.Movies.Add(movieInputModel);
+        _context.SaveChanges();
     }
 
     public Movie GetMovie(int id)
@@ -33,33 +33,7 @@ public class MovieService: IMovieService
 
     public List<Movie> GetMovies()
     {
-        var movies = new List<Movie>
-        {
-            new Movie
-            {
-                Name = "Inception 1",
-                Genre = "Sci-Fi",
-                Director = "Christopher Nolan",
-                Actors = ["Leonardo DiCaprio", "Ellen Page", "Tom Hardy"],
-                Year = 2010
-            },
-            new Movie
-            {
-                Name = "The Shawshank Redemption",
-                Genre = "Drama",
-                Director = "Frank Darabont",
-                Actors = ["Tim Robbins", "Morgan Freeman"],
-                Year = 1994
-            },
-            new Movie
-            {
-                Name = "The Matrix",
-                Genre = "Action",
-                Director = "The Wachowskis",
-                Actors = ["Keanu Reeves", "Laurence Fishburne", "Carrie-Anne Moss"],
-                Year = 1999
-            }
-        };
+        var movies = _context.Movies.Where(m=>m.Director=="me").ToList();
         return movies;
     }
 }
