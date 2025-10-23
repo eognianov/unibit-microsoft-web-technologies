@@ -33,7 +33,7 @@ public class MovieService: IMovieService
 
     public List<Movie> GetMovies()
     {
-        var movies = _context.Movies.Where(m=>m.Director=="me").ToList();
+        var movies = _context.Movies.ToList();
         return movies;
     }
 }
