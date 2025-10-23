@@ -1,13 +1,11 @@
-@model MoviesWebApp.Models.ViewModels.MoviesIndexViewModel;
-
+@model List<Movie>;
 <p>My movies index view</p>
-<button class="btn-danger btn">@Model.Title</button>
 
 
 
 <ul>
-    @foreach (var movie in Model.Movies)
+    @foreach (var movie in Model)
     {
-        <li>@movie</li>
+        <li>@movie.Name</li>
     }
 </ul>

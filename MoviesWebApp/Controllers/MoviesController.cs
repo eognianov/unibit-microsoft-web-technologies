@@ -1,23 +1,25 @@
 using Microsoft.AspNetCore.Mvc;
+using MoviesWebApp.Models;
 using MoviesWebApp.Models.InputModel;
-using MoviesWebApp.Models.ViewModels;
+using MoviesWebApp.Services;
 
 namespace MoviesWebApp.Controllers;
 
 public class MoviesController: Controller
 {
+    private readonly IMovieService _movieService;
+    private readonly MoviesAppDbContext _dbContext;
+
+    public MoviesController(IMovieService movieService, MoviesAppDbContext dbContext)
+    {
+        _movieService = movieService;
+        _dbContext = dbContext;
+    }
+
     public ActionResult Index()
     {
-        var indexViewModel = new MoviesIndexViewModel
-        {
-            Title = "Inception",
-            Movies = new List<string>
-            {
-                "movie 1",
-                "movie 2",
-            }
-        };
-        return View(indexViewModel);
+        var movies = _movieService.GetMovies();
+        return View(movies);
     }
 
     [HttpGet]
@@ -27,14 +29,24 @@ public class MoviesController: Controller
     }
 
     [HttpPost]
-    public ActionResult Create([FromForm]MovieInputModel inputModel)
+    public ActionResult Create([FromForm]Movie movieInput)
     {
         if (ModelState.IsValid)
         {
-            return Ok($"Movie with name: {inputModel.Name} created");
+            try
+            {
+                _dbContext.Movies.Add(movieInput);
+                _dbContext.SaveChanges();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
+            
         }
 
-        return View(inputModel);
+        return View(movieInput);
     }
 
     [HttpGet]

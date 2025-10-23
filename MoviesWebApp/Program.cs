@@ -1,3 +1,6 @@
+using Microsoft.EntityFrameworkCore;
+using MoviesWebApp.Services;
+
 namespace MoviesWebApp;
 
 public class Program
@@ -8,6 +11,11 @@ public class Program
 
         // Add services to the container.
         builder.Services.AddControllersWithViews();
+        builder.Services.AddTransient<IMovieService, MovieService>();
+        builder.Services.AddDbContext<MoviesAppDbContext>(options =>
+        {
+            options.UseSqlite(builder.Configuration.GetConnectionString("SQLite"));
+        });
 
         var app = builder.Build();
 
@@ -26,7 +34,7 @@ public class Program
         {
             Console.WriteLine("Before call of inline middleware");
             await next.Invoke(context);
-            Console.WriteLine("After call of inline middleware");
+             Console.WriteLine("After call of inline middleware");
         });
 
         app.UseCustomMiddleware();

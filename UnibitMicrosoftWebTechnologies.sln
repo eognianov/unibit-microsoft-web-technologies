@@ -8,27 +8,3 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BasicHTTPServer", "BasicHTT
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoviesWebApp", "MoviesWebApp\MoviesWebApp.csproj", "{7DA10697-323B-44A4-8CA1-F7CD36E046BC}"
 EndProject
-Global
-	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|Any CPU = Debug|Any CPU
-		Release|Any CPU = Release|Any CPU
-	EndGlobalSection
-	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{3DFE0817-FC32-412B-87EC-1F5BAD89EE78}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3DFE0817-FC32-412B-87EC-1F5BAD89EE78}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{3DFE0817-FC32-412B-87EC-1F5BAD89EE78}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3DFE0817-FC32-412B-87EC-1F5BAD89EE78}.Release|Any CPU.Build.0 = Release|Any CPU
-		{70C55860-6E6C-414F-BA11-EDC0EE0050B2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{70C55860-6E6C-414F-BA11-EDC0EE0050B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{70C55860-6E6C-414F-BA11-EDC0EE0050B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{70C55860-6E6C-414F-BA11-EDC0EE0050B2}.Release|Any CPU.Build.0 = Release|Any CPU
-		{3BDFB95F-A5E8-4A72-AF05-0235108CCB7A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3BDFB95F-A5E8-4A72-AF05-0235108CCB7A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{3BDFB95F-A5E8-4A72-AF05-0235108CCB7A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3BDFB95F-A5E8-4A72-AF05-0235108CCB7A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7DA10697-323B-44A4-8CA1-F7CD36E046BC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7DA10697-323B-44A4-8CA1-F7CD36E046BC}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7DA10697-323B-44A4-8CA1-F7CD36E046BC}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7DA10697-323B-44A4-8CA1-F7CD36E046BC}.Release|Any CPU.Build.0 = Release|Any CPU
-	EndGlobalSection
-EndGlobal
