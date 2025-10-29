@@ -1,9 +1,10 @@
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using MoviesWebApp.Models;
 
 namespace MoviesWebApp;
 
-public class MoviesAppDbContext : DbContext
+public class MoviesAppDbContext : IdentityDbContext
 {
     public MoviesAppDbContext(DbContextOptions<MoviesAppDbContext> options) : base(options)
     {
