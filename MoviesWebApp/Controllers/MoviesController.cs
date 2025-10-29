@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MoviesWebApp.Models;
 using MoviesWebApp.Models.InputModel;
@@ -23,12 +24,14 @@ public class MoviesController: Controller
     }
 
     [HttpGet]
+    [Authorize]
     public ActionResult Create()
     {
         return View();
     }
 
     [HttpPost]
+    [Authorize]
     public ActionResult Create([FromForm]Movie movieInput)
     {
         if (ModelState.IsValid)
