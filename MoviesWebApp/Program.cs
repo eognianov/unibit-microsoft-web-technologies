@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using MoviesWebApp.Services;
 
@@ -16,6 +17,18 @@ public class Program
         {
             options.UseSqlite(builder.Configuration.GetConnectionString("SQLite"));
         });
+        
+        builder.Services.AddDefaultIdentity<IdentityUser>(options =>
+            {
+                options.SignIn.RequireConfirmedAccount = false;
+                options.Password.RequireDigit = false;
+                options.Password.RequireLowercase = false;
+                options.Password.RequireNonAlphanumeric = false;
+                options.Password.RequireUppercase = false;
+                options.Password.RequiredLength = 3;
+                options.Password.RequiredUniqueChars = 0;
+            })
+            .AddEntityFrameworkStores<MoviesAppDbContext>();
 
         var app = builder.Build();
 
@@ -40,13 +53,13 @@ public class Program
         app.UseCustomMiddleware();
 
         app.UseRouting();
-
+        app.UseAuthentication();
         app.UseAuthorization();
 
         app.MapControllerRoute(
             name: "default",
             pattern: "{controller=Home}/{action=Index}/{id?}");
-
+        app.MapRazorPages();
         app.Run();
     }
 }

@@ -25,8 +25,12 @@
                     <li class="nav-item">
                         <a class="nav-link text-dark" asp-area="" asp-controller="Movies" asp-action="Index">All Movies</a>
                     </li>
+                    <li>
+                        
+                        <a asp-area="" asp-controller="Movies" asp-action="Create" class="btn btn-primary">Create Movie</a>
+                    </li>
                 </ul>
-                    <a asp-area="" asp-controller="Movies" asp-action="Create" class="btn btn-primary">Create Movie</a>
+                @await Html.PartialAsync("_LoginPartial")
             </div>
         </div>
     </nav>
