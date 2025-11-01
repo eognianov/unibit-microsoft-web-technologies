@@ -1,57 +1,74 @@
 @model MoviesWebApp.Models.Movie
 
-<h1>Create movie page</h1>
-<form id="create-form" class="form-control" asp-controller="Movies" asp-action="Create" method="post">
-    <div asp-validation-summary="All" class="text-danger"></div>
-    
-    <div class="form-group mt-1">
-        <label asp-for="Name" class="control-label"></label>
-        <input asp-for="Name" class="form-control" />
-        <span asp-validation-for="Name" class="text-danger"></span>
-    </div>
-    <div class="form-group mt-1">
-        <label asp-for="Genre" class="control-label"></label>
-        <input asp-for="Genre" class="form-control" />
-        <span asp-validation-for="Genre" class="text-danger"></span>
-    </div>
-    
-    <div class="form-group mt-1">
-        <label asp-for="Director" class="control-label"></label>
-        <input asp-for="Director" class="form-control" />
-        <span asp-validation-for="Director" class="text-danger"></span>
-    </div>
-    
-    @* <div class="form-group mt-1"> *@
-    @*     <label asp-for="Actors" class="control-label"></label> *@
-    @*     <input asp-for="Actors" class="form-control" /> *@
-    @*     <input asp-for="Actors" class="form-control" /> *@
-    @*     <span asp-validation-for="Actors" class="text-danger"></span> *@
-    @* </div> *@
-    <div class="form-group mt-1">
-        <label asp-for="Year" class="control-label"></label>
-        <input asp-for="Year" class="form-control" />
-        <span asp-validatiosdadsan-for="Year" class="text-danger"></span>
-    </div>
-    <div class="form-group mt-1">
-        <button id="clear-btn" class="btn btn-outline-info">Clear</button>
-        <button type="submit" class="btn btn-primary">Create</button>
-    </div>
-</form>
-
-
-@section Scripts
-{
-    @await Html.PartialAsync("_ValidationScriptsPartial")
-    <script>
-        document.getElementById('clear-btn').addEventListener('click', (e) => {
-                document.getElementById('create-form').reset();
-                document.querySelectorAll(".text-danger").forEach(el => el.textContent = "");
-            
-        })
-    </script>
+@{
+    ViewData["Title"] = "Create Movie";
 }
 
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Create New Movie</h4>
+                </div>
 
+                <div class="card-body">
+                    <form id="create-form" asp-controller="Movies" asp-action="Create" method="post" novalidate>
+                        <div asp-validation-summary="All" class="text-danger mb-3"></div>
 
-    
+                        <div class="mb-3">
+                            <label asp-for="Name" class="form-label fw-semibold"></label>
+                            <input asp-for="Name" class="form-control" placeholder="Enter movie name" />
+                            <span asp-validation-for="Name" class="text-danger"></span>
+                        </div>
 
+                        <div class="mb-3">
+                            <label asp-for="Genre" class="form-label fw-semibold"></label>
+                            <input asp-for="Genre" class="form-control" placeholder="Enter genre" />
+                            <span asp-validation-for="Genre" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Director" class="form-label fw-semibold"></label>
+                            <input asp-for="Director" class="form-control" placeholder="Enter director name" />
+                            <span asp-validation-for="Director" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Year" class="form-label fw-semibold"></label>
+                            <input asp-for="Year" class="form-control" placeholder="Enter release year" />
+                            <span asp-validation-for="Year" class="text-danger"></span>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <button id="clear-btn" type="button" class="btn btn-outline-info">
+                                <i class="bi bi-eraser"></i> Clear
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-plus-circle"></i> Create
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="card-footer bg-light text-center">
+                    <a asp-action="Index" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Back to List
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+
+    <script>
+        document.getElementById('clear-btn').addEventListener('click', (e) => {
+            const form = document.getElementById('create-form');
+            form.reset();
+            document.querySelectorAll(".text-danger").forEach(el => el.textContent = "");
+        });
+    </script>
+}

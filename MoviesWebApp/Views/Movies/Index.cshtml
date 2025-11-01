@@ -1,11 +1,37 @@
 @model List<Movie>;
-<p>My movies index view</p>
 
-
-
-<ul>
-    @foreach (var movie in Model)
-    {
-        <li>@movie.Name</li>
+<table class="table table-striped table-bordered table-hover table-sm align-middle">
+    <thead class="table-dark">
+    <tr>
+        <th>Name</th>
+        <th>Genre</th>
+        <th>Director</th>
+        <th>Year</th>
+        <th></th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var item in Model) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.Name)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Genre)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Director)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Year)
+            </td>
+            <td>
+                <a class="btn btn-sm btn-info" asp-action="Edit" asp-route-id="@item.Id">Edit</a>
+                <a class="btn btn-sm btn-success" asp-action="Details" asp-route-id="@item.Id">Details</a>
+                <a class="btn btn-sm btn-danger" asp-action="Delete" asp-route-id="@item.Id">Delete</a>
+            </td>
+        </tr>
     }
-</ul>
+    </tbody>
+</table>
+

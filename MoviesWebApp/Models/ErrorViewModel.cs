@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+
 namespace MoviesWebApp.Models;
 
 public class ErrorViewModel

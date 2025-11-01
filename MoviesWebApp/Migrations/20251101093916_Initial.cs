@@ -5,7 +5,7 @@
 namespace MoviesWebApp.Migrations
 {
     /// <inheritdoc />
-    public partial class addMovieTable : Migration
+    public partial class Initial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

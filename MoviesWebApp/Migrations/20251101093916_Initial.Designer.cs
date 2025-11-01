@@ -10,14 +10,14 @@ using MoviesWebApp;
 namespace MoviesWebApp.Migrations
 {
     [DbContext(typeof(MoviesAppDbContext))]
-    [Migration("20251023153809_addMovieTable")]
-    partial class addMovieTable
+    [Migration("20251101093916_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "9.0.10");
+            modelBuilder.HasAnnotation("ProductVersion", "8.0.21");
 
             modelBuilder.Entity("MoviesWebApp.Models.Movie", b =>
                 {

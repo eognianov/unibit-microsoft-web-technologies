@@ -43,41 +43,43 @@ public class MoviesController: Controller
     [HttpGet]
     public ActionResult Delete(int id)
     {
-        return Ok("Delete Movies page with id " + id);
+        var movie = _dbContext.Movies.Find(id);
+        return View(movie);
     }
 
     [HttpPost]
     public IActionResult DeletePost(int id)
     {  
-        return Ok("Deleted Movie with id " + id);
+        var movie = _dbContext.Movies.Find(id);
+        _dbContext.Movies.Remove(movie);
+        return RedirectToAction(nameof(Index));
     }
 
     [HttpGet]
     public ActionResult Edit(int id)
     {
-        return Ok("Edit Movies page");
+        
+        var movie = _dbContext.Movies.Find(id);
+        return View("Update", movie);
     }
 
     [HttpPost]
-    public IActionResult EditPost(MovieInputModel inputModel)
+    public IActionResult EditPost(Movie inputModel, int id)
     {
-        
-        if (ModelState.IsValid)
-        {
-            return Ok($"Movie with name: {inputModel.Name} edit");
-        }
-        
-        var errors = ModelState
-            .Where(e => e.Value.Errors.Count > 0)
-            .ToDictionary(
-                e => e.Key,
-                e => e.Value.Errors.Select(err => err.ErrorMessage).ToArray()
-            );
-        
-        return BadRequest(new
-        {
-            Message = "Validation failed",
-            Errors = errors
-        });
+
+        var movie = _dbContext.Movies.Find(inputModel.Id);
+        movie.Year = inputModel.Year;
+        movie.Name = inputModel.Name;
+
+        _dbContext.SaveChanges();
+        return RedirectToAction("Edit", movie.Id);
+    }
+
+    
+    [HttpGet]
+    public ActionResult Details(int id)
+    {
+        var movie = _dbContext.Movies.Find(id);
+        return View(movie);
     }
 }
