@@ -8,8 +8,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BasicHTTPServer", "BasicHTT
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoviesWebApp", "MoviesWebApp\MoviesWebApp.csproj", "{7DA10697-323B-44A4-8CA1-F7CD36E046BC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CrudSandbox", "CrudSandbox\CrudSandbox.csproj", "{314064A0-C2C7-4502-BCA9-9FB1B8339644}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -32,9 +30,5 @@ Global
 		{70C55860-6E6C-414F-BA11-EDC0EE0050B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{70C55860-6E6C-414F-BA11-EDC0EE0050B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{70C55860-6E6C-414F-BA11-EDC0EE0050B2}.Release|Any CPU.Build.0 = Release|Any CPU
-		{314064A0-C2C7-4502-BCA9-9FB1B8339644}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{314064A0-C2C7-4502-BCA9-9FB1B8339644}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{314064A0-C2C7-4502-BCA9-9FB1B8339644}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{314064A0-C2C7-4502-BCA9-9FB1B8339644}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
