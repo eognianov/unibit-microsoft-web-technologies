@@ -16,13 +16,14 @@ public class HomeController : Controller
     
     public IActionResult Index()
     {
-        var recipes = _context.Recipes.ToList();
-        return View();
+        var lastRecipe = _context.Recipes.OrderByDescending(r=>r.CreatedAt).Take(1).FirstOrDefault();
+        return View(lastRecipe);
     }
 
-    public IActionResult Privacy()
+    public IActionResult Recipes()
     {
-        return View();
+        var recipes = _context.Recipes.ToList();
+        return View(recipes);
     }
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
