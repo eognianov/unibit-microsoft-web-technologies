@@ -1,4 +1,4 @@
-namespace RecipeVault.Models;
+namespace RecipeVaultWithDb.Models;
 
 public class ErrorViewModel
 {
