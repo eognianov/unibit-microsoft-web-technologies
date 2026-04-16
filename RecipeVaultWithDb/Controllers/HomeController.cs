@@ -38,7 +38,7 @@ public class HomeController : Controller
         {
             return NotFound();
         }
-        return Ok(recipe);
+        return View(recipe);
     }
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

@@ -1,0 +1,112 @@
+@model RecipeVaultWithDb.Models.Recipe
+
+@{
+    ViewData["Title"] = Model.Title;
+}
+
+<div class="container-lg pb-5" style="max-width: 860px;">
+
+    <div class="position-relative mb-4 rounded overflow-hidden" style="max-height: 400px;">
+        @if (!string.IsNullOrWhiteSpace(Model.ImageUrl))
+        {
+            <img src="@Model.ImageUrl" alt="@Model.Title" class="w-100 object-fit-cover" style="max-height: 400px;" />
+        }
+        else
+        {
+            <div class="bg-secondary d-flex align-items-center justify-content-center" style="height: 200px; font-size: 4rem;">🍽️</div>
+        }
+        <div class="position-absolute bottom-0 start-0 w-100 p-3" style="background: linear-gradient(transparent, rgba(0,0,0,0.6));">
+            <span class="badge bg-primary mb-2">@Model.Category</span>
+            <h1 class="text-white fw-bold fs-2 mb-0">@Model.Title</h1>
+        </div>
+    </div>
+
+    <div class="card mb-4 mx-2">
+        <div class="card-body">
+            <div class="d-flex justify-content-around align-items-center flex-wrap gap-2">
+                @if (Model.CookTimeMinutes.HasValue)
+                {
+                    <div class="text-center">
+                        <div class="fs-4">⏱️</div>
+                        <div class="text-muted small">Готвене</div>
+                        <div class="fw-semibold">@Model.CookTimeMinutes мин.</div>
+                    </div>
+                    <div class="vr d-none d-sm-block"></div>
+                }
+                <div class="text-center">
+                    <div class="fs-4">🍴</div>
+                    <div class="text-muted small">Порции</div>
+                    <div class="fw-semibold">@Model.Servings</div>
+                </div>
+                <div class="vr d-none d-sm-block"></div>
+                <div class="text-center">
+                    <div class="fs-4">📂</div>
+                    <div class="text-muted small">Категория</div>
+                    <div class="fw-semibold">@Model.Category</div>
+                </div>
+                <div class="vr d-none d-sm-block"></div>
+                <div class="text-center">
+                    <div class="fs-4">🗓️</div>
+                    <div class="text-muted small">Добавена</div>
+                    <div class="fw-semibold">@Model.CreatedAt.ToString("dd.MM.yyyy")</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-4 px-2">
+        <h5 class="fw-bold border-bottom pb-2 mb-3">Инструкции за приготвяне</h5>
+        <p class="lh-lg">@Model.Instructions</p>
+    </div>
+
+    <div class="mb-4 px-2">
+        <h5 class="fw-bold border-bottom pb-2 mb-3">Детайли</h5>
+        <div class="card">
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Заглавие</span>
+                    <span class="fw-semibold">@Model.Title</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Категория</span>
+                    <span class="fw-semibold">@Model.Category</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Брой порции</span>
+                    <span class="fw-semibold">@Model.Servings</span>
+                </li>
+                @if (Model.CookTimeMinutes.HasValue)
+                {
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span class="text-muted">Време за готвене</span>
+                        <span class="fw-semibold">@Model.CookTimeMinutes минути</span>
+                    </li>
+                }
+                @if (!string.IsNullOrWhiteSpace(Model.ImageUrl))
+                {
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span class="text-muted">Снимка (URL)</span>
+                        <span style="word-break:break-all; max-width: 60%; text-align:right; font-size:0.85rem;">
+                            <a href="@Model.ImageUrl" target="_blank" class="text-decoration-none">Отвори връзката</a>
+                        </span>
+                    </li>
+                }
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Дата на добавяне</span>
+                    <span class="fw-semibold">@Model.CreatedAt.ToString("dd MMMM yyyy, HH:mm")</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 px-2 mt-4">
+        <a asp-action="Recipes" class="btn btn-outline-secondary">← Към всички рецепти</a>
+        <div class="d-flex gap-2 flex-wrap">
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-primary">✏️ Редактирай</a>
+            <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-outline-danger">🗑️ Изтрий</a>
+        </div>
+    </div>
+
+    <p class="text-center text-muted small mt-4">Рецептата е добавена на @Model.CreatedAt.ToString("dd MMMM yyyy")</p>
+
+</div>
