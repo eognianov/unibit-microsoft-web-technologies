@@ -10,6 +10,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoviesWebApp", "MoviesWebAp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RecipeVaultWithDb", "RecipeVaultWithDb\RecipeVaultWithDb.csproj", "{214652EC-AE94-4A5C-85A1-ECAC1B3836A3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FootballTeamsManager", "FootballTeamsManager\FootballTeamsManager.csproj", "{2544E466-FC6D-42CF-BB75-F04AF5AE3105}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -36,5 +38,9 @@ Global
 		{214652EC-AE94-4A5C-85A1-ECAC1B3836A3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{214652EC-AE94-4A5C-85A1-ECAC1B3836A3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{214652EC-AE94-4A5C-85A1-ECAC1B3836A3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2544E466-FC6D-42CF-BB75-F04AF5AE3105}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2544E466-FC6D-42CF-BB75-F04AF5AE3105}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2544E466-FC6D-42CF-BB75-F04AF5AE3105}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2544E466-FC6D-42CF-BB75-F04AF5AE3105}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
