@@ -1,0 +1,72 @@
+@model Article
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-xl-7">
+
+            <article class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-body p-4 p-md-5">
+
+                    <!-- Article header -->
+                    <div class="mb-4">
+                        <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-2 mb-3">
+                            Article
+                        </span>
+
+                        <h1 class="display-6 fw-bold text-dark mb-3">
+                            @Model.Title
+                        </h1>
+
+                        <div class="d-flex flex-wrap align-items-center gap-3 text-secondary small">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-person-circle fs-5"></i>
+                                <span>@Model.Author</span>
+                            </div>
+
+                            <span class="text-secondary">•</span>
+
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-calendar3"></i>
+                                <time datetime="@Model.CreatedAt.ToString("yyyy-MM-dd")">
+                                    @Model.CreatedAt.ToString("dd MMMM yyyy")
+                                </time>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="border-secondary-subtle my-4" />
+
+                    <!-- Article content -->
+                    <div class="article-content text-body-secondary">
+                        @Model.Body
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="d-flex justify-content-between align-items-center mt-5 pt-4 border-top">
+                        <a asp-action="Index"
+                           class="btn btn-outline-secondary rounded-pill px-4">
+                            <i class="bi bi-arrow-left me-2"></i>
+                            Назад
+                        </a>
+
+                        <span class="text-secondary small">
+                            <i class="bi bi-book me-1"></i>
+                            Article details
+                        </span>
+                    </div>
+
+                </div>
+            </article>
+
+        </div>
+    </div>
+</div>
+
+<style>
+    .article-content {
+        font-size: 1.1rem;
+        line-height: 1.9;
+        white-space: pre-line;
+        overflow-wrap: anywhere;
+    }
+</style>

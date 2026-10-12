@@ -1,0 +1,110 @@
+@model List<Article>
+
+<div class="container py-5">
+    <a asp-action="Create" class="btn btn-info">Създай</a>
+    <!-- Page Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between
+                align-items-md-center gap-3 mb-5">
+
+        <div>
+            <h1 class="display-5 fw-bold mb-2">Статии</h1>
+            <p class="text-secondary mb-0">
+                Открий интересни теми и нови идеи.
+            </p>
+        </div>
+
+        <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-2 fs-6">
+            @Model.Count статии
+        </span>
+    </div>
+
+    @if (Model.Count == 0)
+    {
+        <div class="text-center py-5 bg-light rounded-4">
+            <i class="bi bi-journal-text display-3 text-secondary"></i>
+            <h3 class="mt-3">Все още няма статии</h3>
+            <p class="text-secondary mb-0">
+                Когато бъдат публикувани, ще ги откриеш тук.
+            </p>
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+
+            @foreach (var article in Model)
+            {
+                <div class="col-12 col-md-6 col-xl-4">
+
+                    <article class="card h-100 border-0 shadow-sm article-card">
+
+                        <div class="card-body p-4 d-flex flex-column">
+
+                            <!-- Metadata -->
+                            <div class="d-flex align-items-center gap-2
+                                        text-secondary small mb-3">
+
+                                <i class="bi bi-calendar3"></i>
+
+                                <time datetime="@article.CreatedAt.ToString("yyyy-MM-dd")">
+                                    @article.CreatedAt.ToString("dd MMM yyyy")
+                                </time>
+
+                                <span>·</span>
+
+                                <i class="bi bi-person"></i>
+
+                                <span class="text-truncate">
+                                    @article.Author
+                                </span>
+                            </div>
+
+                            <!-- Title -->
+                            <h2 class="h4 fw-bold mb-3">
+                                @article.Title
+                            </h2>
+
+                            <!-- Preview -->
+                            <p class="text-secondary article-preview mb-4">
+                                @article.Body
+                            </p>
+
+                            <!-- Action -->
+                            <div class="mt-auto pt-2">
+                                <a asp-action="Details"
+                                   asp-route-id="@article.Id"
+                                   class="btn btn-outline-primary rounded-pill px-4">
+                                    Виж статията
+                                    <i class="bi bi-arrow-right ms-2"></i>
+                                </a>
+                            </div>
+
+                        </div>
+                    </article>
+
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<style>
+    .article-card {
+        border-radius: 1rem;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .article-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.75rem 1.75rem rgba(0, 0, 0, 0.10) !important;
+    }
+
+    .article-preview {
+        line-height: 1.7;
+        display: -webkit-box;
+        -webkit-line-clamp: 4;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        overflow-wrap: anywhere;
+    }
+</style>

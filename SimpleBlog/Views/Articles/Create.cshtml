@@ -1,0 +1,117 @@
+@model Article
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-xl-7">
+
+            <!-- Header -->
+            <div class="mb-4">
+                <a asp-action="Index"
+                   class="text-decoration-none text-secondary small">
+                    <i class="bi bi-arrow-left me-2"></i>
+                    Назад към статиите
+                </a>
+
+                <h1 class="display-6 fw-bold mt-3 mb-2">
+                    Създай статия
+                </h1>
+
+                <p class="text-secondary">
+                    Сподели своята история, идеи и знания с останалите.
+                </p>
+            </div>
+
+            <!-- Form Card -->
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-4 p-md-5">
+
+                    <form asp-action="Create" method="post">
+
+                        <div asp-validation-summary="ModelOnly"
+                             class="alert alert-danger"
+                             role="alert"></div>
+
+                        <!-- Title -->
+                        <div class="mb-4">
+                            <label asp-for="Title"
+                                   class="form-label fw-semibold">
+                                Заглавие
+                            </label>
+
+                            <input asp-for="Title"
+                                   class="form-control form-control-lg"
+                                   placeholder="Въведи заглавие на статията..." />
+
+                            <span asp-validation-for="Title"
+                                  class="text-danger small"></span>
+                        </div>
+
+                        <!-- Author -->
+                        <div class="mb-4">
+                            <label asp-for="Author"
+                                   class="form-label fw-semibold">
+                                Автор
+                            </label>
+
+                            <input asp-for="Author"
+                                   class="form-control"
+                                   placeholder="Твоето име..." />
+
+                            <span asp-validation-for="Author"
+                                  class="text-danger small"></span>
+                        </div>
+
+                        <!-- Body -->
+                        <div class="mb-4">
+                            <label asp-for="Body"
+                                   class="form-label fw-semibold">
+                                Съдържание
+                            </label>
+
+                            <textarea asp-for="Body"
+                                      class="form-control"
+                                      rows="9"
+                                      placeholder="Напиши своята статия тук..."></textarea>
+
+                            <span asp-validation-for="Body"
+                                  class="text-danger small"></span>
+
+                            <div class="form-text">
+                                Напиши нещо интересно и полезно за своите читатели.
+                            </div>
+                        </div>
+
+                        <hr class="my-4" />
+
+                        <!-- Actions -->
+                        <div class="d-flex flex-column flex-sm-row
+                                    justify-content-end gap-2">
+
+                            <a asp-action="Index"
+                               class="btn btn-light border rounded-pill px-4">
+                                Отказ
+                            </a>
+
+                            <button type="submit"
+                                    class="btn btn-primary rounded-pill px-4">
+                                <i class="bi bi-check2-circle me-2"></i>
+                                Създай статия
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+
+            <p class="text-center text-secondary small mt-4">
+                <i class="bi bi-info-circle me-1"></i>
+                Провери съдържанието преди публикуване.
+            </p>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

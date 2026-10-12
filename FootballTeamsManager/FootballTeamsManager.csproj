@@ -4,7 +4,6 @@
         <TargetFramework>net10.0</TargetFramework>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
-        <UserSecretsId>aspnet-FootballTeamsManager-a430f3c6-e0df-428a-a7a0-ae4b97107f24</UserSecretsId>
     </PropertyGroup>
 
     <ItemGroup>
