@@ -1,0 +1,1428 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Session 07 — Data, Databases and ORMs</title>
+<link rel="stylesheet" href="../../design-system/styles.css">
+<style>
+/* ── Deck-level extensions to the design system ────────────────────────────
+   Slides are authored on a fixed 1280×720 stage and scaled to the viewport,
+   so every size below is a *slide* size, not a screen size. Body copy is
+   stepped up from --fs-body (14px, UI density) to projection density. */
+:root{
+  --stage-w:1280px; --stage-h:720px;
+  --fs-slide-body:20px;  --lh-slide-body:30px;
+  --fs-slide-lead:24px;  --lh-slide-lead:34px;
+  --fs-slide-sm:16px;    --lh-slide-sm:24px;
+  --fs-slide-code:16px;  --lh-slide-code:26px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  background:var(--neutral-grey-160);
+  font-family:var(--font-sans-text);
+  color:var(--text-primary);
+  overflow:hidden;
+}
+
+/* ── Stage ─────────────────────────────────────────────────────────────── */
+#stage{position:fixed;inset:0;display:grid;place-items:center}
+#deck{width:var(--stage-w);height:var(--stage-h);position:relative;transform-origin:center center}
+.slide{
+  position:absolute;inset:0;
+  width:var(--stage-w);height:var(--stage-h);
+  background:var(--surface-page);
+  display:none;flex-direction:column;
+  padding:var(--space-16) var(--space-16) var(--space-10);
+  overflow:hidden;
+}
+.slide.is-active{display:flex}
+
+/* ── Slide chrome ──────────────────────────────────────────────────────── */
+.eyebrow{
+  margin:0 0 var(--space-3);
+  font-family:var(--font-sans-text);
+  font-size:var(--fs-body-sm);line-height:var(--lh-body-sm);
+  font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--brand-pressed);
+}
+h1,h2,h3{margin:0;font-family:var(--font-sans);color:var(--text-primary)}
+h1{font-size:var(--fs-display);line-height:var(--lh-display);font-weight:var(--fw-display);letter-spacing:-.02em}
+h2{font-size:var(--fs-title-1);line-height:var(--lh-title-1);font-weight:var(--fw-title-1);letter-spacing:-.01em}
+h3{font-size:var(--fs-title-3);line-height:var(--lh-title-3);font-weight:var(--fw-title-3)}
+.rule{width:56px;height:3px;background:var(--brand-base);border-radius:var(--radius-pill);margin:var(--space-4) 0 var(--space-6)}
+.body{margin:0;font-size:var(--fs-slide-body);line-height:var(--lh-slide-body);color:var(--text-primary)}
+.lead{margin:0;font-size:var(--fs-slide-lead);line-height:var(--lh-slide-lead);color:var(--text-secondary)}
+.muted{color:var(--text-secondary)}
+.sm{font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm)}
+strong{font-weight:600}
+.content{flex:1;min-height:0;display:flex;flex-direction:column;gap:var(--space-5)}
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.foot{
+  display:flex;align-items:center;gap:var(--space-4);
+  padding-top:var(--space-5);margin-top:auto;
+  border-top:1px solid var(--border-default);
+  font-size:var(--fs-caption);line-height:var(--lh-caption);
+  letter-spacing:.06em;text-transform:uppercase;color:var(--text-disabled);
+}
+.foot .spacer{flex:1}
+
+/* ── Brand-block slides (title + section dividers) ─────────────────────── */
+.slide--brand{background:var(--brand-base);color:var(--text-on-brand);justify-content:center}
+.slide--brand h1,.slide--brand h2{color:var(--text-on-brand)}
+.slide--brand .eyebrow{color:var(--brand-tint-20)}
+.slide--brand .lead,.slide--brand .body{color:var(--brand-tint-30)}
+.slide--brand .rule{background:var(--neutral-white)}
+.slide--brand .foot{border-top-color:rgba(255,255,255,.24);color:var(--brand-tint-20)}
+.slide--dark{background:var(--brand-shade-20)}
+.slide--dark h1,.slide--dark h2{color:var(--text-on-brand)}
+.slide--dark .eyebrow{color:var(--brand-tint-10)}
+.slide--dark .lead,.slide--dark .body{color:var(--brand-tint-30)}
+.slide--dark .foot{border-top-color:rgba(255,255,255,.18);color:var(--brand-tint-10)}
+.section-no{
+  font-family:var(--font-sans);font-size:120px;line-height:1;font-weight:600;
+  color:rgba(255,255,255,.22);letter-spacing:-.03em;margin-bottom:var(--space-4);
+}
+
+/* ── Layout helpers ────────────────────────────────────────────────────── */
+.cols{display:grid;gap:var(--space-6);flex:1;min-height:0}
+.cols-2{grid-template-columns:1fr 1fr}
+.cols-3{grid-template-columns:repeat(3,1fr)}
+.cols-2-1{grid-template-columns:1.4fr 1fr}
+.cols--auto{flex:0 0 auto;min-height:auto}
+.stack{display:flex;flex-direction:column;gap:var(--space-4);min-height:0}
+.center{justify-content:center}
+
+/* ── Card (design-system surfaces/Card, slide-scaled) ──────────────────── */
+.card{
+  background:var(--surface-card);border:1px solid var(--border-default);
+  border-radius:var(--radius-lg);padding:var(--space-5);
+  display:flex;flex-direction:column;gap:var(--space-2);
+}
+.card--elevated{border:none;box-shadow:var(--shadow-8)}
+.card--brand{background:var(--brand-tint-40);border-color:var(--brand-tint-20)}
+.card h3{font-size:var(--fs-title-3);line-height:var(--lh-title-3)}
+.card p{margin:0;font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm);color:var(--text-secondary)}
+
+/* ── Badge (design-system feedback/Badge, slide-scaled) ────────────────── */
+.badge{
+  display:inline-flex;align-items:center;align-self:flex-start;height:26px;padding:0 var(--space-3);
+  border-radius:var(--radius-pill);font-size:var(--fs-slide-sm);font-weight:600;
+  background:var(--brand-tint-40);color:var(--brand-pressed);white-space:nowrap;
+}
+.badge--neutral{background:var(--surface-subtle);color:var(--text-secondary)}
+.badge--success{background:var(--color-success-bg);color:var(--color-success)}
+.badge--warning{background:var(--color-warning-bg);color:var(--color-warning)}
+.badge--danger{background:var(--color-danger-bg);color:var(--color-danger)}
+.badge--mono{font-family:var(--font-mono);font-weight:600}
+
+/* ── Lists ─────────────────────────────────────────────────────────────── */
+ul.list,ol.list{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:var(--space-4)}
+ul.list li,ol.list li{
+  position:relative;padding-left:var(--space-8);
+  font-size:var(--fs-slide-body);line-height:var(--lh-slide-body);
+}
+ul.list li::before{
+  content:"";position:absolute;left:var(--space-2);top:11px;
+  width:8px;height:8px;border-radius:var(--radius-circular);background:var(--brand-base);
+}
+ol.list{counter-reset:step}
+ol.list li{counter-increment:step;padding-left:var(--space-10)}
+ol.list li::before{
+  content:counter(step);position:absolute;left:0;top:2px;
+  width:28px;height:28px;border-radius:var(--radius-circular);
+  background:var(--brand-tint-40);color:var(--brand-pressed);
+  font-family:var(--font-sans);font-size:var(--fs-slide-sm);font-weight:600;
+  display:grid;place-items:center;
+}
+.list--tight li{font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm)}
+.list--tight{gap:var(--space-3)}
+
+/* ── Table ─────────────────────────────────────────────────────────────── */
+table{
+  width:100%;border-collapse:collapse;
+  background:var(--surface-card);border:1px solid var(--border-default);
+  border-radius:var(--radius-lg);overflow:hidden;
+  font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm);
+}
+thead th{
+  text-align:left;background:var(--surface-subtle);color:var(--text-secondary);
+  font-weight:600;font-size:var(--fs-body-sm);letter-spacing:.06em;text-transform:uppercase;
+  padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border-default);
+}
+tbody td{padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border-default);vertical-align:top}
+tbody tr:last-child td{border-bottom:none}
+tbody th{
+  text-align:left;padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border-default);
+  font-weight:600;white-space:nowrap;
+}
+tbody tr:last-child th{border-bottom:none}
+td.center,th.center{text-align:center}
+
+/* ── Code ──────────────────────────────────────────────────────────────── */
+pre,code{font-family:var(--font-mono)}
+pre{
+  margin:0;background:var(--brand-shade-30);color:var(--brand-tint-30);
+  border-radius:var(--radius-lg);padding:var(--space-5) var(--space-6);
+  font-size:var(--fs-slide-code);line-height:var(--lh-slide-code);
+  overflow:hidden;white-space:pre;
+}
+pre .k{color:#4fc3f7;font-weight:600}
+pre .h{color:var(--neutral-white)}
+pre .c{color:var(--neutral-grey-90)}
+pre .ok{color:#6bd66b;font-weight:600}
+code.inline{
+  background:var(--surface-subtle);border:1px solid var(--border-default);
+  border-radius:var(--radius-sm);padding:1px 6px;font-size:.92em;color:var(--brand-pressed);
+}
+.slide--brand code.inline,.slide--dark code.inline{
+  background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.24);color:var(--neutral-white);
+}
+
+/* ── Callout ───────────────────────────────────────────────────────────── */
+.callout{
+  background:var(--brand-tint-40);border:1px solid var(--brand-tint-20);
+  border-radius:var(--radius-lg);padding:var(--space-4) var(--space-5);
+  font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm);color:var(--brand-shade-10);
+}
+.callout--warn{background:var(--color-warning-bg);border-color:#f0d98a;color:var(--color-warning)}
+
+/* ── Big statement ─────────────────────────────────────────────────────── */
+.statement{margin:0;font-family:var(--font-sans);font-size:var(--fs-title-1);line-height:var(--lh-title-1);font-weight:600}
+
+/* ── Progress bar ──────────────────────────────────────────────────────── */
+#progress{position:fixed;left:0;top:0;height:3px;background:var(--brand-tint-10);width:0;
+  transition:width var(--duration-normal) var(--ease-standard);z-index:10}
+
+/* ── Help hint ─────────────────────────────────────────────────────────── */
+#hint{
+  position:fixed;right:16px;bottom:14px;z-index:10;
+  font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--neutral-grey-90);font-family:var(--font-sans-text);
+  transition:opacity var(--duration-slow) var(--ease-standard);
+}
+#hint.is-hidden{opacity:0}
+
+/* ── Print / PDF export: one slide per landscape page ──────────────────── */
+@media print{
+  @page{size:1280px 720px;margin:0}
+  body{background:var(--neutral-white);overflow:visible}
+  #stage{position:static;display:block}
+  #deck{width:auto;height:auto;transform:none!important}
+  #progress,#hint{display:none}
+  .slide{position:static;display:flex!important;page-break-after:always;break-after:page}
+}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<div id="stage"><div id="deck">
+
+
+<!-- 1 ─ Title -->
+<section class="slide slide--brand">
+  <p class="eyebrow">Microsoft Web Technologies · Session 07</p>
+  <h1>Data, Databases and ORMs</h1>
+  <div class="rule"></div>
+  <p class="lead">Storage that outlives the process: the relational model, a working<br>minimum of SQL, and the mapper that stands between them and our objects.</p>
+  <div class="foot"><span>Lecture 4 · Models, ORM, EF Core setup</span><span class="spacer"></span><span>~180 min</span></div>
+</section>
+
+<!-- 2 ─ Where we are -->
+<section class="slide">
+  <p class="eyebrow">Where we are</p>
+  <h2>Everything so far has been about the shape of an answer</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-3">
+      <div class="card">
+        <span class="badge badge--neutral">Sessions 03–04</span>
+        <h3 style="margin-top:var(--space-2)">The request finds our code</h3>
+        <p>Routing picks a controller and an action. The action returns a view. The Model is where the data lives — and so far, that model is a hard-coded list of articles.</p>
+      </div>
+      <div class="card">
+        <span class="badge badge--neutral">Sessions 05–06</span>
+        <h3 style="margin-top:var(--space-2)">The answer is rendered</h3>
+        <p>Layouts, templates and view models turn that data into HTML. A view model is shaped for the page — not for storage.</p>
+      </div>
+      <div class="card card--brand">
+        <span class="badge">This session</span>
+        <h3 style="margin-top:var(--space-2)">The data becomes real</h3>
+        <p>We replace the hard-coded list with a database, and we introduce the layer that lets our code keep speaking in objects while the database keeps speaking in tables.</p>
+      </div>
+    </div>
+    <div class="callout">One question has been waiting since Session 03: <strong>what would change if the articles came from a database?</strong> We answer it, in full, by the end of this session.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 3 ─ Learning objectives -->
+<section class="slide">
+  <p class="eyebrow">Learning objectives</p>
+  <h2>By the end of this session you can…</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <ol class="list list--tight">
+        <li>Explain why data must be stored outside the running program.</li>
+        <li>Describe the relational model: tables, rows, columns, primary keys, foreign keys.</li>
+        <li>Read simple SQL: <code class="inline">SELECT</code>, <code class="inline">WHERE</code>, <code class="inline">ORDER BY</code>, <code class="inline">INSERT</code>, <code class="inline">UPDATE</code>, <code class="inline">DELETE</code>.</li>
+      </ol>
+      <ol class="list list--tight" style="counter-reset:step 3">
+        <li>Explain what an ORM does and what it costs.</li>
+        <li>Configure EF Core in an ASP.NET Core app: <code class="inline">DbContext</code>, <code class="inline">DbSet&lt;T&gt;</code>, connection string, dependency injection.</li>
+        <li>Explain what dependency injection is, and why the controller does not create its own <code class="inline">DbContext</code>.</li>
+      </ol>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 4 ─ Agenda -->
+<section class="slide">
+  <p class="eyebrow">Agenda</p>
+  <h2>Three hours, two breaks</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <table>
+        <thead><tr><th style="width:34px">#</th><th>Block</th><th class="center" style="width:64px">Min</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Recap and the disappearing-data problem</td><td class="center">10</td></tr>
+          <tr><td>2</td><td>Why databases; the relational model</td><td class="center">30</td></tr>
+          <tr><td>3</td><td>A working minimum of SQL</td><td class="center">20</td></tr>
+          <tr><td>4</td><td class="muted">Break</td><td class="center">10</td></tr>
+          <tr><td>5</td><td>The object–relational mismatch; what an ORM is</td><td class="center">20</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <thead><tr><th style="width:34px">#</th><th>Block</th><th class="center" style="width:64px">Min</th></tr></thead>
+        <tbody>
+          <tr><td>6</td><td>EF Core: context, provider, connection string</td><td class="center">30</td></tr>
+          <tr><td>7</td><td class="muted">Break</td><td class="center">10</td></tr>
+          <tr><td>8</td><td>Dependency injection and the service registry</td><td class="center">20</td></tr>
+          <tr><td>9</td><td>Walkthrough: we wire up the database</td><td class="center">25</td></tr>
+          <tr><td>10</td><td>Wrap-up and Q&amp;A</td><td class="center">5</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 5 ─ Section: memory forgets -->
+<section class="slide slide--dark">
+  <div class="section-no">01</div>
+  <p class="eyebrow">Block 1 · 10 min</p>
+  <h2>Memory forgets</h2>
+  <p class="lead" style="margin-top:var(--space-4)">A demonstration first, an explanation second.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 6 ─ Where did it go? -->
+<section class="slide">
+  <p class="eyebrow">Memory forgets · demo</p>
+  <h2>Where did it go?</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+      <ol class="list list--tight">
+        <li>We run the app and open the article list. Three articles, as always.</li>
+        <li>We add a fourth article while the app is running.</li>
+        <li>We reload the page. It is still there. So far, so good.</li>
+        <li>We stop the app and start it again.</li>
+        <li>Three articles.</li>
+      </ol>
+      <div class="card card--elevated center">
+        <h3>Nothing was deleted</h3>
+        <p>No file was removed, no error was raised, no code is wrong. The fourth article was never anywhere that could survive step 4.</p>
+      </div>
+    </div>
+    <div class="callout">A list of articles held in memory belongs to the <strong>running program</strong>. When the program ends, the memory it was using is handed back — a restart, a deployment, a crash, a power cut. All the same thing.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 7 ─ Four things we need -->
+<section class="slide">
+  <p class="eyebrow">Memory forgets</p>
+  <h2>Losing the data is only the first problem</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <div class="stack">
+        <p class="body"><strong>Three more, which a bigger memory would not fix:</strong></p>
+        <ul class="list list--tight">
+          <li>Two copies of the app on two machines would each hold a <strong>different</strong> list. Which one is right?</li>
+          <li>Nothing coordinates two people editing the same article at the same instant.</li>
+          <li>"How many articles per author?" can only be answered by walking the whole list, every time.</li>
+        </ul>
+      </div>
+      <div class="stack">
+        <p class="body"><strong>So we need storage that is:</strong></p>
+        <div class="cols cols-2 cols--auto">
+          <div class="card"><h3>Durable</h3><p>It outlives the program that wrote it.</p></div>
+          <div class="card"><h3>Shared</h3><p>One copy, many readers and writers.</p></div>
+          <div class="card"><h3>Queryable</h3><p>Questions answered without scanning everything.</p></div>
+          <div class="card"><h3>Safe</h3><p>Correct when several people write at once.</p></div>
+        </div>
+      </div>
+    </div>
+    <div class="callout">A plain file gives us the first one only. A <strong>database management system</strong> — a separate program whose whole job is storing and answering — gives us all four.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 8 ─ Section: relational model -->
+<section class="slide slide--dark">
+  <div class="section-no">02</div>
+  <p class="eyebrow">Block 2 · 30 min</p>
+  <h2>The relational model</h2>
+  <p class="lead" style="margin-top:var(--space-4)">Tables, rows, columns and the keys that tie them together.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 9 ─ The third box, redrawn -->
+<section class="slide">
+  <p class="eyebrow">The relational model</p>
+  <h2>The box we drew dashed in Session 01</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <svg viewBox="0 0 1100 300" style="width:auto;height:222px;align-self:center" role="img"
+         aria-label="Browser sends a request to a server; the server queries a database and receives rows back; the server sends a response to the browser">
+      <g style="font-family:var(--font-sans-text)">
+        <rect x="20" y="90" width="250" height="120" rx="8" style="fill:var(--surface-card);stroke:var(--border-default)"/>
+        <text x="145" y="140" text-anchor="middle" font-size="24" font-weight="600" style="fill:var(--text-primary)">Browser</text>
+        <text x="145" y="170" text-anchor="middle" font-size="16" style="fill:var(--text-secondary)">the client &#8212; it asks</text>
+
+        <rect x="430" y="90" width="250" height="120" rx="8" style="fill:var(--brand-base)"/>
+        <text x="555" y="140" text-anchor="middle" font-size="24" font-weight="600" style="fill:#ffffff">Server</text>
+        <text x="555" y="170" text-anchor="middle" font-size="16" style="fill:var(--brand-tint-20)">our application code</text>
+
+        <rect x="820" y="90" width="250" height="120" rx="8" style="fill:var(--surface-card);stroke:var(--border-strong);stroke-width:2"/>
+        <text x="945" y="140" text-anchor="middle" font-size="24" font-weight="600" style="fill:var(--text-primary)">Database</text>
+        <text x="945" y="170" text-anchor="middle" font-size="16" style="fill:var(--text-secondary)">a program that remembers</text>
+
+        <defs>
+          <marker id="ar7" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+            <path d="M0,0 L10,4 L0,8 Z" style="fill:var(--brand-base)"/>
+          </marker>
+          <marker id="arg7" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+            <path d="M0,0 L10,4 L0,8 Z" style="fill:var(--neutral-grey-110)"/>
+          </marker>
+        </defs>
+        <line x1="278" y1="128" x2="420" y2="128" stroke-width="2.5" marker-end="url(#ar7)" style="stroke:var(--brand-base)"/>
+        <text x="349" y="114" text-anchor="middle" font-size="16" font-weight="600" style="fill:var(--brand-pressed)">request</text>
+        <line x1="422" y1="176" x2="280" y2="176" stroke-width="2.5" marker-end="url(#arg7)" style="stroke:var(--neutral-grey-110)"/>
+        <text x="351" y="204" text-anchor="middle" font-size="16" font-weight="600" style="fill:var(--text-secondary)">response</text>
+
+        <line x1="688" y1="128" x2="810" y2="128" stroke-width="2.5" marker-end="url(#ar7)" style="stroke:var(--brand-base)"/>
+        <text x="749" y="114" text-anchor="middle" font-size="16" font-weight="600" style="fill:var(--brand-pressed)">query</text>
+        <line x1="812" y1="176" x2="690" y2="176" stroke-width="2.5" marker-end="url(#arg7)" style="stroke:var(--neutral-grey-110)"/>
+        <text x="751" y="204" text-anchor="middle" font-size="16" font-weight="600" style="fill:var(--text-secondary)">rows</text>
+
+        <text x="945" y="250" text-anchor="middle" font-size="15" font-weight="600" letter-spacing="1.4" style="fill:var(--brand-pressed)">SESSION 07 &#8212; THIS ONE</text>
+      </g>
+    </svg>
+    <div class="cols cols-3 cols--auto" style="margin-top:var(--space-4)">
+      <div class="card"><h3>A separate program</h3><p>Not part of our app. It may not even run on the same machine. Our app is one of its clients.</p></div>
+      <div class="card"><h3>Two roles again</h3><p>Towards the browser our app is the server. Towards the database it is the client — it asks, and waits.</p></div>
+      <div class="card card--brand"><h3>Its own language</h3><p>The database does not understand our objects. It answers questions written in SQL, and returns rows.</p></div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 10 ─ The spreadsheet, taken seriously -->
+<section class="slide">
+  <p class="eyebrow">The relational model</p>
+  <h2>Analogy: the spreadsheet, taken seriously</h2>
+  <div class="rule"></div>
+  <div class="content center">
+<pre><span class="h">Articles</span>
+<span class="c">+----+--------------------+---------+--------------+</span>
+<span class="c">|</span> <span class="k">Id</span> <span class="c">|</span> <span class="k">Title</span>              <span class="c">|</span> <span class="k">Author</span>  <span class="c">|</span> <span class="k">PublishedOn</span>  <span class="c">|</span>
+<span class="c">+----+--------------------+---------+--------------+</span>
+<span class="c">|</span>  1 <span class="c">|</span> How the web works  <span class="c">|</span> Ada     <span class="c">|</span> 2026-01-10   <span class="c">|</span>
+<span class="c">|</span>  2 <span class="c">|</span> Getting started    <span class="c">|</span> Grace   <span class="c">|</span> 2026-02-02   <span class="c">|</span>
+<span class="c">|</span>  3 <span class="c">|</span> Controllers 101    <span class="c">|</span> Ada     <span class="c">|</span> 2026-03-01   <span class="c">|</span>
+<span class="c">+----+--------------------+---------+--------------+</span>
+  <span class="ok">^^ primary key</span></pre>
+    <div class="cols cols-2 cols--auto" style="margin-top:var(--space-6)">
+      <div class="card"><h3>What is the same as a spreadsheet</h3><p>Named columns, rows of data, one sheet per kind of thing.</p></div>
+      <div class="card card--brand"><h3>What a database adds</h3><p>Columns have <strong>declared types</strong>. Rules are <strong>enforced</strong>, not merely intended. And questions are answered efficiently over millions of rows.</p></div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 11 ─ Vocabulary -->
+<section class="slide">
+  <p class="eyebrow">The relational model</p>
+  <h2>Seven words, one line each</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <table>
+      <thead><tr><th style="width:230px">Term</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><th>Table</th><td>One kind of thing — articles, users, categories.</td></tr>
+        <tr><th>Row / record</th><td>One of those things.</td></tr>
+        <tr><th>Column / field</th><td>One named property of it, with a declared type.</td></tr>
+        <tr><th>Primary key</th><td>The column that uniquely identifies a row — never null, never reused.</td></tr>
+        <tr><th>Foreign key</th><td>A column holding another table's primary key. This is how tables relate.</td></tr>
+        <tr><th>Schema</th><td>The whole structure: tables, columns, types, keys, constraints.</td></tr>
+        <tr><th>Constraint</th><td>A rule the database itself enforces — <code class="inline">NOT NULL</code>, <code class="inline">UNIQUE</code>, and others.</td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><strong>Types are not decoration.</strong> A published date stored as a real date can be sorted, compared and ranged over. Stored as text, it cannot — <code class="inline">"10 March"</code> sorts before <code class="inline">"2 March"</code>. This is the single most common beginner mistake in a first project.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 12 ─ Why not one giant table -->
+<section class="slide">
+  <p class="eyebrow">The relational model</p>
+  <h2>Why not one giant table?</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <p class="body">Suppose each article also carried its author's full name, biography and photo. Two hundred articles by Ada means two hundred copies of Ada. Change the photo and you change it in two hundred places; mistype the name once and you have invented a second Ada.</p>
+<pre><span class="h">Articles</span>                                  <span class="h">Authors</span>
+<span class="c">+----+-----------+----------+</span>          <span class="c">+----+--------+-----+</span>
+<span class="c">|</span> Id <span class="c">|</span> Title     <span class="c">|</span> <span class="k">AuthorId</span> <span class="c">|</span>--- <span class="ok">FK</span> --&gt;<span class="c">|</span> <span class="k">Id</span> <span class="c">|</span> Name   <span class="c">|</span> Bio <span class="c">|</span>
+<span class="c">+----+-----------+----------+</span>          <span class="c">+----+--------+-----+</span></pre>
+    <div class="cols cols-2 cols--auto">
+      <div class="card card--brand"><h3>Normalisation</h3><p>Stated at the level we need it: <strong>store each fact exactly once</strong>, and point at it from wherever else it is needed.</p></div>
+      <div class="card"><h3>How many on each side</h3><p>One author has many articles; each article has one author. That is a <strong>one-to-many</strong> relationship — the only shape we need, and we will build one in Session 08.</p></div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 13 ─ Which database -->
+<section class="slide">
+  <p class="eyebrow">The relational model</p>
+  <h2>Which database? They differ in scale, not in ideas</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <div class="cols cols-2">
+      <div class="card card--elevated">
+        <span class="badge">Our default</span>
+        <h3 style="margin-top:var(--space-2)">A single-file database</h3>
+        <p>The whole database is one ordinary file next to the project. No server to install, no service to start, no password. It is a real relational database with real SQL — just packaged as a file.</p>
+        <p>We use it so that every operating system in this room behaves identically.</p>
+      </div>
+      <div class="card card--elevated">
+        <span class="badge badge--neutral">The other family</span>
+        <h3 style="margin-top:var(--space-2)">Server databases</h3>
+        <p>A permanently running program that listens on a port and accepts connections from many applications at once, with users, permissions and backups of its own.</p>
+        <p>Bigger deployments need this. Everything in the next three hours applies unchanged.</p>
+      </div>
+    </div>
+    <div class="callout">Tables, rows, keys, constraints and SQL are the same in all of them. Later in this session we will see exactly how much code has to change to swap one for the other. The answer is: two lines.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 14 ─ Section: SQL -->
+<section class="slide slide--dark">
+  <div class="section-no">03</div>
+  <p class="eyebrow">Block 3 · 20 min</p>
+  <h2>A working minimum of SQL</h2>
+  <p class="lead" style="margin-top:var(--space-4)">Six statements will carry us through the whole course.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 15 ─ SQL: reading -->
+<section class="slide">
+  <p class="eyebrow">A working minimum of SQL</p>
+  <h2>Asking questions</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre><span class="c">-- every article, two columns only</span>
+<span class="k">SELECT</span> Title, Author <span class="k">FROM</span> Articles;
+
+<span class="c">-- only the rows that match</span>
+<span class="k">SELECT</span> * <span class="k">FROM</span> Articles <span class="k">WHERE</span> Author = <span class="h">'Ada'</span>;
+
+<span class="c">-- filtered and sorted</span>
+<span class="k">SELECT</span> * <span class="k">FROM</span> Articles
+<span class="k">WHERE</span>  PublishedOn &gt;= <span class="h">'2026-02-01'</span>
+<span class="k">ORDER BY</span> PublishedOn <span class="k">DESC</span>;
+
+<span class="c">-- counted per author</span>
+<span class="k">SELECT</span> Author, COUNT(*) <span class="k">FROM</span> Articles
+<span class="k">GROUP BY</span> Author;</pre>
+      <div class="stack">
+        <div class="card card--brand">
+          <h3>SQL is declarative</h3>
+          <p>We describe the result we want, not the steps to produce it. Which rows to read in which order is the database's problem, and it is very good at it.</p>
+        </div>
+        <div class="card">
+          <h3>Four questions, over and over</h3>
+          <p>Which rows? Which columns? In what order? How many? Nearly every read in this course is one of those four, or a combination.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 16 ─ SQL: writing -->
+<section class="slide">
+  <p class="eyebrow">A working minimum of SQL</p>
+  <h2>Changing things</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre><span class="c">-- add a row</span>
+<span class="k">INSERT INTO</span> Articles (Title, Author, PublishedOn)
+<span class="k">VALUES</span> (<span class="h">'New post'</span>, <span class="h">'Ada'</span>, <span class="h">'2026-03-04'</span>);
+
+<span class="c">-- change a row</span>
+<span class="k">UPDATE</span> Articles
+<span class="k">SET</span>    Title = <span class="h">'Edited title'</span>
+<span class="k">WHERE</span>  Id = <span class="h">3</span>;
+
+<span class="c">-- remove a row</span>
+<span class="k">DELETE FROM</span> Articles
+<span class="k">WHERE</span> Id = <span class="h">3</span>;</pre>
+      <div class="stack">
+        <div class="card">
+          <h3>The key does the aiming</h3>
+          <p>Every one of these picks its target by primary key. That is what a primary key is <em>for</em> — one row, unambiguously.</p>
+        </div>
+        <div class="card">
+          <h3>We do not supply the Id</h3>
+          <p>The <code class="inline">INSERT</code> names three columns, not four. The database generates the key. Remember this when we return to it in code.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 17 ─ The missing WHERE -->
+<section class="slide slide--brand">
+  <p class="eyebrow">Say it once, mean it forever</p>
+  <p class="statement" style="color:var(--neutral-white)">A <code class="inline">DELETE</code> or an <code class="inline">UPDATE</code> without a <code class="inline">WHERE</code><br>applies to every single row.</p>
+  <div class="rule"></div>
+  <p class="lead">There is no undo. There is no confirmation dialog. <strong style="color:#fff">DELETE FROM Articles;</strong> empties the table and reports success. We will repeat this warning in Session 09, when we start writing deletes for real.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 18 ─ Demo: see the table -->
+<section class="slide">
+  <p class="eyebrow">A working minimum of SQL · demo</p>
+  <h2>We open the file and ask it something</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <ol class="list list--tight">
+        <li>We open a sample database in a viewer — a database extension in the editor, or the command-line tool that ships with it.</li>
+        <li>We look at the table list, then at one table's columns and their declared types.</li>
+        <li>We run a <code class="inline">SELECT</code> with no <code class="inline">WHERE</code> and see every row.</li>
+        <li>We add a <code class="inline">WHERE</code>, then an <code class="inline">ORDER BY</code>, and watch the result narrow and reorder.</li>
+      </ol>
+      <div class="stack">
+        <div class="card card--elevated center">
+          <h3>Why we spend ten minutes on this</h3>
+          <p>Everything after this point in the course is a program writing these same statements on our behalf. Having seen the rows with our own eyes, the rest of the session stops being abstract.</p>
+        </div>
+        <div class="callout">A database is not a mystery inside the framework. It is a file, or a service, holding tables you can look at.</div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 19 ─ Section: the mismatch -->
+<section class="slide slide--dark">
+  <div class="section-no">04</div>
+  <p class="eyebrow">Block 5 · 20 min</p>
+  <h2>The object–relational mismatch</h2>
+  <p class="lead" style="margin-top:var(--space-4)">Our program thinks in objects. The database thinks in tables. Something has to translate.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 20 ─ Object vs table diagram -->
+<section class="slide">
+  <p class="eyebrow">The object–relational mismatch</p>
+  <h2>The same article, described twice</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <svg viewBox="0 0 1120 300" style="width:auto;height:236px;align-self:center" role="img"
+         aria-label="An Article object with four properties on the left, an Articles table with four typed columns on the right, and a tie between each property and its column">
+      <g style="font-family:var(--font-sans-text)">
+        <rect x="10" y="16" width="390" height="268" rx="8" style="fill:var(--surface-card);stroke:var(--border-default)"/>
+        <text x="34" y="54" font-size="22" font-weight="600" style="fill:var(--text-primary)">Article</text>
+        <text x="34" y="80" font-size="15" style="fill:var(--text-secondary)">an object in the program</text>
+        <line x1="10" y1="98" x2="400" y2="98" style="stroke:var(--border-default)"/>
+        <text x="34" y="134" font-size="16" style="font-family:var(--font-mono);fill:var(--text-primary)">Id</text>
+        <text x="200" y="134" font-size="16" style="font-family:var(--font-mono);fill:var(--text-secondary)">whole number</text>
+        <text x="34" y="174" font-size="16" style="font-family:var(--font-mono);fill:var(--text-primary)">Title</text>
+        <text x="200" y="174" font-size="16" style="font-family:var(--font-mono);fill:var(--text-secondary)">text</text>
+        <text x="34" y="214" font-size="16" style="font-family:var(--font-mono);fill:var(--text-primary)">Author</text>
+        <text x="200" y="214" font-size="16" style="font-family:var(--font-mono);fill:var(--text-secondary)">text</text>
+        <text x="34" y="254" font-size="16" style="font-family:var(--font-mono);fill:var(--text-primary)">PublishedOn</text>
+        <text x="200" y="254" font-size="16" style="font-family:var(--font-mono);fill:var(--text-secondary)">date</text>
+
+        <rect x="700" y="16" width="410" height="268" rx="8" style="fill:var(--surface-card);stroke:var(--border-default)"/>
+        <text x="724" y="54" font-size="22" font-weight="600" style="fill:var(--text-primary)">Articles</text>
+        <text x="724" y="80" font-size="15" style="fill:var(--text-secondary)">a table in the database</text>
+        <line x1="700" y1="98" x2="1110" y2="98" style="stroke:var(--border-default)"/>
+        <text x="724" y="134" font-size="16" style="font-family:var(--font-mono);fill:var(--text-primary)">Id</text>
+        <text x="880" y="134" font-size="16" style="font-family:var(--font-mono);fill:var(--brand-pressed)">INTEGER  PK</text>
+        <text x="724" y="174" font-size="16" style="font-family:var(--font-mono);fill:var(--text-primary)">Title</text>
+        <text x="880" y="174" font-size="16" style="font-family:var(--font-mono);fill:var(--text-secondary)">TEXT</text>
+        <text x="724" y="214" font-size="16" style="font-family:var(--font-mono);fill:var(--text-primary)">Author</text>
+        <text x="880" y="214" font-size="16" style="font-family:var(--font-mono);fill:var(--text-secondary)">TEXT</text>
+        <text x="724" y="254" font-size="16" style="font-family:var(--font-mono);fill:var(--text-primary)">PublishedOn</text>
+        <text x="880" y="254" font-size="16" style="font-family:var(--font-mono);fill:var(--text-secondary)">DATE</text>
+
+        <text x="550" y="60" text-anchor="middle" font-size="15" font-weight="600" letter-spacing="1.4" style="fill:var(--brand-pressed)">ONE PROPERTY, ONE COLUMN</text>
+        <line x1="404" y1="128" x2="696" y2="128" stroke-width="1.5" style="stroke:var(--brand-tint-10)"/>
+        <line x1="404" y1="168" x2="696" y2="168" stroke-width="1.5" style="stroke:var(--brand-tint-10)"/>
+        <line x1="404" y1="208" x2="696" y2="208" stroke-width="1.5" style="stroke:var(--brand-tint-10)"/>
+        <line x1="404" y1="248" x2="696" y2="248" stroke-width="1.5" style="stroke:var(--brand-tint-10)"/>
+        <circle cx="404" cy="128" r="4" style="fill:var(--brand-base)"/><circle cx="696" cy="128" r="4" style="fill:var(--brand-base)"/>
+        <circle cx="404" cy="168" r="4" style="fill:var(--brand-base)"/><circle cx="696" cy="168" r="4" style="fill:var(--brand-base)"/>
+        <circle cx="404" cy="208" r="4" style="fill:var(--brand-base)"/><circle cx="696" cy="208" r="4" style="fill:var(--brand-base)"/>
+        <circle cx="404" cy="248" r="4" style="fill:var(--brand-base)"/><circle cx="696" cy="248" r="4" style="fill:var(--brand-base)"/>
+      </g>
+    </svg>
+    <div class="cols cols-3 cols--auto" style="margin-top:var(--space-4)">
+      <div class="card"><h3>Naming</h3><p>One article, but a table of many: <code class="inline">Article</code> against <code class="inline">Articles</code>. Something must decide the plural.</p></div>
+      <div class="card"><h3>Types</h3><p>The two systems have different type names and different limits. Every value is converted in both directions.</p></div>
+      <div class="card"><h3>Nullability</h3><p>A column may hold nothing at all. A property in the program may not be prepared for that. Someone has to reconcile it.</p></div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 21 ─ Bridging by hand -->
+<section class="slide">
+  <p class="eyebrow">The object–relational mismatch</p>
+  <h2>Bridging it by hand, once</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre><span class="k">open</span> a connection to the database
+
+<span class="k">write</span>  "SELECT Id, Title, Author, PublishedOn
+        FROM Articles WHERE Id = ?"
+<span class="k">bind</span>  the parameter
+<span class="k">run</span>   it
+
+<span class="k">for each</span> row that comes back:
+    build an Article
+      Id          &#8592; row["Id"]         <span class="c">as number</span>
+      Title       &#8592; row["Title"]      <span class="c">as text</span>
+      Author      &#8592; row["Author"]     <span class="c">as text</span>
+      PublishedOn &#8592; row["PublishedOn"] <span class="c">as date</span>
+
+<span class="k">close</span> the connection</pre>
+      <div class="stack">
+        <div class="card">
+          <h3>Now do it again</h3>
+          <p>For every query. In both directions. In every application ever written.</p>
+        </div>
+        <div class="card card--brand">
+          <h3>And notice the strings</h3>
+          <p>Every column name is quoted text. Misspell one and nothing complains until the program runs and fails in front of a user.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 22 ─ What an ORM is -->
+<section class="slide">
+  <p class="eyebrow">The object–relational mismatch</p>
+  <h2>What an ORM is, and where it sits</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+      <svg viewBox="14 0 582 470" style="width:auto;height:376px;align-self:center" role="img"
+           aria-label="A vertical stack: a request arrives at the application code, which asks the mapper, which generates SQL, which the database engine runs; rows travel back up and become objects">
+        <g style="font-family:var(--font-sans-text)">
+          <defs>
+            <marker id="ard7" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+              <path d="M0,0 L10,4 L0,8 Z" style="fill:var(--brand-base)"/>
+            </marker>
+            <marker id="aru7" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+              <path d="M0,0 L10,4 L0,8 Z" style="fill:var(--neutral-grey-110)"/>
+            </marker>
+          </defs>
+
+          <text x="345" y="16" text-anchor="middle" font-size="15" font-weight="600" letter-spacing="1.4" style="fill:var(--brand-pressed)">A REQUEST ARRIVES</text>
+          <line x1="345" y1="24" x2="345" y2="34" stroke-width="2.5" marker-end="url(#ard7)" style="stroke:var(--brand-base)"/>
+
+          <rect x="110" y="40" width="470" height="64" rx="8" style="fill:var(--surface-card);stroke:var(--border-default)"/>
+          <text x="134" y="70" font-size="19" font-weight="600" style="fill:var(--text-primary)">Application code</text>
+          <text x="134" y="92" font-size="14" style="fill:var(--text-secondary)">asks in objects: the newest articles, please</text>
+
+          <line x1="345" y1="106" x2="345" y2="140" stroke-width="2.5" marker-end="url(#ard7)" style="stroke:var(--brand-base)"/>
+
+          <rect x="110" y="144" width="470" height="64" rx="8" style="fill:var(--brand-base)"/>
+          <text x="134" y="174" font-size="19" font-weight="600" style="fill:#ffffff">The mapper &#8212; the ORM</text>
+          <text x="134" y="196" font-size="14" style="fill:var(--brand-tint-20)">holds the map from classes to tables, both ways</text>
+
+          <line x1="345" y1="210" x2="345" y2="244" stroke-width="2.5" marker-end="url(#ard7)" style="stroke:var(--brand-base)"/>
+
+          <rect x="110" y="248" width="470" height="64" rx="8" stroke-dasharray="6 5" style="fill:var(--surface-subtle);stroke:var(--border-strong)"/>
+          <text x="134" y="276" font-size="15" style="font-family:var(--font-mono);fill:var(--text-primary)">SELECT * FROM Articles ORDER BY ...</text>
+          <text x="134" y="300" font-size="14" font-weight="600" style="fill:var(--brand-pressed)">generated &#8212; nobody typed this line</text>
+
+          <line x1="345" y1="314" x2="345" y2="348" stroke-width="2.5" marker-end="url(#ard7)" style="stroke:var(--brand-base)"/>
+
+          <rect x="110" y="352" width="470" height="64" rx="8" style="fill:var(--brand-shade-20)"/>
+          <text x="134" y="382" font-size="19" font-weight="600" style="fill:#ffffff">Database engine</text>
+          <text x="134" y="404" font-size="14" style="fill:var(--brand-tint-20)">runs the SQL and returns rows</text>
+
+          <path d="M104,384 H 62 V 72 H 104" fill="none" stroke-width="2" marker-end="url(#aru7)" style="stroke:var(--neutral-grey-110)"/>
+          <text x="34" y="228" text-anchor="middle" font-size="14" font-weight="600" transform="rotate(-90 34 228)" style="fill:var(--text-secondary)">rows come back as objects</text>
+        </g>
+      </svg>
+      <div class="stack">
+        <div class="card card--brand">
+          <h3>The definition</h3>
+          <p>An <strong>object–relational mapper</strong> is a library that is told how classes correspond to tables, and from then on generates the SQL and builds the objects for us.</p>
+        </div>
+        <div class="card">
+          <h3>We never write that middle box</h3>
+          <p>We ask a question in the language of our own objects. The SQL is produced from it.</p>
+        </div>
+        <div class="card">
+          <h3>But it is still SQL</h3>
+          <p>The database understands nothing else. That is why we learned to read it first.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 23 ─ Gain and give up -->
+<section class="slide">
+  <p class="eyebrow">The object–relational mismatch</p>
+  <h2>Be honest about the trade</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <table>
+      <thead><tr><th style="width:50%">You gain</th><th>You give up</th></tr></thead>
+      <tbody>
+        <tr><td>No hand-written mapping code, ever again.</td><td>Some control over the exact SQL that runs.</td></tr>
+        <tr><td>Property names checked before the program runs, not after.</td><td>A whole extra layer that has to be learned.</td></tr>
+        <tr><td>One codebase across several database engines.</td><td>Performance surprises when it is used carelessly.</td></tr>
+        <tr><td>Changes to the structure tracked in source control — Session 08.</td><td>&nbsp;</td></tr>
+      </tbody>
+    </table>
+    <div class="callout callout--warn"><strong>A mapper does not replace SQL.</strong> When a page is slow, the only way to find out why is to read the SQL the mapper produced. We do exactly that in Session 08 — which is why this session began with the language and not with the library.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 24 ─ Section: EF Core -->
+<section class="slide slide--dark">
+  <div class="section-no">05</div>
+  <p class="eyebrow">Block 6 · 30 min · demo</p>
+  <h2>Entity Framework Core</h2>
+  <p class="lead" style="margin-top:var(--space-4)">The same idea, with a name, a package and four files to edit.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 25 ─ Every ecosystem has one -->
+<section class="slide">
+  <p class="eyebrow">Entity Framework Core</p>
+  <h2>Every ecosystem has one — ours is called EF Core</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <div class="cols cols-2">
+      <table>
+        <thead><tr><th style="width:46%">Ecosystem</th><th>Its mapper</th></tr></thead>
+        <tbody>
+          <tr><td>.NET</td><td><strong>Entity Framework Core</strong></td></tr>
+          <tr><td>Java</td><td>Hibernate</td></tr>
+          <tr><td>Python</td><td>SQLAlchemy, Django ORM</td></tr>
+          <tr><td>PHP</td><td>Doctrine</td></tr>
+          <tr><td>Ruby</td><td>ActiveRecord</td></tr>
+        </tbody>
+      </table>
+      <div class="stack">
+        <div class="card card--brand">
+          <h3>The concepts transfer</h3>
+          <p>Classes to tables, a query language over objects, generated SQL, tracked changes. Learn it once here and the next one is a matter of vocabulary.</p>
+        </div>
+        <div class="card">
+          <h3>Four things to configure</h3>
+          <p>The packages, the entity class, the context, and the connection string. Then one line to register it. That is the whole of the rest of this session.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 26 ─ SQL and LINQ -->
+<section class="slide">
+  <p class="eyebrow">Entity Framework Core</p>
+  <h2>You already know the four questions</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <table>
+      <thead><tr><th style="width:150px">Question</th><th style="width:42%">In SQL</th><th>In LINQ — Session 02</th></tr></thead>
+      <tbody>
+        <tr><th>Filter</th><td><code class="inline">WHERE Author = 'Ada'</code></td><td><code class="inline">.Where(a =&gt; a.Author == "Ada")</code></td></tr>
+        <tr><th>Project</th><td><code class="inline">SELECT Title</code></td><td><code class="inline">.Select(a =&gt; a.Title)</code></td></tr>
+        <tr><th>Sort</th><td><code class="inline">ORDER BY PublishedOn DESC</code></td><td><code class="inline">.OrderByDescending(a =&gt; a.PublishedOn)</code></td></tr>
+        <tr><th>Take one</th><td><code class="inline">LIMIT 1</code> / <code class="inline">TOP 1</code></td><td><code class="inline">.FirstOrDefault()</code></td></tr>
+      </tbody>
+    </table>
+    <div class="callout">In Session 02 we wrote these against a list held in memory. In a moment we will write the identical code against a table on disk — and EF Core will turn it into the SQL on the left. Only the notation differs.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 27 ─ Installing the pieces -->
+<section class="slide">
+  <p class="eyebrow">Entity Framework Core · demo</p>
+  <h2>Installing the pieces</h2>
+  <div class="rule"></div>
+  <div class="content">
+<pre>$ <span class="k">dotnet add package</span> Microsoft.EntityFrameworkCore.Sqlite
+$ <span class="k">dotnet add package</span> Microsoft.EntityFrameworkCore.Design
+$ <span class="k">dotnet tool install --global</span> dotnet-ef      <span class="c">// once per machine</span>
+<span class="c">
+// SimpleBlog.csproj, afterwards</span>
+&lt;<span class="k">ItemGroup</span>&gt;
+  &lt;<span class="k">PackageReference</span> Include=<span class="h">"Microsoft.EntityFrameworkCore.Sqlite"</span> /&gt;
+  &lt;<span class="k">PackageReference</span> Include=<span class="h">"Microsoft.EntityFrameworkCore.Design"</span> /&gt;
+&lt;/<span class="k">ItemGroup</span>&gt;</pre>
+    <div class="cols cols-2 cols--auto">
+      <div class="card"><h3>Three pieces, three jobs</h3><p><strong>Sqlite</strong> is the provider — the part that knows how to speak to this engine. <strong>Design</strong> is the tooling support the migration commands need in Session 08. <strong>dotnet-ef</strong> is a command-line tool, installed once per machine.</p></div>
+      <div class="card card--brand"><h3>Back to the project file</h3><p>On the Session 02 folder tour the <code class="inline">.csproj</code> was "the project's shopping list". <code class="inline">dotnet add package</code> is what writes to it — those two lines were not typed by hand.</p></div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 28 ─ The entity class -->
+<section class="slide">
+  <p class="eyebrow">Entity Framework Core</p>
+  <h2>The entity: a plain class, and nothing more</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre><span class="c">// Models/Article.cs</span>
+<span class="k">namespace</span> SimpleBlog.Models;
+
+<span class="k">public class</span> <span class="h">Article</span>
+{
+    <span class="k">public int</span>      Id          { <span class="k">get</span>; <span class="k">set</span>; }
+    <span class="k">public string</span>   Title       { <span class="k">get</span>; <span class="k">set</span>; } = <span class="h">""</span>;
+    <span class="k">public string</span>   Author      { <span class="k">get</span>; <span class="k">set</span>; } = <span class="h">""</span>;
+    <span class="k">public string</span>   Summary     { <span class="k">get</span>; <span class="k">set</span>; } = <span class="h">""</span>;
+    <span class="k">public string</span>   Body        { <span class="k">get</span>; <span class="k">set</span>; } = <span class="h">""</span>;
+    <span class="k">public</span> DateTime PublishedOn { <span class="k">get</span>; <span class="k">set</span>; }
+}</pre>
+      <ul class="list list--tight">
+        <li>A property named <code class="inline">Id</code> becomes the <strong>primary key</strong>. No attribute needed.</li>
+        <li>An integer key is <strong>generated by the database</strong> on insert — we leave it at 0.</li>
+        <li>Property names become column names; the types are mapped for us.</li>
+        <li>A <code class="inline">string</code> column is nullable unless we say otherwise — Session 08 fixes that with data annotations.</li>
+      </ul>
+    </div>
+    <div class="callout">The class from Session 03 is unchanged in spirit. Note also what it is <em>not</em>: <code class="inline">ArticleListViewModel</code> from Session 06 is what a <em>page</em> needs. <code class="inline">Article</code> is what we <em>store</em>. They change for different reasons, which is exactly why they are two classes.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 29 ─ The DbContext -->
+<section class="slide">
+  <p class="eyebrow">Entity Framework Core</p>
+  <h2>The <code class="inline">DbContext</code>: the database, as an object</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre><span class="c">// Data/ApplicationDbContext.cs</span>
+<span class="k">using</span> Microsoft.EntityFrameworkCore;
+<span class="k">using</span> SimpleBlog.Models;
+
+<span class="k">namespace</span> SimpleBlog.Data;
+
+<span class="k">public class</span> <span class="h">ApplicationDbContext</span> : DbContext
+{
+    <span class="k">public</span> ApplicationDbContext(
+        DbContextOptions&lt;ApplicationDbContext&gt; options)
+        : <span class="k">base</span>(options) { }
+
+    <span class="k">public</span> DbSet&lt;Article&gt; <span class="h">Articles</span> =&gt; Set&lt;Article&gt;();
+}</pre>
+      <ul class="list list--tight">
+        <li>The class stands for <strong>the database</strong>.</li>
+        <li>Each <code class="inline">DbSet&lt;T&gt;</code> stands for <strong>one table</strong>. The property name <code class="inline">Articles</code> becomes the table name — there is the plural from our diagram.</li>
+        <li>It takes <strong>options</strong> rather than deciding for itself which database it is. That single choice is what makes the next block necessary.</li>
+        <li>A <code class="inline">DbSet&lt;T&gt;</code> is queried exactly like the <code class="inline">List&lt;T&gt;</code> of Session 02.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 30 ─ The connection string -->
+<section class="slide">
+  <p class="eyebrow">Entity Framework Core</p>
+  <h2>The connection string</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre><span class="c">// appsettings.json</span>
+{
+  <span class="k">"ConnectionStrings"</span>: {
+    <span class="k">"DefaultConnection"</span>: <span class="h">"Data Source=simpleblog.db"</span>
+  },
+  <span class="k">"Logging"</span>: { <span class="k">"LogLevel"</span>: { <span class="k">"Default"</span>: <span class="h">"Information"</span> } },
+  <span class="k">"AllowedHosts"</span>: <span class="h">"*"</span>
+}</pre>
+      <div class="stack">
+        <div class="card card--brand">
+          <h3>Which database, where, and how do I get in</h3>
+          <p>That is all a connection string is. Here it names a file that will sit beside the project.</p>
+        </div>
+        <div class="card">
+          <h3>Configuration, with a job at last</h3>
+          <p>On the Session 02 folder tour <code class="inline">appsettings.json</code> was "the configuration file". This is the first thing we have actually put in it.</p>
+        </div>
+      </div>
+    </div>
+    <div class="callout callout--warn"><strong>Security, now rather than later.</strong> Connection strings for real databases contain passwords, and <code class="inline">appsettings.json</code> is committed to source control. Real projects keep secrets in user-secrets (<code class="inline">dotnet user-secrets init</code>), environment variables or a key vault — never in a committed file. We return to this in Session 10.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 31 ─ Switching provider -->
+<section class="slide">
+  <p class="eyebrow">Entity Framework Core</p>
+  <h2>Switching database: two lines change, and nothing else</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+<pre><span class="c">// SQLite &#8212; the course default</span>
+
+<span class="c">// appsettings.json</span>
+<span class="k">"DefaultConnection"</span>:
+  <span class="h">"Data Source=simpleblog.db"</span>
+
+
+<span class="c">// Program.cs</span>
+options.<span class="k">UseSqlite</span>(connectionString)
+
+<span class="c">// the whole database is that one file,</span>
+<span class="c">// sitting next to the project</span></pre>
+<pre><span class="c">// SQL Server LocalDB &#8212; on Windows</span>
+
+<span class="c">// appsettings.json</span>
+<span class="k">"DefaultConnection"</span>:
+  <span class="h">"Server=(localdb)\\mssqllocaldb;</span>
+<span class="h">   Database=SimpleBlog;</span>
+<span class="h">   Trusted_Connection=True"</span>
+
+<span class="c">// Program.cs</span>
+options.<span class="k">UseSqlServer</span>(connectionString)</pre>
+    </div>
+    <div class="cols cols-2 cols--auto">
+      <div class="callout">Plus one package: <code class="inline">…EntityFrameworkCore.Sqlite</code> becomes <code class="inline">…EntityFrameworkCore.SqlServer</code>.</div>
+      <div class="callout"><strong>Nothing else moves.</strong> Not the entity, not the context, not a single controller, not one line of LINQ.</div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 32 ─ Section: dependency injection -->
+<section class="slide slide--dark">
+  <div class="section-no">06</div>
+  <p class="eyebrow">Block 8 · 20 min · demo</p>
+  <h2>Dependency injection</h2>
+  <p class="lead" style="margin-top:var(--space-4)">A class states what it needs. Something else decides what it gets.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 33 ─ The naive question -->
+<section class="slide">
+  <p class="eyebrow">Dependency injection</p>
+  <h2>Why not just write <code class="inline">new ApplicationDbContext()</code>?</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <p class="lead">It is the obvious thing to type. Ask it out loud, then follow it through.</p>
+    <div class="cols cols-2 cols--auto">
+      <div class="card"><h3>The controller decides the database</h3><p>Which engine, which file, which server — decided inside a class whose job is answering one URL.</p></div>
+      <div class="card"><h3>And every controller decides again</h3><p>Change the provider and you edit forty files, hoping you found all of them.</p></div>
+    </div>
+    <div class="cols cols-2 cols--auto">
+      <div class="card"><h3>Nobody closes it</h3><p>The connection is opened per controller, and released whenever someone remembers to.</p></div>
+      <div class="card"><h3>It cannot be tested</h3><p>To test one action you need a real database, because the action insists on building one.</p></div>
+    </div>
+    <div class="callout">Every one of those is the same fault: <strong>a class that decides for itself what it depends on.</strong></div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 34 ─ Inversion of control -->
+<section class="slide">
+  <p class="eyebrow">Dependency injection</p>
+  <h2>Inversion of control, for the third time in this course</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <div class="cols cols-2-1 cols--auto">
+      <ul class="list list--tight">
+        <li><strong>Session 02</strong> — we do not call the framework; the framework calls our code.</li>
+        <li><strong>Session 05</strong> — the view does not draw the page around itself; the layout wraps it.</li>
+        <li><strong>Session 07</strong> — the controller does not build its database context; it is handed one.</li>
+      </ul>
+      <div class="card card--elevated center">
+        <h3>The restaurant, once more</h3>
+        <p>The waiter does not go to the market and does not choose the supplier. Supplies arrive at the kitchen door; the waiter simply uses them — and can carry on working if the supplier changes overnight.</p>
+      </div>
+    </div>
+    <p class="statement" style="text-align:center;margin-top:var(--space-6)">A class declares what it <em>needs</em>.<br>Something else decides what it <em>gets</em>.</p>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 35 ─ Registration -->
+<section class="slide">
+  <p class="eyebrow">Dependency injection · demo</p>
+  <h2>Registering the context, once, in <code class="inline">Program.cs</code></h2>
+  <div class="rule"></div>
+  <div class="content">
+<pre><span class="k">using</span> Microsoft.EntityFrameworkCore;
+<span class="k">using</span> SimpleBlog.Data;
+
+<span class="k">var</span> builder = WebApplication.CreateBuilder(args);
+builder.Services.<span class="k">AddControllersWithViews</span>();
+
+builder.Services.<span class="h">AddDbContext</span>&lt;ApplicationDbContext&gt;(options =&gt;
+    options.<span class="h">UseSqlite</span>(builder.Configuration
+        .GetConnectionString(<span class="h">"DefaultConnection"</span>)));
+
+<span class="k">var</span> app = builder.Build();</pre>
+    <div class="callout">Read it as one sentence: <strong>"whenever anything needs an <code class="inline">ApplicationDbContext</code>, build one using SQLite and the <code class="inline">DefaultConnection</code> string."</strong> <code class="inline">builder.Services</code> is the application's registry of what it is able to supply — <code class="inline">AddControllersWithViews</code> has been filling it since Session 02.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 36 ─ Constructor injection -->
+<section class="slide">
+  <p class="eyebrow">Dependency injection · demo</p>
+  <h2>Asking for it, in the controller</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre><span class="k">public class</span> ArticlesController : Controller
+{
+    <span class="k">private readonly</span> ApplicationDbContext _context;
+    <span class="k">public</span> ArticlesController(ApplicationDbContext context)
+    {
+        _context = context;   <span class="c">// asked for, not created</span>
+    }
+
+    <span class="k">public</span> IActionResult Index()
+    {
+        <span class="k">var</span> articles = _context.<span class="h">Articles</span>
+            .OrderByDescending(a =&gt; a.PublishedOn).ToList();
+        <span class="k">return</span> View(articles);
+    }
+}</pre>
+      <div class="stack">
+        <div class="card card--brand">
+          <h3>Constructor injection</h3>
+          <p>The dependency is a constructor parameter. The framework reads it, finds a match in the registry, and supplies one when it creates the controller for a request — step 4 of the Session 03 lifecycle.</p>
+        </div>
+        <div class="card">
+          <h3>Nobody writes <code class="inline">new ArticlesController(…)</code></h3>
+          <p>We never did. The framework has always created our controllers; now it fills in their needs as well.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 37 ─ Lifetimes -->
+<section class="slide">
+  <p class="eyebrow">Dependency injection</p>
+  <h2>How long does the thing we are handed live?</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <table>
+      <thead><tr><th style="width:180px">Lifetime</th><th style="width:34%">One instance per…</th><th>For a database context</th></tr></thead>
+      <tbody>
+        <tr><th><span class="badge badge--neutral">Transient</span></th><td>every single request for it</td><td>Wasteful — a new connection story each time it is asked for.</td></tr>
+        <tr><th><span class="badge badge--success">Scoped</span></th><td><strong>one HTTP request</strong></td><td><strong>Correct.</strong> <code class="inline">AddDbContext</code> registers scoped by default — we did not have to choose.</td></tr>
+        <tr><th><span class="badge badge--danger">Singleton</span></th><td>the whole application</td><td>Wrong, and dangerously so.</td></tr>
+      </tbody>
+    </table>
+    <div class="callout">A <code class="inline">DbContext</code> <strong>tracks the changes we make</strong> so it knows what to save. Two simultaneous requests sharing one tracker would see each other's half-finished edits. One request, one context, discarded at the end — that is what scoped means.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 38 ─ The deliberate failure -->
+<section class="slide">
+  <p class="eyebrow">Entity Framework Core · demo</p>
+  <h2>We run it now, and it fails on purpose</h2>
+  <div class="rule"></div>
+  <div class="content center">
+<pre>$ <span class="k">dotnet run</span>
+
+<span class="c">Microsoft.Data.Sqlite.SqliteException (0x80004005):</span>
+<span class="c">SQLite Error 1: 'no such table: Articles'.</span></pre>
+    <div class="cols cols-3 cols--auto" style="margin-top:var(--space-6)">
+      <div class="card"><h3>Everything we wrote is correct</h3><p>The packages, the entity, the context, the connection string and the registration are all in place.</p></div>
+      <div class="card"><h3>What is missing</h3><p>The database file itself. We described a table; nobody has yet created one.</p></div>
+      <div class="card card--brand"><h3>That is the next session</h3><p>Session 08 opens with <strong>migrations</strong> — turning our classes into a real schema, in a file we can review and keep.</p></div>
+    </div>
+    <div class="callout">Read the error to the end and say what it means before reaching for a fix. That habit is worth more than any single fix, and it is the whole of Session 10.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 39 ─ Misconceptions 1 -->
+<section class="slide">
+  <p class="eyebrow">Wrap-up</p>
+  <h2>Common misconceptions — data and SQL</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <table>
+      <thead><tr><th style="width:42%">Misconception</th><th>Correction</th></tr></thead>
+      <tbody>
+        <tr><td>"A list is fine, it keeps my data."</td><td>Only while the process lives. Restart and it is gone.</td></tr>
+        <tr><td>"A database is just a spreadsheet."</td><td>It also enforces rules, answers queries efficiently, and handles many users at once.</td></tr>
+        <tr><td>"Store dates as text, it's simpler."</td><td>Then you cannot sort or compare them correctly. Use date types.</td></tr>
+        <tr><td>"An ORM means I never need SQL."</td><td>When a query is slow, reading the generated SQL is the only way to find out why.</td></tr>
+        <tr><td>"SQLite is a toy; the real course is SQL Server."</td><td>Only the provider and the connection string differ. Everything you learn transfers.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 40 ─ Misconceptions 2 -->
+<section class="slide">
+  <p class="eyebrow">Wrap-up</p>
+  <h2>Common misconceptions — the context and its lifetime</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <table>
+      <thead><tr><th style="width:42%">Misconception</th><th>Correction</th></tr></thead>
+      <tbody>
+        <tr><td>"<code class="inline">DbContext</code> is the database."</td><td>It is an object representing a <em>session</em> with the database.</td></tr>
+        <tr><td>"Set the <code class="inline">Id</code> before inserting."</td><td>The database generates it. Leave it at 0.</td></tr>
+        <tr><td>"<code class="inline">new ApplicationDbContext()</code> in the controller is simpler."</td><td>It hard-codes the provider, leaks connections and makes testing impossible.</td></tr>
+        <tr><td>"One context for the whole app is efficient."</td><td>It tracks changes and is not safe across concurrent requests. Scoped, per request.</td></tr>
+        <tr><td>"Connection strings are fine in <code class="inline">appsettings.json</code>."</td><td>Not with a password in them. That file is committed to source control.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 41 ─ Check for understanding -->
+<section class="slide">
+  <p class="eyebrow">Check for understanding</p>
+  <h2>Seven questions</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <ol class="list list--tight">
+        <li>Name two problems a database solves that a list in memory cannot.</li>
+        <li>What is a primary key, and why must it never be reused?</li>
+        <li>Write the SQL for "the three newest articles by Ada". Now write the LINQ.</li>
+        <li>What is an ORM bridging, exactly? Name one thing you gain and one you give up.</li>
+      </ol>
+      <ol class="list list--tight" style="counter-reset:step 4">
+        <li><code class="inline">_context.Articles</code> — what is it, and what can you do to it that you already learned in Session 02?</li>
+        <li>Why does the controller take <code class="inline">ApplicationDbContext</code> as a constructor parameter instead of creating one? Give two reasons.</li>
+        <li>Why is <code class="inline">DbContext</code> registered as <em>scoped</em> rather than <em>singleton</em>?</li>
+      </ol>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 42 ─ Lab walkthrough -->
+<section class="slide">
+  <p class="eyebrow">Walkthrough · 25 min · together</p>
+  <h2>We wire up the database</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <p class="lead">We do it once on screen, in <strong>SimpleBlog</strong>, in this order. Follow along on your own machine and stop me at any step that does not land.</p>
+    <div class="cols cols-2">
+      <ol class="list list--tight">
+        <li>We install the two packages and the tool, then open <code class="inline">.csproj</code> to see what changed.</li>
+        <li>We reshape <code class="inline">Article</code>: <code class="inline">Id</code>, <code class="inline">Title</code>, <code class="inline">Author</code>, <code class="inline">Summary</code>, <code class="inline">Body</code>, <code class="inline">PublishedOn</code>.</li>
+        <li>We create <code class="inline">Data/ApplicationDbContext.cs</code> with one <code class="inline">DbSet&lt;Article&gt;</code>.</li>
+        <li>We add <code class="inline">ConnectionStrings:DefaultConnection</code> to <code class="inline">appsettings.json</code>.</li>
+      </ol>
+      <ol class="list list--tight" style="counter-reset:step 4">
+        <li>We register it in <code class="inline">Program.cs</code> with <code class="inline">AddDbContext</code> and <code class="inline">UseSqlite</code>.</li>
+        <li>We inject the context into <code class="inline">ArticlesController</code>, delete the static list, and rewrite <code class="inline">Index</code> and <code class="inline">Details</code> in LINQ — keeping <code class="inline">FirstOrDefault</code> and <code class="inline">NotFound()</code> from Session 03.</li>
+        <li>We run it, read the error aloud, and name in one sentence exactly what is missing.</li>
+      </ol>
+    </div>
+    <div class="callout"><strong>By the end we will have</strong> a project that compiles, contains no <code class="inline">new ApplicationDbContext()</code> and no static list, queries through the injected context — and fails at runtime for one precise reason we can all state.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 43 ─ Before we move on -->
+<section class="slide">
+  <p class="eyebrow">Wrap-up</p>
+  <h2>Before we move on</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-3">
+      <div class="card card--brand">
+        <span class="badge">State of SimpleBlog</span>
+        <h3 style="margin-top:var(--space-2)">Configured, not yet running</h3>
+        <p>EF Core installed · <code class="inline">Article</code> is an entity · the context exposes <code class="inline">Articles</code> · the connection string is set · the controller is injected.</p>
+        <p>The database file does not exist. Session 08 creates it, first thing.</p>
+      </div>
+      <div class="card">
+        <span class="badge badge--neutral">Together</span>
+        <h3 style="margin-top:var(--space-2)">Four statements at the board</h3>
+        <p>All articles ordered by title · articles published in 2026 · the count per author · deleting article 5.</p>
+        <p>And for the last one: what happens if the <code class="inline">WHERE</code> is forgotten?</p>
+      </div>
+      <div class="card">
+        <span class="badge badge--neutral">Together</span>
+        <h3 style="margin-top:var(--space-2)">Sketch a second table</h3>
+        <p>We draw <code class="inline">Categories</code> beside <code class="inline">Articles</code> and agree which column is the foreign key and which table it lives in. Session 08 builds it.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 44 ─ Glossary -->
+<section class="slide">
+  <p class="eyebrow">Glossary</p>
+  <h2>Речник · EN → BG</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <table>
+        <thead><tr><th style="width:45%">English</th><th>Български</th></tr></thead>
+        <tbody>
+          <tr><td>persistence</td><td>постоянно съхранение</td></tr>
+          <tr><td>database / DBMS</td><td>база данни / система за управление на БД</td></tr>
+          <tr><td>table / row / column</td><td>таблица / ред / колона</td></tr>
+          <tr><td>primary key / foreign key</td><td>първичен ключ / външен ключ</td></tr>
+          <tr><td>schema / constraint</td><td>схема / ограничение</td></tr>
+          <tr><td>normalisation</td><td>нормализация</td></tr>
+          <tr><td>query</td><td>заявка</td></tr>
+          <tr><td>entity</td><td>същност / ентити</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <thead><tr><th style="width:45%">English</th><th>Български</th></tr></thead>
+        <tbody>
+          <tr><td>ORM (object–relational mapper)</td><td>обектно-релационно съответствие</td></tr>
+          <tr><td>connection string</td><td>низ за връзка</td></tr>
+          <tr><td>provider</td><td>доставчик</td></tr>
+          <tr><td>dependency injection</td><td>вграждане на зависимости</td></tr>
+          <tr><td>inversion of control</td><td>обръщане на управлението</td></tr>
+          <tr><td>service lifetime (scoped)</td><td>живот на услугата (в обхвата на заявка)</td></tr>
+          <tr><td>constructor injection</td><td>вграждане през конструктор</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 45 ─ References -->
+<section class="slide">
+  <p class="eyebrow">References</p>
+  <h2>Where to read more</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <ul class="list list--tight">
+      <li><strong>EF Core — getting started</strong><br><span class="sm muted">learn.microsoft.com/ef/core/get-started/overview/first-app</span></li>
+      <li><strong><code class="inline">DbContext</code> configuration</strong><br><span class="sm muted">learn.microsoft.com/ef/core/dbcontext-configuration/</span></li>
+      <li><strong>Connection strings</strong><br><span class="sm muted">learn.microsoft.com/ef/core/miscellaneous/connection-strings</span></li>
+      <li><strong>Dependency injection in ASP.NET Core</strong><br><span class="sm muted">learn.microsoft.com/aspnet/core/fundamentals/dependency-injection</span></li>
+      <li><strong>Safe storage of app secrets in development</strong><br><span class="sm muted">learn.microsoft.com/aspnet/core/security/app-secrets</span></li>
+      <li><strong>SQL tutorial — for the SQL primer</strong><br><span class="sm muted">w3schools.com/sql/</span></li>
+    </ul>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 46 ─ Closing -->
+<section class="slide slide--brand">
+  <p class="eyebrow">Next session</p>
+  <h1 style="font-size:var(--fs-title-1);line-height:var(--lh-title-1)">08 · Code-First and Migrations</h1>
+  <div class="rule"></div>
+  <p class="lead">We turn the classes we just wrote into a real database, review the SQL that EF Core generates,<br>and add the <code class="inline">Category</code> table we sketched. The error we left on screen is where we begin.</p>
+  <div class="foot"><span>Questions?</span><span class="spacer"></span><span>Microsoft Web Technologies</span></div>
+</section>
+
+</div></div>
+<div id="hint">← → navigate · F fullscreen · P print</div>
+
+<script>
+(function(){
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var deck = document.getElementById('deck');
+  var progress = document.getElementById('progress');
+  var hint = document.getElementById('hint');
+  var total = slides.length;
+  var i = 0;
+
+  slides.forEach(function(s, n){
+    var num = s.querySelector('.num');
+    if (num) num.textContent = (n + 1) + ' / ' + total;
+  });
+
+  function show(n){
+    i = Math.max(0, Math.min(total - 1, n));
+    slides.forEach(function(s, k){ s.classList.toggle('is-active', k === i); });
+    progress.style.width = ((i + 1) / total * 100) + '%';
+    if (location.hash !== '#' + (i + 1)) history.replaceState(null, '', '#' + (i + 1));
+  }
+
+  function fit(){
+    var scale = Math.min(window.innerWidth / 1280, window.innerHeight / 720);
+    deck.style.transform = 'scale(' + scale + ')';
+  }
+
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); show(i + 1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(i - 1); }
+    else if (e.key === 'Home') { show(0); }
+    else if (e.key === 'End') { show(total - 1); }
+    else if (e.key === 'f' || e.key === 'F') {
+      if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen();
+    }
+    else if (e.key === 'p' || e.key === 'P') { window.print(); }
+  });
+
+  document.getElementById('stage').addEventListener('click', function(e){
+    show(e.clientX < window.innerWidth / 3 ? i - 1 : i + 1);
+  });
+
+  window.addEventListener('resize', fit);
+  window.addEventListener('hashchange', function(){ show((parseInt(location.hash.slice(1), 10) || 1) - 1); });
+
+  fit();
+  show((parseInt(location.hash.slice(1), 10) || 1) - 1);
+  setTimeout(function(){ hint.classList.add('is-hidden'); }, 4000);
+})();
+</script>
+</body>
+</html>

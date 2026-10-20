@@ -1,0 +1,260 @@
+<html><head><meta charset="utf-8"><title>Microsoft Web Technologies — лекции 1–5</title>
+<style>
+body { font-family: Calibri, "Segoe UI", sans-serif; font-size: 11pt; color:#000; line-height:1.35; }
+h1 { font-family: "Cambria", Georgia, serif; font-size: 20pt; margin: 0 0 14pt 0; }
+h2 { font-family: "Cambria", Georgia, serif; font-size: 14pt; margin: 20pt 0 8pt 0; color:#1F3864; }
+p { margin: 0 0 6pt 0; }
+p.lead { margin: 10pt 0 4pt 0; }
+p.brk { margin: 12pt 0; }
+ol, ul { margin: 0 0 8pt 0; padding-left: 22pt; }
+li { margin: 0 0 3pt 0; }
+ul ul, ol ul { margin-top: 3pt; }
+.code { font-family: Consolas, "Courier New", monospace; font-size: 10pt; }
+</style></head><body>
+<h1>Microsoft Web Technologies — лекции 1–5</h1>
+<h2>Лекция 1: Въведение в MVC и настройка на проекта</h2>
+<p class="lead"><b>Цели на обучението</b></p>
+<ul>
+<li>Разбиране на архитектурата MVC и нейните компоненти: Model, View, Controller.</li>
+<li>Настройка на средата за разработка.</li>
+<li>Създаване на нов ASP.NET MVC проект.</li>
+</ul>
+<p class="lead"><b>Съдържание</b></p>
+<ol>
+<li><b>Какво е HTTP?</b>
+<ul>
+<li>Защо ни е нужен HTTP? Клиент–сървър модел.</li>
+<li>Структура на HTTP заявка (метод, URL, хедъри, тяло).</li>
+<li>HTTP методи: GET, POST, PUT, DELETE.</li>
+<li>Структура на HTTP отговор.</li>
+<li>Често срещани статус кодове: 200, 301, 302, 400, 401, 403, 404, 500.</li>
+</ul>
+</li>
+<li><b>Какво е .NET, ASP.NET, C#</b>
+<ul>
+<li>Какво е framework и защо ни улеснява.</li>
+<li>.NET SDK, runtime, CLI (<span class="code">dotnet new</span>, <span class="code">dotnet run</span>).</li>
+</ul>
+</li>
+<li><b>Основи на C#</b> <i>(преговор, ускорено темпо)</i>
+<ul>
+<li>Защо C# за уеб разработка.</li>
+<li>Структура на C# програма; типове данни и променливи.</li>
+<li>Управляващи конструкции (if, switch, цикли).</li>
+<li>Колекции: масиви, <span class="code">List&lt;T&gt;</span>, <span class="code">Dictionary&lt;K,V&gt;</span>.</li>
+<li>Методи и параметри; класове и обекти; свойства.</li>
+<li>Работа с изключения (<span class="code">try / catch / finally</span>).</li>
+<li>LINQ – само базовите оператори <span class="code">Where</span>, <span class="code">Select</span>, <span class="code">OrderBy</span>, <span class="code">FirstOrDefault</span>.</li>
+</ul>
+</li>
+<li><b>Какво е MVC?</b>
+<ul>
+<li>Преглед на Model, View и Controller и ролята на всеки компонент.</li>
+<li>Разделяне на отговорностите; предимства на архитектурата.</li>
+<li>Жизнен цикъл на една заявка в ASP.NET Core MVC.</li>
+</ul>
+</li>
+<li><b>Инсталиране и настройка на инструментите</b>
+<ul>
+<li>Изтегляне на .NET SDK.</li>
+<li>Visual Studio Community Edition или алтернатива според ОС.</li>
+<li>Настройка на SQL Server Express / LocalDB и SQL Server Management Studio.</li>
+</ul>
+</li>
+<li><b>Създаване на първия ASP.NET MVC проект</b>
+<ul>
+<li>Стъпка по стъпка създаване на проект (шаблон <i>ASP.NET Core Web App (MVC)</i>).</li>
+<li>Структура на папките: <span class="code">Models</span>, <span class="code">Views</span>, <span class="code">Controllers</span>, <span class="code">wwwroot</span>.</li>
+<li>Роля на <span class="code">Program.cs</span> и <span class="code">appsettings.json</span>.</li>
+</ul>
+</li>
+<li><b>Практически пример: стартиране на уебсайта за библиотеката</b>
+<ul>
+<li>Създаване на проект с име <span class="code">LocalLibrary</span>.</li>
+<li>Стартиране и разглеждане на генерираната страница в браузъра.</li>
+<li>Обсъждане на автоматично генерираните файлове.</li>
+</ul>
+</li>
+</ol>
+<p class="lead"><b>Практическа задача</b></p>
+<ul>
+<li>Създайте нов ASP.NET MVC проект и го стартирайте в браузъра.</li>
+<li>Разгледайте структурата на папките и идентифицирайте ключовите файлове.</li>
+</ul>
+<p class="brk">&nbsp;</p>
+<h2>Лекция 2: Контролери и маршрутизиране</h2>
+<p class="lead"><b>Цели на обучението</b></p>
+<ul>
+<li>Как работят контролерите в MVC.</li>
+<li>Как маршрутизирането свързва URL адреси с контролери и действия.</li>
+</ul>
+<p class="lead"><b>Съдържание</b></p>
+<ol>
+<li><b>Какво е контролер?</b>
+<ul>
+<li>Роля на контролерите при обработката на HTTP заявки.</li>
+<li>Създаване на персонализиран контролер в папка <span class="code">Controllers</span>.</li>
+<li>Конвенции за именуване (<span class="code">XxxController</span>).</li>
+</ul>
+</li>
+<li><b>Добавяне на действия (actions)</b>
+<ul>
+<li>Дефиниране на действия и връщане на изглед (<span class="code">IActionResult</span>, <span class="code">View()</span>).</li>
+<li>Приемане на параметри от URL и от заявка.</li>
+<li>Пример: <span class="code">LibraryController</span> с действие <span class="code">Index</span>.</li>
+</ul>
+</li>
+<li><b>Маршрутизиране (Routing)</b>
+<ul>
+<li>Как маршрутът свързва URL с метод за действие.</li>
+<li>Конвенционално маршрутизиране (<span class="code">{controller}/{action}/{id?}</span>).</li>
+<li>Атрибутно маршрутизиране (<span class="code">[Route]</span>, <span class="code">[HttpGet]</span>).</li>
+</ul>
+</li>
+<li><b>Практически пример: основни страници</b>
+<ul>
+<li><span class="code">LibraryController</span> с действия за начална страница (<span class="code">Index</span>), „За нас“ (<span class="code">About</span>) и „Контакт“ (<span class="code">Contact</span>).</li>
+</ul>
+</li>
+</ol>
+<p class="lead"><b>Практическа задача</b></p>
+<ul>
+<li>Създайте <span class="code">LibraryController</span> и дефинирайте основните методи за действие.</li>
+<li>Добавете персонализирани маршрути, така че страниците да се отварят на конкретни URL адреси.</li>
+</ul>
+<p class="brk">&nbsp;</p>
+<h2>Лекция 3: Изгледи и стилизиране с Bootstrap</h2>
+<p class="lead"><b>Цели на обучението</b></p>
+<ul>
+<li>Създаване и персонализиране на изгледи в MVC.</li>
+<li>Използване на Bootstrap за основно стилизиране.</li>
+</ul>
+<p class="lead"><b>Съдържание</b></p>
+<ol>
+<li><b>Какво е изглед?</b>
+<ul>
+<li>Роля на изгледите при представянето на данните.</li>
+<li><span class="code">.cshtml</span> файлове: C# + HTML + CSS.</li>
+<li>Роля на HTML и CSS; основни HTML елементи и структура на документа; CSS основи (селектори, кутиен модел).</li>
+<li>Razor синтаксис за динамично рендиране (<span class="code">@</span>, <span class="code">@if</span>, <span class="code">@foreach</span>, <span class="code">@model</span>).</li>
+<li>Глобални изгледи (<span class="code">_Layout</span>), частични изгледи (partial views) и секции (sections).</li>
+</ul>
+</li>
+<li><b>Създаване и персонализиране на изгледи</b>
+<ul>
+<li>Изглед за метод на действие в контролера.</li>
+<li>Предаване на данни от контролера към изгледа: <span class="code">ViewData</span>, <span class="code">ViewBag</span> и <b>ViewModel</b> (препоръчителен подход).</li>
+</ul>
+</li>
+<li><b>Стилизиране с Bootstrap</b>
+<ul>
+<li>Включване на Bootstrap в проекта.</li>
+<li>Grid система, компоненти (navbar, card, table, form), отзивчив дизайн.</li>
+</ul>
+</li>
+<li><b>Практически пример: начална страница</b>
+<ul>
+<li>Изглед за действието <span class="code">Index</span> в <span class="code">LibraryController</span>.</li>
+<li>Навигационно меню, долен колонтитул и основно съдържание с Bootstrap.</li>
+</ul>
+</li>
+</ol>
+<p class="lead"><b>Практическа задача</b></p>
+<ul>
+<li>Създайте начална страница със заглавие, навигационни връзки и приветствие.</li>
+<li>Използвайте Bootstrap за подобряване на визията на страницата.</li>
+</ul>
+<p class="brk">&nbsp;</p>
+<h2>Лекция 4: Интегриране на база данни с Entity Framework Core</h2>
+<p class="lead"><b>Цели на обучението</b></p>
+<ul>
+<li>Роля на модела в MVC.</li>
+<li>Използване на Entity Framework за свързване с база данни.</li>
+</ul>
+<p class="lead"><b>Съдържание</b></p>
+<ol>
+<li><b>Какво е модел?</b>
+<ul>
+<li>Роля на моделите за представяне на данните.</li>
+<li>Въведение в ORM и Entity Framework Core.</li>
+</ul>
+</li>
+<li><b>Настройка на базата данни</b>
+<ul>
+<li>Създаване на SQL Server база данни за библиотеката.</li>
+<li>Connection string в <span class="code">appsettings.json</span>.</li>
+<li>Модел <span class="code">Book</span> с полета <span class="code">Title</span>, <span class="code">Author</span>, <span class="code">PublishedDate</span>, <span class="code">ISBN</span>.</li>
+</ul>
+</li>
+<li><b>Code-First подход</b>
+<ul>
+<li><span class="code">DbContext</span> и <span class="code">DbSet&lt;T&gt;</span>; регистрация чрез Dependency Injection.</li>
+<li>Атрибути за данни: <span class="code">[Key]</span>, <span class="code">[Required]</span>, <span class="code">[MaxLength]</span>, <span class="code">[DataType]</span>.</li>
+<li>Миграции: <span class="code">Add-Migration</span> / <span class="code">Update-Database</span> (Package Manager Console) или <span class="code">dotnet ef migrations add</span> / <span class="code">dotnet ef database update</span>.</li>
+<li>Начално зареждане на данни (seeding).</li>
+</ul>
+</li>
+<li><b>Практически пример: списък с книги</b>
+<ul>
+<li><span class="code">BookController</span>, инжектиране на <span class="code">DbContext</span>.</li>
+<li>Извличане на списък с книги и показването му в изглед (таблица с Bootstrap).</li>
+</ul>
+</li>
+</ol>
+<p class="lead"><b>Практическа задача</b></p>
+<ul>
+<li>Създайте модел <span class="code">Book</span>, генерирайте базата данни чрез миграция.</li>
+<li>Покажете списък с книги на уебсайта на библиотеката.</li>
+</ul>
+<p class="brk">&nbsp;</p>
+<h2>Лекция 5: CRUD операции и завършване на уебсайта</h2>
+<p class="lead"><b>Цели на обучението</b></p>
+<ul>
+<li>Реализиране на CRUD операции за управление на данни.</li>
+<li>Отстраняване на грешки и подготовка за разгръщане.</li>
+</ul>
+<p class="lead"><b>Съдържание</b></p>
+<ol>
+<li><b>Какво са CRUD операции?</b>
+<ul>
+<li>Създаване, четене, редактиране и изтриване на записи.</li>
+<li>Реализация в контролер: GET/POST двойки действия.</li>
+</ul>
+</li>
+<li><b>Форми за въвеждане на данни</b>
+<ul>
+<li>Razor форми и Tag Helpers: <span class="code">asp-for</span>, <span class="code">asp-action</span>, <span class="code">asp-validation-for</span>.</li>
+<li>Валидация от страна на модела (Data Annotations) и в изгледа (<span class="code">ModelState.IsValid</span>, validation summary).</li>
+<li>Защита срещу CSRF: <span class="code">[ValidateAntiForgeryToken]</span>.</li>
+</ul>
+</li>
+<li><b>CRUD в <span class="code">BookController</span></b>
+<ul>
+<li>Добавяне на нова книга; преглед на детайли; редактиране; изтриване с потвърждение.</li>
+<li>Използване на scaffolding за автоматично генериране и последващо ръчно доработване.</li>
+</ul>
+</li>
+<li><b>Откриване и отстраняване на грешки</b>
+<ul>
+<li>Debugger във Visual Studio: breakpoints, watch, call stack.</li>
+<li>Developer Exception Page, страници за грешки, логване.</li>
+</ul>
+</li>
+<li><b>Разгръщане (deployment)</b>
+<ul>
+<li>Публикуване към IIS / Azure App Service; publish профил.</li>
+<li>Прилагане на миграции към продукционна база.</li>
+</ul>
+</li>
+<li><b>Практически пример: завършване на уебсайта за библиотеката</b>
+<ul>
+<li>Пълна функционалност за управление на каталога и тестване на приложението.</li>
+</ul>
+</li>
+</ol>
+<p class="lead"><b>Практическа задача</b></p>
+<ul>
+<li>Реализирайте CRUD операции за модела <span class="code">Book</span>.</li>
+<li>Тествайте приложението — добавяне, редактиране и изтриване на книги.</li>
+</ul>
+</body></html>

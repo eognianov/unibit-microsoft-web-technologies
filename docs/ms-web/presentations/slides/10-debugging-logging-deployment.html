@@ -1,0 +1,1521 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Session 10 — Debugging, Logging and Deployment</title>
+<link rel="stylesheet" href="../../design-system/styles.css">
+<style>
+/* ── Deck-level extensions to the design system ────────────────────────────
+   Slides are authored on a fixed 1280×720 stage and scaled to the viewport,
+   so every size below is a *slide* size, not a screen size. Body copy is
+   stepped up from --fs-body (14px, UI density) to projection density. */
+:root{
+  --stage-w:1280px; --stage-h:720px;
+  --fs-slide-body:20px;  --lh-slide-body:30px;
+  --fs-slide-lead:24px;  --lh-slide-lead:34px;
+  --fs-slide-sm:16px;    --lh-slide-sm:24px;
+  --fs-slide-code:16px;  --lh-slide-code:26px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  background:var(--neutral-grey-160);
+  font-family:var(--font-sans-text);
+  color:var(--text-primary);
+  overflow:hidden;
+}
+
+/* ── Stage ─────────────────────────────────────────────────────────────── */
+#stage{position:fixed;inset:0;display:grid;place-items:center}
+#deck{width:var(--stage-w);height:var(--stage-h);position:relative;transform-origin:center center}
+.slide{
+  position:absolute;inset:0;
+  width:var(--stage-w);height:var(--stage-h);
+  background:var(--surface-page);
+  display:none;flex-direction:column;
+  padding:var(--space-16) var(--space-16) var(--space-10);
+  overflow:hidden;
+}
+.slide.is-active{display:flex}
+
+/* ── Slide chrome ──────────────────────────────────────────────────────── */
+.eyebrow{
+  margin:0 0 var(--space-3);
+  font-family:var(--font-sans-text);
+  font-size:var(--fs-body-sm);line-height:var(--lh-body-sm);
+  font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--brand-pressed);
+}
+h1,h2,h3{margin:0;font-family:var(--font-sans);color:var(--text-primary)}
+h1{font-size:var(--fs-display);line-height:var(--lh-display);font-weight:var(--fw-display);letter-spacing:-.02em}
+h2{font-size:var(--fs-title-1);line-height:var(--lh-title-1);font-weight:var(--fw-title-1);letter-spacing:-.01em}
+h3{font-size:var(--fs-title-3);line-height:var(--lh-title-3);font-weight:var(--fw-title-3)}
+.rule{width:56px;height:3px;background:var(--brand-base);border-radius:var(--radius-pill);margin:var(--space-4) 0 var(--space-6)}
+.body{margin:0;font-size:var(--fs-slide-body);line-height:var(--lh-slide-body);color:var(--text-primary)}
+.lead{margin:0;font-size:var(--fs-slide-lead);line-height:var(--lh-slide-lead);color:var(--text-secondary)}
+.muted{color:var(--text-secondary)}
+.sm{font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm)}
+strong{font-weight:600}
+.content{flex:1;min-height:0;display:flex;flex-direction:column;gap:var(--space-5)}
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.foot{
+  display:flex;align-items:center;gap:var(--space-4);
+  padding-top:var(--space-5);margin-top:auto;
+  border-top:1px solid var(--border-default);
+  font-size:var(--fs-caption);line-height:var(--lh-caption);
+  letter-spacing:.06em;text-transform:uppercase;color:var(--text-disabled);
+}
+.foot .spacer{flex:1}
+
+/* ── Brand-block slides (title + section dividers) ─────────────────────── */
+.slide--brand{background:var(--brand-base);color:var(--text-on-brand);justify-content:center}
+.slide--brand h1,.slide--brand h2{color:var(--text-on-brand)}
+.slide--brand .eyebrow{color:var(--brand-tint-20)}
+.slide--brand .lead,.slide--brand .body{color:var(--brand-tint-30)}
+.slide--brand .rule{background:var(--neutral-white)}
+.slide--brand .foot{border-top-color:rgba(255,255,255,.24);color:var(--brand-tint-20)}
+.slide--dark{background:var(--brand-shade-20)}
+.slide--dark h1,.slide--dark h2{color:var(--text-on-brand)}
+.slide--dark .eyebrow{color:var(--brand-tint-10)}
+.slide--dark .lead,.slide--dark .body{color:var(--brand-tint-30)}
+.slide--dark .foot{border-top-color:rgba(255,255,255,.18);color:var(--brand-tint-10)}
+.section-no{
+  font-family:var(--font-sans);font-size:120px;line-height:1;font-weight:600;
+  color:rgba(255,255,255,.22);letter-spacing:-.03em;margin-bottom:var(--space-4);
+}
+
+/* ── Layout helpers ────────────────────────────────────────────────────── */
+.cols{display:grid;gap:var(--space-6);flex:1;min-height:0}
+.cols-2{grid-template-columns:1fr 1fr}
+.cols-3{grid-template-columns:repeat(3,1fr)}
+.cols-2-1{grid-template-columns:1.4fr 1fr}
+.cols--auto{flex:0 0 auto;min-height:auto}
+.stack{display:flex;flex-direction:column;gap:var(--space-4);min-height:0}
+.center{justify-content:center}
+
+/* ── Card (design-system surfaces/Card, slide-scaled) ──────────────────── */
+.card{
+  background:var(--surface-card);border:1px solid var(--border-default);
+  border-radius:var(--radius-lg);padding:var(--space-5);
+  display:flex;flex-direction:column;gap:var(--space-2);
+}
+.card--elevated{border:none;box-shadow:var(--shadow-8)}
+.card--brand{background:var(--brand-tint-40);border-color:var(--brand-tint-20)}
+.card h3{font-size:var(--fs-title-3);line-height:var(--lh-title-3)}
+.card p{margin:0;font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm);color:var(--text-secondary)}
+
+/* ── Badge (design-system feedback/Badge, slide-scaled) ────────────────── */
+.badge{
+  display:inline-flex;align-items:center;align-self:flex-start;height:26px;padding:0 var(--space-3);
+  border-radius:var(--radius-pill);font-size:var(--fs-slide-sm);font-weight:600;
+  background:var(--brand-tint-40);color:var(--brand-pressed);white-space:nowrap;
+}
+.badge--neutral{background:var(--surface-subtle);color:var(--text-secondary)}
+.badge--success{background:var(--color-success-bg);color:var(--color-success)}
+.badge--warning{background:var(--color-warning-bg);color:var(--color-warning)}
+.badge--danger{background:var(--color-danger-bg);color:var(--color-danger)}
+.badge--mono{font-family:var(--font-mono);font-weight:600}
+
+/* ── Lists ─────────────────────────────────────────────────────────────── */
+ul.list,ol.list{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:var(--space-4)}
+ul.list li,ol.list li{
+  position:relative;padding-left:var(--space-8);
+  font-size:var(--fs-slide-body);line-height:var(--lh-slide-body);
+}
+ul.list li::before{
+  content:"";position:absolute;left:var(--space-2);top:11px;
+  width:8px;height:8px;border-radius:var(--radius-circular);background:var(--brand-base);
+}
+ol.list{counter-reset:step}
+ol.list li{counter-increment:step;padding-left:var(--space-10)}
+ol.list li::before{
+  content:counter(step);position:absolute;left:0;top:2px;
+  width:28px;height:28px;border-radius:var(--radius-circular);
+  background:var(--brand-tint-40);color:var(--brand-pressed);
+  font-family:var(--font-sans);font-size:var(--fs-slide-sm);font-weight:600;
+  display:grid;place-items:center;
+}
+.list--tight li{font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm)}
+.list--tight{gap:var(--space-3)}
+
+/* ── Table ─────────────────────────────────────────────────────────────── */
+table{
+  width:100%;border-collapse:collapse;
+  background:var(--surface-card);border:1px solid var(--border-default);
+  border-radius:var(--radius-lg);overflow:hidden;
+  font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm);
+}
+thead th{
+  text-align:left;background:var(--surface-subtle);color:var(--text-secondary);
+  font-weight:600;font-size:var(--fs-body-sm);letter-spacing:.06em;text-transform:uppercase;
+  padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border-default);
+}
+tbody td{padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border-default);vertical-align:top}
+tbody tr:last-child td{border-bottom:none}
+tbody th{
+  text-align:left;padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border-default);
+  font-weight:600;white-space:nowrap;
+}
+tbody tr:last-child th{border-bottom:none}
+td.center,th.center{text-align:center}
+
+/* ── Code ──────────────────────────────────────────────────────────────── */
+pre,code{font-family:var(--font-mono)}
+pre{
+  margin:0;background:var(--brand-shade-30);color:var(--brand-tint-30);
+  border-radius:var(--radius-lg);padding:var(--space-5) var(--space-6);
+  font-size:var(--fs-slide-code);line-height:var(--lh-slide-code);
+  overflow:hidden;white-space:pre;
+}
+pre .k{color:#4fc3f7;font-weight:600}
+pre .h{color:var(--neutral-white)}
+pre .c{color:var(--neutral-grey-90)}
+pre .ok{color:#6bd66b;font-weight:600}
+code.inline{
+  background:var(--surface-subtle);border:1px solid var(--border-default);
+  border-radius:var(--radius-sm);padding:1px 6px;font-size:.92em;color:var(--brand-pressed);
+}
+.slide--brand code.inline,.slide--dark code.inline{
+  background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.24);color:var(--neutral-white);
+}
+
+/* ── Callout ───────────────────────────────────────────────────────────── */
+.callout{
+  background:var(--brand-tint-40);border:1px solid var(--brand-tint-20);
+  border-radius:var(--radius-lg);padding:var(--space-4) var(--space-5);
+  font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm);color:var(--brand-shade-10);
+}
+.callout--warn{background:var(--color-warning-bg);border-color:#f0d98a;color:var(--color-warning)}
+
+/* ── Big statement ─────────────────────────────────────────────────────── */
+.statement{margin:0;font-family:var(--font-sans);font-size:var(--fs-title-1);line-height:var(--lh-title-1);font-weight:600}
+
+/* ── Progress bar ──────────────────────────────────────────────────────── */
+#progress{position:fixed;left:0;top:0;height:3px;background:var(--brand-tint-10);width:0;
+  transition:width var(--duration-normal) var(--ease-standard);z-index:10}
+
+/* ── Help hint ─────────────────────────────────────────────────────────── */
+#hint{
+  position:fixed;right:16px;bottom:14px;z-index:10;
+  font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--neutral-grey-90);font-family:var(--font-sans-text);
+  transition:opacity var(--duration-slow) var(--ease-standard);
+}
+#hint.is-hidden{opacity:0}
+
+/* ── Print / PDF export: one slide per landscape page ──────────────────── */
+@media print{
+  @page{size:1280px 720px;margin:0}
+  body{background:var(--neutral-white);overflow:visible}
+  #stage{position:static;display:block}
+  #deck{width:auto;height:auto;transform:none!important}
+  #progress,#hint{display:none}
+  .slide{position:static;display:flex!important;page-break-after:always;break-after:page}
+}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<div id="stage"><div id="deck">
+
+
+<!-- 1 ─ Title -->
+<section class="slide slide--brand">
+  <p class="eyebrow">Microsoft Web Technologies · Session 10</p>
+  <h1>Debugging, Logging and Deployment</h1>
+  <div class="rule"></div>
+  <p class="lead">Finding out why it doesn't work, telling the difference between<br>your machine and a real one — and closing the course.</p>
+  <div class="foot"><span>Lecture 5 · Debugging, error pages, logging, deployment</span><span class="spacer"></span><span>~180 min · the last session</span></div>
+</section>
+
+<!-- 2 ─ Where we are -->
+<section class="slide">
+  <p class="eyebrow">Where we are</p>
+  <h2>Our app works on our machine. Two things remain.</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <div class="card card--brand center">
+        <span class="badge">One</span>
+        <h3 style="margin-top:var(--space-2)">Finding out why it doesn't, when it doesn't</h3>
+        <p>A method for locating a fault, the tool that shows us every variable at once, and a record of what happened when nobody was watching.</p>
+      </div>
+      <div class="card center">
+        <span class="badge badge--neutral">Two</span>
+        <h3 style="margin-top:var(--space-2)">Getting it onto a machine that isn't ours</h3>
+        <p>What "deploying" actually means, what has to exist on the other side, and the one step in the whole procedure that can destroy real data.</p>
+      </div>
+    </div>
+    <div class="callout">We build on Session 01 (4xx versus 5xx — <em>whose bug is it?</em>), Session 02 (exceptions), Session 07 (connection strings and secrets), Session 08 (migrations) and Session 09 (a complete CRUD application).</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 3 ─ Learning objectives -->
+<section class="slide">
+  <p class="eyebrow">Learning objectives</p>
+  <h2>By the end of this session you can…</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <ol class="list">
+        <li>Debug an application with breakpoints, stepping, watches and the call stack.</li>
+        <li>Distinguish the developer exception page from a production error page, and configure both.</li>
+        <li>Write useful log entries and choose an appropriate level.</li>
+      </ol>
+      <ol class="list" style="counter-reset:step 3">
+        <li>Explain what deployment is: the difference between running locally and hosting.</li>
+        <li>Publish an ASP.NET Core application and apply migrations to a production database.</li>
+        <li>State the final-project requirements and how they will be assessed.</li>
+      </ol>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 4 ─ Agenda -->
+<section class="slide">
+  <p class="eyebrow">Agenda</p>
+  <h2>Three hours, two breaks</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <table>
+        <thead><tr><th style="width:34px">#</th><th>Block</th><th class="center" style="width:64px">Min</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Recap and objectives</td><td class="center">10</td></tr>
+          <tr><td>2</td><td>How to find a bug — the method</td><td class="center">20</td></tr>
+          <tr><td>3</td><td>Demo: the debugger</td><td class="center">25</td></tr>
+          <tr><td>4</td><td class="muted">Break</td><td class="center">10</td></tr>
+          <tr><td>5</td><td>Error pages: development vs. production</td><td class="center">20</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <thead><tr><th style="width:34px">#</th><th>Block</th><th class="center" style="width:64px">Min</th></tr></thead>
+        <tbody>
+          <tr><td>6</td><td>Logging: levels, what to log, what never to log</td><td class="center">20</td></tr>
+          <tr><td>7</td><td class="muted">Break</td><td class="center">10</td></tr>
+          <tr><td>8</td><td>Deployment: the idea, then publishing</td><td class="center">30</td></tr>
+          <tr><td>9</td><td>Course wrap-up and the final project</td><td class="center">25</td></tr>
+          <tr><td>10</td><td>Q&amp;A</td><td class="center">10</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 5 ─ Section: the method -->
+<section class="slide slide--dark">
+  <div class="section-no">01</div>
+  <p class="eyebrow">Block 2 · 20 min</p>
+  <h2>How to find a bug</h2>
+  <p class="lead" style="margin-top:var(--space-4)">A method, not a talent. Nothing in this block belongs to any one language.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 6 ─ The method -->
+<section class="slide">
+  <p class="eyebrow">How to find a bug</p>
+  <h2>Debugging is a method, not a talent</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <p class="lead">Beginners debug by changing things until the error stops. That is slow, and it teaches nothing.</p>
+    <div class="cols cols-2">
+      <ol class="list list--tight">
+        <li><strong>Reproduce it reliably.</strong> A fault we cannot trigger on demand cannot be fixed, only guessed at. We write down the exact steps.</li>
+        <li><strong>Read the error message.</strong> All of it — the file, the line, the innermost cause. This is the step everyone skips.</li>
+        <li><strong>Form one hypothesis.</strong> "The id is arriving as 0." Not "something is wrong with the database."</li>
+        <li><strong>Test that one hypothesis</strong> — with a pause point or a log line.</li>
+      </ol>
+      <ol class="list list--tight" style="counter-reset:step 4">
+        <li><strong>Narrow the search.</strong> Confirm where the value is still right and where it is already wrong. Halve the interval each time.</li>
+        <li><strong>Fix the cause, not the symptom.</strong> Wrapping a crash in error handling so it stops crashing is not a fix.</li>
+        <li><strong>Verify.</strong> Reproduce the original steps and confirm the behaviour changed.</li>
+      </ol>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 7 ─ Diagram: the debugging loop -->
+<section class="slide">
+  <p class="eyebrow">How to find a bug</p>
+  <h2>The loop, and where we enter it</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <svg viewBox="0 0 1180 300" style="width:auto;height:288px;align-self:center" role="img"
+         aria-label="A debugging cycle entered by reading the actual error message, then reproduce, observe, hypothesise, test one change, confirm, looping back to observe">
+      <g style="font-family:var(--font-sans-text)">
+        <defs>
+          <marker id="d1a" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+            <path d="M0,0 L10,4 L0,8 Z" style="fill:var(--brand-base)"/>
+          </marker>
+          <marker id="d1g" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+            <path d="M0,0 L10,4 L0,8 Z" style="fill:var(--neutral-grey-110)"/>
+          </marker>
+        </defs>
+
+        <text x="0" y="72" font-size="13" font-weight="600" letter-spacing="1.6" style="fill:var(--brand-pressed)">ENTRY POINT</text>
+        <rect x="0" y="92" width="200" height="96" rx="8" style="fill:var(--brand-base)"/>
+        <text x="100" y="128" text-anchor="middle" font-size="17" font-weight="600" style="fill:#ffffff">Read the actual</text>
+        <text x="100" y="152" text-anchor="middle" font-size="17" font-weight="600" style="fill:#ffffff">error message</text>
+        <text x="100" y="174" text-anchor="middle" font-size="14" style="fill:var(--brand-tint-20)">all of it</text>
+        <line x1="206" y1="140" x2="242" y2="140" stroke-width="2.5" marker-end="url(#d1a)" style="stroke:var(--brand-base)"/>
+
+        <rect x="248" y="92" width="165" height="96" rx="8" style="fill:var(--surface-card);stroke:var(--border-default)"/>
+        <text x="330" y="126" text-anchor="middle" font-size="14" font-weight="600" style="fill:var(--brand-pressed)">1</text>
+        <text x="330" y="154" text-anchor="middle" font-size="19" font-weight="600" style="fill:var(--text-primary)">Reproduce</text>
+        <line x1="419" y1="140" x2="429" y2="140" stroke-width="2.5" marker-end="url(#d1a)" style="stroke:var(--brand-base)"/>
+
+        <rect x="435" y="92" width="165" height="96" rx="8" style="fill:var(--surface-card);stroke:var(--border-default)"/>
+        <text x="517" y="126" text-anchor="middle" font-size="14" font-weight="600" style="fill:var(--brand-pressed)">2</text>
+        <text x="517" y="154" text-anchor="middle" font-size="19" font-weight="600" style="fill:var(--text-primary)">Observe</text>
+        <line x1="606" y1="140" x2="616" y2="140" stroke-width="2.5" marker-end="url(#d1a)" style="stroke:var(--brand-base)"/>
+
+        <rect x="622" y="92" width="165" height="96" rx="8" style="fill:var(--surface-card);stroke:var(--border-default)"/>
+        <text x="704" y="126" text-anchor="middle" font-size="14" font-weight="600" style="fill:var(--brand-pressed)">3</text>
+        <text x="704" y="154" text-anchor="middle" font-size="19" font-weight="600" style="fill:var(--text-primary)">Hypothesise</text>
+        <line x1="793" y1="140" x2="803" y2="140" stroke-width="2.5" marker-end="url(#d1a)" style="stroke:var(--brand-base)"/>
+
+        <rect x="809" y="92" width="165" height="96" rx="8" style="fill:var(--surface-card);stroke:var(--border-default)"/>
+        <text x="891" y="122" text-anchor="middle" font-size="14" font-weight="600" style="fill:var(--brand-pressed)">4</text>
+        <text x="891" y="148" text-anchor="middle" font-size="19" font-weight="600" style="fill:var(--text-primary)">Test one</text>
+        <text x="891" y="170" text-anchor="middle" font-size="19" font-weight="600" style="fill:var(--text-primary)">change</text>
+        <line x1="980" y1="140" x2="990" y2="140" stroke-width="2.5" marker-end="url(#d1a)" style="stroke:var(--brand-base)"/>
+
+        <rect x="996" y="92" width="165" height="96" rx="8" style="fill:var(--brand-tint-40);stroke:var(--brand-tint-20)"/>
+        <text x="1078" y="126" text-anchor="middle" font-size="14" font-weight="600" style="fill:var(--brand-pressed)">5</text>
+        <text x="1078" y="154" text-anchor="middle" font-size="19" font-weight="600" style="fill:var(--brand-pressed)">Confirm</text>
+
+        <path d="M1078,194 C1078,252 1040,258 900,258 L700,258 C560,258 517,252 517,196"
+              fill="none" stroke-width="2.5" stroke-dasharray="7 5" marker-end="url(#d1g)" style="stroke:var(--neutral-grey-110)"/>
+        <text x="800" y="284" text-anchor="middle" font-size="16" font-weight="600" style="fill:var(--text-secondary)">still wrong? go round again — and halve the interval each time</text>
+
+        <text x="0" y="40" font-size="16" style="fill:var(--text-secondary)">One turn of the loop changes exactly one thing. Two changes at once and we learn nothing from either.</text>
+      </g>
+    </svg>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 8 ─ The rule -->
+<section class="slide slide--brand">
+  <p class="eyebrow">The rule that saves the most time</p>
+  <p class="statement" style="color:var(--neutral-white)">We are not looking for the bug.<br>
+    We are looking for the first place the state is wrong.</p>
+  <div class="rule"></div>
+  <p class="lead">Everything after that point is a consequence. The crash is usually a long way downstream of the mistake.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 9 ─ Three tools -->
+<section class="slide">
+  <p class="eyebrow">How to find a bug</p>
+  <h2>Three tools, three different purposes</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <div class="cols cols-3 cols--auto">
+      <div class="card card--elevated">
+        <span class="badge">Now</span>
+        <h3 style="margin-top:var(--space-2)">The debugger</h3>
+        <p>Inspecting state <strong>at a moment</strong>, in detail. Every variable, at once, without editing the code.</p>
+      </div>
+      <div class="card card--elevated">
+        <span class="badge badge--neutral">Later</span>
+        <h3 style="margin-top:var(--space-2)">Logging</h3>
+        <p>What happened <strong>over time</strong> — especially on a machine we cannot pause and poke at.</p>
+      </div>
+      <div class="card card--elevated">
+        <span class="badge badge--neutral">Session 01</span>
+        <h3 style="margin-top:var(--space-2)">Browser DevTools</h3>
+        <p>What actually <strong>crossed the wire</strong>: the method, the path, the status code, the headers.</p>
+      </div>
+    </div>
+    <div class="callout" style="margin-top:var(--space-6)">Choosing the wrong one costs hours. "It returns the wrong page" is a DevTools question. "The value is wrong by the time it gets here" is a debugger question. "It failed once, at 3 a.m., for one user" is a logging question.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 10 ─ What a debugger does -->
+<section class="slide">
+  <p class="eyebrow">How to find a bug</p>
+  <h2>What a debugger actually does</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <p class="lead">A <strong>breakpoint</strong> tells the running program to pause on a line, <em>before</em> executing it. While paused, the program is frozen and inspectable.</p>
+    <div class="cols cols-2">
+      <table>
+        <thead><tr><th style="width:130px">Action</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><th>Continue</th><td>Run until the next breakpoint.</td></tr>
+          <tr><th>Step over</th><td>Run this line; do not go inside the calls it makes.</td></tr>
+          <tr><th>Step into</th><td>Go inside the call on this line.</td></tr>
+          <tr><th>Step out</th><td>Finish this piece of code and return to whoever called it.</td></tr>
+        </tbody>
+      </table>
+      <div class="stack">
+        <div class="card"><h3>Locals</h3><p>Every variable in scope, right now, with its current value.</p></div>
+        <div class="card"><h3>Watch</h3><p>Expressions we chose to keep an eye on, re-evaluated at every pause.</p></div>
+        <div class="card"><h3>Call stack</h3><p>Who called whom to get here. Read it bottom-up to answer "how did we reach this line?"</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 11 ─ Not for emergencies -->
+<section class="slide slide--brand">
+  <p class="eyebrow">Said plainly</p>
+  <p class="statement" style="color:var(--neutral-white)">A debugger is not for emergencies.</p>
+  <div class="rule"></div>
+  <p class="lead">Stepping through code we just wrote — <em>while it works</em> — is the fastest way to learn what it really does. Most people first open a debugger in a panic, years too late.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 12 ─ Section: demo the debugger -->
+<section class="slide slide--dark">
+  <div class="section-no">02</div>
+  <p class="eyebrow">Block 3 · 25 min · demo</p>
+  <h2>The debugger, on a real bug</h2>
+  <p class="lead" style="margin-top:var(--space-4)">From here on we name the technology: .NET 10, ASP.NET Core MVC, and the editor's debugger.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 13 ─ The 500, promised in Session 01 -->
+<section class="slide">
+  <p class="eyebrow">Demo · the promise from Session 01</p>
+  <h2>We start by breaking it on purpose</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+      <div class="stack">
+<pre><span class="k">public</span> <span class="h">IActionResult</span> Details(<span class="k">int</span> id)
+{
+    <span class="k">throw new</span> <span class="h">InvalidOperationException</span>(<span class="h">"boom"</span>);
+}</pre>
+        <p class="body">We request <code class="inline">/articles/2</code>, and we open the Network tab from Session 01. The row is red. The status is <strong>500</strong>.</p>
+      </div>
+      <div class="card card--elevated center">
+        <span class="badge badge--danger badge--mono">500</span>
+        <h3 style="margin-top:var(--space-3)">Session 01, verbatim</h3>
+        <p>"When your app returns a 500 in Session 10, that is your own code throwing an exception. A 404 is the server answering <em>correctly</em>."</p>
+        <p><strong>That session is now cashed in.</strong> 4xx is the caller's mistake; 5xx is ours. Everything in this block is about the second kind.</p>
+      </div>
+    </div>
+    <div class="callout">The exception is the honest part. The rest of this block is about seeing it — as a developer — and hiding it — from everyone else.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 14 ─ The planted bug -->
+<section class="slide">
+  <p class="eyebrow">Demo · live investigation</p>
+  <h2>A planted bug, found with the debugger</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <p class="lead"><code class="inline">Details</code> returns 404 for an article that exists. The parameter is named <code class="inline">articleId</code>; the route says <code class="inline">{id}</code> — Session 04's contract, broken on purpose.</p>
+    <div class="cols cols-2">
+      <ol class="list list--tight">
+        <li>We press <strong>F5</strong> — in VS Code with the C# Dev Kit, or in Visual Studio. The app starts with the debugger attached.</li>
+        <li>We set a breakpoint on the first line of <code class="inline">Details</code> and request <code class="inline">/articles/2</code>. Execution pauses.</li>
+        <li><strong>Locals</strong>: <code class="inline">id</code> is <code class="inline">0</code>, not <code class="inline">2</code>. <em>There is the first wrong value.</em></li>
+        <li><strong>Call stack</strong>: we read who invoked the action.</li>
+      </ol>
+      <ol class="list list--tight" style="counter-reset:step 4">
+        <li><strong>Watch</strong>: we add <code class="inline">_context.Articles.Count()</code> and evaluate it against the live database while paused.</li>
+        <li>We step over <code class="inline">FirstOrDefaultAsync</code> and watch <code class="inline">article</code> become <code class="inline">null</code>.</li>
+        <li>Diagnosis: model binding never matched a value to the parameter. We fix the name, and we verify by repeating step 2.</li>
+      </ol>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 15 ─ Beyond breakpoints -->
+<section class="slide">
+  <p class="eyebrow">Demo · three more things</p>
+  <h2>Past the plain breakpoint</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <div class="cols cols-3 cols--auto">
+      <div class="card">
+        <span class="badge badge--mono">id == 42</span>
+        <h3 style="margin-top:var(--space-2)">Conditional breakpoints</h3>
+        <p>Right-click a breakpoint and give it a condition. Priceless inside a loop over 500 rows, where stopping every time is useless.</p>
+      </div>
+      <div class="card">
+        <span class="badge badge--danger">on throw</span>
+        <h3 style="margin-top:var(--space-2)">Break where it was thrown</h3>
+        <p>Breaking on a thrown exception stops us <em>where</em> the exception happened, not where it finally surfaced. Those are rarely the same place.</p>
+      </div>
+      <div class="card">
+        <span class="badge badge--neutral badge--mono">dotnet watch</span>
+        <h3 style="margin-top:var(--space-2)">Hot reload</h3>
+        <p>Editing while the app runs — the thing that has been re-rendering our pages without a restart since Session 02.</p>
+      </div>
+    </div>
+    <div class="callout" style="margin-top:var(--space-6)">The debugger evaluates expressions against the live process. A watch on a database query runs a real query, against the real data, at the moment we are paused.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 16 ─ Section: error pages -->
+<section class="slide slide--dark">
+  <div class="section-no">03</div>
+  <p class="eyebrow">Block 5 · 20 min · demo</p>
+  <h2>Error pages: two audiences</h2>
+  <p class="lead" style="margin-top:var(--space-4)">The same exception. Two completely different screens — and the same status code.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 17 ─ Two audiences -->
+<section class="slide">
+  <p class="eyebrow">The idea</p>
+  <h2>When something throws, who is looking?</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <table>
+      <thead><tr><th style="width:22%"></th><th style="width:39%">Us, developing</th><th>A user, on the live site</th></tr></thead>
+      <tbody>
+        <tr><th>Needs</th><td>The error, the trace of how we got there, the line of code, the query.</td><td>"Something went wrong. Please try again."</td></tr>
+        <tr><th>Must not see</th><td>—</td><td>File paths, source code, database connection details, table names, versions.</td></tr>
+        <tr><th>Where the detail goes</th><td>Straight onto the screen.</td><td>Into the log, where only we can read it.</td></tr>
+      </tbody>
+    </table>
+    <div class="callout callout--warn" style="font-size:var(--fs-slide-body);line-height:var(--lh-slide-body)">
+      A full error trace on a public site tells an attacker which framework we use, which versions, how our files are laid out, and often the structure of our database. It is free reconnaissance.
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 18 ─ The rule -->
+<section class="slide slide--brand">
+  <p class="eyebrow">The rule</p>
+  <p class="statement" style="color:var(--neutral-white)">Detailed diagnostics in development.<br>A generic apology in production.</p>
+  <div class="rule"></div>
+  <p class="lead">The real details still exist — they go to the log. The user gets an apology and a way forward; we get the evidence.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 19 ─ Program.cs -->
+<section class="slide">
+  <p class="eyebrow">In practice · .NET 10</p>
+  <h2>The template already wrote this — now it means something</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre><span class="c">// Program.cs</span>
+<span class="k">if</span> (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler(<span class="h">"/Home/Error"</span>);
+    app.UseHsts();
+}
+
+<span class="c">// no-exception status codes get a friendly page too</span>
+app.UseStatusCodePagesWithReExecute(<span class="h">"/Home/Error/{0}"</span>);</pre>
+      <ul class="list list--tight">
+        <li>In <strong>Development</strong> the detailed page is on by default — no line of code needed.</li>
+        <li>Anywhere else, the exception handler re-runs the request at <code class="inline">/Home/Error</code> and shows the generic page.</li>
+        <li>The last line covers a <code class="inline">NotFound()</code> — a 404 with no exception behind it, which the handler above would never see.</li>
+      </ul>
+    </div>
+    <div class="callout"><code class="inline">Properties/launchSettings.json</code> is where the <code class="inline">Development</code> environment name comes from on our own machine. It is a local file, and it is not what runs on a server.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 20 ─ Both pages, same 500 -->
+<section class="slide">
+  <p class="eyebrow">Demo · both screens</p>
+  <h2>Same exception, same status code, different disclosure</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <div class="stack">
+        <span class="badge">Development</span>
+<pre>$ <span class="k">dotnet run</span></pre>
+        <p class="body sm">The <strong>developer exception page</strong>: the message, the stack trace, the highlighted source line, the request headers, the route values. Everything we asked for on the previous slide.</p>
+      </div>
+      <div class="stack">
+        <span class="badge badge--warning">Production</span>
+<pre>$ <span class="k">ASPNETCORE_ENVIRONMENT</span>=Production dotnet run
+<span class="c"># PowerShell:</span>
+$env:<span class="k">ASPNETCORE_ENVIRONMENT</span>=<span class="h">"Production"</span>; dotnet run</pre>
+        <p class="body sm">The generic <code class="inline">/Home/Error</code> page. No message, no trace, no file names — an apology and nothing else.</p>
+      </div>
+    </div>
+    <div class="callout callout--warn" style="font-size:var(--fs-slide-body);line-height:var(--lh-slide-body)">
+      We check DevTools for both: <strong>both return HTTP 500.</strong> Session 01 closes here — the status code is the same, the disclosure is not. The status code is for machines; the page is for people.
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 21 ─ Section: logging -->
+<section class="slide slide--dark">
+  <div class="section-no">04</div>
+  <p class="eyebrow">Block 6 · 20 min · talk and demo</p>
+  <h2>Logging</h2>
+  <p class="lead" style="margin-top:var(--space-4)">Levels, what to log, and what must never appear in a log as long as we live.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 22 ─ Levels -->
+<section class="slide">
+  <p class="eyebrow">The idea</p>
+  <h2>Six levels, and the question each one answers</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <p class="lead">Printing to the console does not survive deployment — on a server there is no console for anyone to watch. A logging framework adds levels, filtering, timestamps and somewhere durable to write.</p>
+    <table>
+      <thead><tr><th style="width:150px">Level</th><th style="width:34%">The question it answers</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><th><span class="badge badge--neutral badge--mono">Trace</span></th><td>Every detail, no matter how small.</td><td>Rarely switched on at all.</td></tr>
+        <tr><th><span class="badge badge--neutral badge--mono">Debug</span></th><td>What is happening internally?</td><td>"Query returned 12 rows."</td></tr>
+        <tr><th><span class="badge badge--mono">Information</span></th><td>What normal, notable thing happened?</td><td>"Article 42 created by Ada."</td></tr>
+        <tr><th><span class="badge badge--warning badge--mono">Warning</span></th><td>Odd — but we handled it.</td><td>"Article 999 not found."</td></tr>
+        <tr><th><span class="badge badge--danger badge--mono">Error</span></th><td>This operation failed.</td><td>"Saving article failed."</td></tr>
+        <tr><th><span class="badge badge--danger badge--mono">Critical</span></th><td>The application itself is in trouble.</td><td>"Database unreachable."</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 23 ─ Diagram: levels as a filter -->
+<section class="slide">
+  <p class="eyebrow">The idea</p>
+  <h2>A level is a filter, and the filter is configurable</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <svg viewBox="0 0 1180 372" style="width:auto;height:300px;align-self:center" role="img"
+         aria-label="The same six log events pass through a configurable minimum level: in development a Debug threshold lets five through, in production a Warning threshold lets three through">
+      <g style="font-family:var(--font-sans-text)">
+        <defs>
+          <marker id="d2a" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+            <path d="M0,0 L9,3.5 L0,7 Z" style="fill:var(--neutral-grey-110)"/>
+          </marker>
+        </defs>
+
+        <text x="0" y="18" font-size="13" font-weight="600" letter-spacing="1.4" style="fill:var(--text-secondary)">EVERY EVENT THE APP RAISES</text>
+        <text x="688" y="18" font-size="13" font-weight="600" letter-spacing="1.4" style="fill:var(--text-secondary)">MINIMUM LEVEL</text>
+        <text x="880" y="18" font-size="13" font-weight="600" letter-spacing="1.4" style="fill:var(--text-secondary)">WHAT REACHES THE OUTPUT</text>
+
+        <!-- Development band -->
+        <text x="0" y="60" font-size="17" font-weight="600" style="fill:var(--brand-pressed)">Development</text>
+        <rect x="0"   y="76" width="104" height="34" rx="6" style="fill:var(--surface-subtle);stroke:var(--border-default)"/>
+        <text x="52"  y="99" text-anchor="middle" font-size="14" style="fill:var(--text-secondary)">Trace</text>
+        <rect x="112" y="76" width="104" height="34" rx="6" style="fill:var(--surface-subtle);stroke:var(--border-default)"/>
+        <text x="164" y="99" text-anchor="middle" font-size="14" style="fill:var(--text-secondary)">Debug</text>
+        <rect x="224" y="76" width="104" height="34" rx="6" style="fill:var(--brand-tint-40);stroke:var(--brand-tint-20)"/>
+        <text x="276" y="99" text-anchor="middle" font-size="14" style="fill:var(--brand-pressed)">Information</text>
+        <rect x="336" y="76" width="104" height="34" rx="6" style="fill:#fff4ce;stroke:#f0d98a"/>
+        <text x="388" y="99" text-anchor="middle" font-size="14" style="fill:var(--color-warning)">Warning</text>
+        <rect x="448" y="76" width="104" height="34" rx="6" style="fill:#fde7e9;stroke:#f4c7c9"/>
+        <text x="500" y="99" text-anchor="middle" font-size="14" style="fill:var(--color-danger)">Error</text>
+        <rect x="560" y="76" width="104" height="34" rx="6" style="fill:#fde7e9;stroke:#f4c7c9"/>
+        <text x="612" y="99" text-anchor="middle" font-size="14" style="fill:var(--color-danger)">Critical</text>
+        <line x1="670" y1="93" x2="688" y2="93" stroke-width="2" marker-end="url(#d2a)" style="stroke:var(--neutral-grey-110)"/>
+
+        <rect x="694" y="52" width="150" height="82" rx="8" style="fill:var(--brand-base)"/>
+        <text x="769" y="82" text-anchor="middle" font-size="14" style="fill:var(--brand-tint-20)">at least</text>
+        <text x="769" y="108" text-anchor="middle" font-size="20" font-weight="600" style="fill:#ffffff">Debug</text>
+        <line x1="850" y1="93" x2="872" y2="93" stroke-width="2" marker-end="url(#d2a)" style="stroke:var(--neutral-grey-110)"/>
+
+        <rect x="880" y="76" width="88" height="34" rx="6" style="fill:var(--surface-subtle);stroke:var(--border-default)"/>
+        <text x="924" y="99" text-anchor="middle" font-size="13" style="fill:var(--text-secondary)">Debug</text>
+        <rect x="974" y="76" width="88" height="34" rx="6" style="fill:var(--brand-tint-40);stroke:var(--brand-tint-20)"/>
+        <text x="1018" y="99" text-anchor="middle" font-size="13" style="fill:var(--brand-pressed)">Info</text>
+        <rect x="1068" y="76" width="52" height="34" rx="6" style="fill:#fff4ce;stroke:#f0d98a"/>
+        <text x="1094" y="99" text-anchor="middle" font-size="13" style="fill:var(--color-warning)">W</text>
+        <rect x="1126" y="76" width="26" height="34" rx="6" style="fill:#fde7e9;stroke:#f4c7c9"/>
+        <text x="1139" y="99" text-anchor="middle" font-size="13" style="fill:var(--color-danger)">E</text>
+        <text x="880" y="136" font-size="15" style="fill:var(--text-secondary)">five of six get through — and Critical with them</text>
+
+        <line x1="0" y1="180" x2="1160" y2="180" stroke-width="1" stroke-dasharray="4 5" style="stroke:var(--border-default)"/>
+
+        <!-- Production band -->
+        <text x="0" y="228" font-size="17" font-weight="600" style="fill:var(--brand-pressed)">Production</text>
+        <rect x="0"   y="244" width="104" height="34" rx="6" style="fill:var(--surface-subtle);stroke:var(--border-default)"/>
+        <text x="52"  y="267" text-anchor="middle" font-size="14" style="fill:var(--text-disabled)">Trace</text>
+        <rect x="112" y="244" width="104" height="34" rx="6" style="fill:var(--surface-subtle);stroke:var(--border-default)"/>
+        <text x="164" y="267" text-anchor="middle" font-size="14" style="fill:var(--text-disabled)">Debug</text>
+        <rect x="224" y="244" width="104" height="34" rx="6" style="fill:var(--surface-subtle);stroke:var(--border-default)"/>
+        <text x="276" y="267" text-anchor="middle" font-size="14" style="fill:var(--text-disabled)">Information</text>
+        <rect x="336" y="244" width="104" height="34" rx="6" style="fill:#fff4ce;stroke:#f0d98a"/>
+        <text x="388" y="267" text-anchor="middle" font-size="14" style="fill:var(--color-warning)">Warning</text>
+        <rect x="448" y="244" width="104" height="34" rx="6" style="fill:#fde7e9;stroke:#f4c7c9"/>
+        <text x="500" y="267" text-anchor="middle" font-size="14" style="fill:var(--color-danger)">Error</text>
+        <rect x="560" y="244" width="104" height="34" rx="6" style="fill:#fde7e9;stroke:#f4c7c9"/>
+        <text x="612" y="267" text-anchor="middle" font-size="14" style="fill:var(--color-danger)">Critical</text>
+        <line x1="670" y1="261" x2="688" y2="261" stroke-width="2" marker-end="url(#d2a)" style="stroke:var(--neutral-grey-110)"/>
+
+        <rect x="694" y="220" width="150" height="82" rx="8" style="fill:var(--brand-shade-20)"/>
+        <text x="769" y="250" text-anchor="middle" font-size="14" style="fill:var(--brand-tint-20)">at least</text>
+        <text x="769" y="276" text-anchor="middle" font-size="20" font-weight="600" style="fill:#ffffff">Warning</text>
+        <line x1="850" y1="261" x2="872" y2="261" stroke-width="2" marker-end="url(#d2a)" style="stroke:var(--neutral-grey-110)"/>
+
+        <rect x="880" y="244" width="104" height="34" rx="6" style="fill:#fff4ce;stroke:#f0d98a"/>
+        <text x="932" y="267" text-anchor="middle" font-size="13" style="fill:var(--color-warning)">Warning</text>
+        <rect x="992" y="244" width="82" height="34" rx="6" style="fill:#fde7e9;stroke:#f4c7c9"/>
+        <text x="1033" y="267" text-anchor="middle" font-size="13" style="fill:var(--color-danger)">Error</text>
+        <rect x="1082" y="244" width="82" height="34" rx="6" style="fill:#fde7e9;stroke:#f4c7c9"/>
+        <text x="1123" y="267" text-anchor="middle" font-size="13" style="fill:var(--color-danger)">Critical</text>
+        <text x="880" y="304" font-size="15" style="fill:var(--text-secondary)">three get through — the rest are never written at all</text>
+
+        <text x="0" y="344" font-size="16" style="fill:var(--text-secondary)">Same code, same log statements, one setting changed. Nothing below the threshold is written, so the cost of a switched-off log line is close to nothing.</text>
+      </g>
+    </svg>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 24 ─ What to log -->
+<section class="slide">
+  <p class="eyebrow">The idea</p>
+  <h2>What to log, and what must never be logged</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <div class="cols cols-2">
+      <div class="stack">
+        <div class="card"><h3>Log the events, not the noise</h3><p>A log nobody reads is worse than no log — it hides the one line that mattered under ten thousand that did not.</p></div>
+        <div class="card"><h3>Include the identifiers</h3><p>Whatever we would need to investigate: which article, which user, which request. "An error occurred" helps nobody.</p></div>
+        <div class="card"><h3>Log at the boundaries</h3><p>Things entering the application, things leaving it, and every error we caught and handled quietly.</p></div>
+      </div>
+      <div class="stack">
+        <div class="card card--elevated">
+          <span class="badge badge--danger">Never</span>
+          <h3 style="margin-top:var(--space-2)">Secrets and personal data</h3>
+          <p>Passwords, tokens, database credentials, card numbers, anything private about a person.</p>
+          <p>Logs are copied to other machines, shipped to other services, and read by people who were never meant to see the underlying data. Once it is in a log, it is everywhere.</p>
+          <p><strong>This is a legal question as much as a technical one.</strong></p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 25 ─ ILogger injected -->
+<section class="slide">
+  <p class="eyebrow">In practice · .NET 10</p>
+  <h2>Logging is already registered — we just ask for it</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre><span class="k">public class</span> <span class="h">ArticlesController</span> : Controller
+{
+    <span class="k">private readonly</span> ApplicationDbContext _context;
+    <span class="k">private readonly</span> ILogger&lt;ArticlesController&gt; _logger;
+
+    <span class="k">public</span> <span class="h">ArticlesController</span>(ApplicationDbContext context,
+                              ILogger&lt;ArticlesController&gt; logger)
+    {
+        _context = context;
+        _logger = logger;
+    }
+}</pre>
+      <ul class="list list--tight">
+        <li><code class="inline">ILogger&lt;T&gt;</code> arrives by <strong>dependency injection</strong> — exactly the mechanism that hands us the database context since Session 07.</li>
+        <li>Nothing to configure, nothing to install. The type parameter is just the class doing the logging, so every line is stamped with where it came from.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 26 ─ Structured logging -->
+<section class="slide">
+  <p class="eyebrow">In practice · .NET 10</p>
+  <h2>Structured logging: the braces are not string formatting</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+<pre><span class="k">public async</span> Task&lt;IActionResult&gt; Details(<span class="k">int</span> id)
+{
+    <span class="k">var</span> article = <span class="k">await</span> _context.Articles.FindAsync(id);
+
+    <span class="k">if</span> (article <span class="k">is null</span>)
+    {
+        _logger.<span class="h">LogWarning</span>(<span class="h">"Article {ArticleId} missing."</span>, id);
+        <span class="k">return</span> NotFound();
+    }
+
+    _logger.<span class="h">LogInformation</span>(<span class="h">"Serving article {ArticleId}."</span>, id);
+    <span class="k">return</span> View(article);
+}</pre>
+      <div class="stack">
+        <div class="card card--brand">
+          <h3>Named placeholder</h3>
+          <p><code class="inline">{ArticleId}</code> is a name, not a position. The value is stored <em>beside</em> the message, so a log system can answer "show me every line where ArticleId = 42" across millions of rows.</p>
+        </div>
+        <div class="card">
+          <h3>String interpolation</h3>
+          <p>Writing <code class="inline">$"Article {id} saved"</code> produces the same text on screen and throws the structure away. Same output, none of the searchability.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 27 ─ appsettings levels -->
+<section class="slide">
+  <p class="eyebrow">In practice · .NET 10</p>
+  <h2>Where the threshold lives</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+<pre><span class="c">// appsettings.json</span>
+<span class="k">"Logging"</span>: {
+  <span class="k">"LogLevel"</span>: {
+    <span class="k">"Default"</span>: <span class="h">"Information"</span>,
+    <span class="k">"Microsoft.AspNetCore"</span>: <span class="h">"Warning"</span>,
+    <span class="k">"Microsoft.EntityFrameworkCore</span>
+<span class="k">      .Database.Command"</span>: <span class="h">"Information"</span>
+  }
+}</pre>
+      <ul class="list list--tight">
+        <li>Each key sets the threshold for one part of the application. <code class="inline">Default</code> catches everything else.</li>
+        <li>That last entry is what has been printing generated SQL to our console since Session 08. We switch it to <code class="inline">Warning</code> and watch the console go quiet.</li>
+        <li><code class="inline">appsettings.Development.json</code> overrides <code class="inline">appsettings.json</code>. That is how one codebase behaves differently in two places — no <code class="inline">if</code> statements anywhere.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 28 ─ Section: deployment -->
+<section class="slide slide--dark">
+  <div class="section-no">05</div>
+  <p class="eyebrow">Block 8 · 30 min · talk and demo</p>
+  <h2>Deployment</h2>
+  <p class="lead" style="margin-top:var(--space-4)">What has actually been running our site all course? A laptop. Let us fix that.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 29 ─ What deployment is -->
+<section class="slide">
+  <p class="eyebrow">The idea</p>
+  <h2>What has to be true for it to be a website?</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <table>
+      <thead><tr><th style="width:36%">Requirement</th><th style="width:30%">On our machine</th><th>In production</th></tr></thead>
+      <tbody>
+        <tr><th>A machine that is always on</th><td>A laptop, until the lid closes.</td><td>A server, or a cloud service.</td></tr>
+        <tr><th>A public address</th><td><code class="inline">localhost:5001</code> — visible to nobody else.</td><td>A domain name, resolved by DNS (Session 01).</td></tr>
+        <tr><th>Encrypted traffic</th><td>A development certificate the machine trusts.</td><td>A real certificate, issued for that domain.</td></tr>
+        <tr><th>A reachable database</th><td>A file next to the project.</td><td>A hosted database with its own credentials.</td></tr>
+        <tr><th>Restart after a crash</th><td>We press play again.</td><td>The host does it, unattended, at 3 a.m.</td></tr>
+        <tr><th>Configuration and secrets</th><td>A file in the project folder.</td><td>Settings held by the host, outside the code.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 30 ─ Build and host -->
+<section class="slide">
+  <p class="eyebrow">The idea</p>
+  <h2>Every deployment, in any technology, is two steps</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <div class="cols cols-2 cols--auto">
+      <div class="card card--brand">
+        <span class="badge">Step 1</span>
+        <h3 style="margin-top:var(--space-2)">Build</h3>
+        <p>Turn source code into an optimised set of files that can be run. Not our source — the <strong>output</strong>.</p>
+      </div>
+      <div class="card card--brand">
+        <span class="badge">Step 2</span>
+        <h3 style="margin-top:var(--space-2)">Host</h3>
+        <p>Put those files on a machine configured to run them and answer requests, forever, without us.</p>
+      </div>
+    </div>
+    <p class="lead" style="margin-top:var(--space-5)">Three ways to arrange the second step:</p>
+    <div class="cols cols-3 cols--auto">
+      <div class="card"><h3>Our own server</h3><p>Full control, and full responsibility: operating system, updates, certificates, backups, the lot.</p></div>
+      <div class="card"><h3>A platform service</h3><p>We supply the application; they supply the machine, the restarts and the certificate.</p></div>
+      <div class="card"><h3>Containers</h3><p>We ship the application <em>and</em> its environment, so "works on my machine" becomes "ships as my machine".</p></div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 31 ─ Environments -->
+<section class="slide">
+  <p class="eyebrow">The idea</p>
+  <h2>The same code must behave differently in different places</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <div class="cols cols-2">
+      <div class="card card--elevated center">
+        <span class="badge badge--danger">Not this</span>
+        <h3 style="margin-top:var(--space-3)">A condition in the code</h3>
+        <p>Deciding inside the program which database to use, or whether to show the error detail, means the decision ships with the code and can only change by changing the code.</p>
+      </div>
+      <div class="card card--elevated center">
+        <span class="badge badge--success">This</span>
+        <h3 style="margin-top:var(--space-3)">A named environment, set outside</h3>
+        <p>The machine tells the application which environment it is running in. The application loads the settings for that name: verbose errors here, silence there; this database here, that one there.</p>
+      </div>
+    </div>
+    <div class="callout">One codebase, several environments, no branches and no commented-out lines. We saw the mechanism already in the logging settings — the same idea decides every other difference too.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 32 ─ Diagram: the publish pipeline -->
+<section class="slide">
+  <p class="eyebrow">The idea</p>
+  <h2>What travels, and what changes on the way</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <svg viewBox="0 0 1180 372" style="width:auto;height:300px;align-self:center" role="img"
+         aria-label="Source on a development machine is built in release mode into a publish output, which is copied to the hosting environment where configuration, connection string and environment name change; separately the database migration is applied after a backup, marked as the step that carries risk">
+      <g style="font-family:var(--font-sans-text)">
+        <defs>
+          <marker id="d3a" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+            <path d="M0,0 L10,4 L0,8 Z" style="fill:var(--brand-base)"/>
+          </marker>
+          <marker id="d3w" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+            <path d="M0,0 L10,4 L0,8 Z" style="fill:var(--color-warning)"/>
+          </marker>
+        </defs>
+
+        <rect x="0" y="40" width="250" height="104" rx="8" style="fill:var(--surface-card);stroke:var(--border-default)"/>
+        <text x="125" y="76" text-anchor="middle" font-size="19" font-weight="600" style="fill:var(--text-primary)">Source</text>
+        <text x="125" y="102" text-anchor="middle" font-size="15" style="fill:var(--text-secondary)">our machine</text>
+        <text x="125" y="124" text-anchor="middle" font-size="15" style="fill:var(--text-secondary)">code, views, settings file</text>
+
+        <line x1="256" y1="92" x2="298" y2="92" stroke-width="2.5" marker-end="url(#d3a)" style="stroke:var(--brand-base)"/>
+        <text x="277" y="166" text-anchor="middle" font-size="14" font-weight="600" style="fill:var(--brand-pressed)">build</text>
+
+        <rect x="304" y="40" width="250" height="104" rx="8" style="fill:var(--surface-card);stroke:var(--border-default)"/>
+        <text x="429" y="76" text-anchor="middle" font-size="19" font-weight="600" style="fill:var(--text-primary)">Build, Release</text>
+        <text x="429" y="102" text-anchor="middle" font-size="15" style="fill:var(--text-secondary)">optimised</text>
+        <text x="429" y="124" text-anchor="middle" font-size="15" style="fill:var(--text-secondary)">debug information stripped</text>
+
+        <line x1="560" y1="92" x2="602" y2="92" stroke-width="2.5" marker-end="url(#d3a)" style="stroke:var(--brand-base)"/>
+        <text x="581" y="166" text-anchor="middle" font-size="14" font-weight="600" style="fill:var(--brand-pressed)">publish</text>
+
+        <rect x="608" y="40" width="250" height="104" rx="8" style="fill:var(--brand-tint-40);stroke:var(--brand-tint-20)"/>
+        <text x="733" y="76" text-anchor="middle" font-size="19" font-weight="600" style="fill:var(--brand-pressed)">Publish output</text>
+        <text x="733" y="102" text-anchor="middle" font-size="15" style="fill:var(--brand-pressed)">the artifact that travels</text>
+        <text x="733" y="124" text-anchor="middle" font-size="15" style="fill:var(--brand-pressed)">no source files in it</text>
+
+        <line x1="864" y1="92" x2="906" y2="92" stroke-width="2.5" marker-end="url(#d3a)" style="stroke:var(--brand-base)"/>
+        <text x="885" y="166" text-anchor="middle" font-size="14" font-weight="600" style="fill:var(--brand-pressed)">deploy</text>
+
+        <rect x="912" y="40" width="250" height="104" rx="8" style="fill:var(--brand-base)"/>
+        <text x="1037" y="76" text-anchor="middle" font-size="19" font-weight="600" style="fill:#ffffff">Hosting environment</text>
+        <text x="1037" y="102" text-anchor="middle" font-size="15" style="fill:var(--brand-tint-20)">always on, public address</text>
+        <text x="1037" y="124" text-anchor="middle" font-size="15" style="fill:var(--brand-tint-20)">real users, real data</text>
+
+        <rect x="912" y="192" width="250" height="76" rx="8" style="fill:var(--surface-card);stroke:var(--brand-tint-20)"/>
+        <text x="1037" y="218" text-anchor="middle" font-size="15" font-weight="600" style="fill:var(--brand-pressed)">changes here, not in code</text>
+        <text x="1037" y="240" text-anchor="middle" font-size="14" style="fill:var(--text-secondary)">environment name ·</text>
+        <text x="1037" y="258" text-anchor="middle" font-size="14" style="fill:var(--text-secondary)">connection string · secrets</text>
+        <line x1="1037" y1="150" x2="1037" y2="186" stroke-width="2" marker-end="url(#d3a)" style="stroke:var(--brand-base)"/>
+
+        <rect x="304" y="232" width="554" height="96" rx="8" style="fill:#fff4ce;stroke:#f0d98a"/>
+        <text x="330" y="264" font-size="13" font-weight="600" letter-spacing="1.4" style="fill:var(--color-warning)">THE STEP THAT CARRIES RISK</text>
+        <text x="330" y="292" font-size="18" font-weight="600" style="fill:var(--color-warning)">Back up &#8594; review the script &#8594; apply the migration</text>
+        <text x="330" y="314" font-size="15" style="fill:var(--color-warning)">The production database is not ours to guess at. It already holds real data.</text>
+        <line x1="864" y1="280" x2="906" y2="280" stroke-width="2.5" marker-end="url(#d3w)" style="stroke:var(--color-warning)"/>
+        <text x="960" y="306" font-size="15" style="fill:var(--text-secondary)">then, and only then, the new code</text>
+
+        <text x="0" y="20" font-size="16" style="fill:var(--text-secondary)">The code is identical at every hop. Everything that differs between here and there is configuration.</text>
+      </g>
+    </svg>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 33 ─ dotnet publish -->
+<section class="slide">
+  <p class="eyebrow">In practice · .NET 10</p>
+  <h2>The artifact: what actually gets deployed</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <div class="stack">
+<pre>$ <span class="k">dotnet publish -c Release -o ./publish</span>
+
+$ <span class="k">ls</span> ./publish
+SimpleBlog.dll   SimpleBlog.deps.json
+appsettings.json  web.config
+wwwroot/          <span class="c"># and the runtime files</span></pre>
+        <div class="callout"><strong>No <code class="inline">.cs</code> files anywhere.</strong> This folder is the artifact. This is what gets deployed — not our project folder.</div>
+      </div>
+      <ul class="list list--tight">
+        <li><code class="inline">-c Release</code>: optimised, with debug information stripped. <code class="inline">Debug</code> is for our machine only, and it is slower.</li>
+        <li><code class="inline">wwwroot</code> travels as-is — our stylesheets and Bootstrap files from Session 06 are static content, not compiled.</li>
+        <li><code class="inline">appsettings.json</code> travels too. Which is exactly why the production password must not be in it.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 34 ─ Publishing to Azure -->
+<section class="slide">
+  <p class="eyebrow">In practice · demo from the front</p>
+  <h2>Publishing to Azure App Service</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <div class="stack">
+        <span class="badge badge--neutral">From the command line</span>
+<pre>$ <span class="k">az webapp up</span> --name simpleblog-ada \
+    --runtime <span class="h">"DOTNET:10"</span> --sku <span class="h">F1</span></pre>
+        <p class="body sm">One command: it creates the hosting plan, creates the web app, builds, uploads and gives us a public URL.</p>
+      </div>
+      <div class="stack">
+        <span class="badge badge--neutral">From the editor</span>
+        <p class="body sm">VS Code: the Azure extension &#8594; <strong>Deploy to Web App</strong>.</p>
+        <p class="body sm">Visual Studio: right-click the project &#8594; <strong>Publish</strong> &#8594; App Service &#8594; create a <strong>publish profile</strong> &#8594; Publish.</p>
+        <p class="body sm">We open the <code class="inline">Properties/PublishProfiles/*.pubxml</code> file it writes: a saved recipe of where and how to publish. Not magic, and worth reading once.</p>
+      </div>
+    </div>
+    <div class="callout"><strong>Accounts.</strong> We run this once from the front, on one account, and everybody watches the same deployment. Repeating it individually needs an Azure account of your own — the free <code class="inline">F1</code> tier is enough, and a student account covers it.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 35 ─ Configure the deployed app -->
+<section class="slide">
+  <p class="eyebrow">In practice · where the real lesson is</p>
+  <h2>Publishing was the easy part. Now configure it.</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <div class="cols cols-3 cols--auto">
+      <div class="card">
+        <span class="badge badge--mono">Production</span>
+        <h3 style="margin-top:var(--space-2)">The environment name</h3>
+        <p><code class="inline">ASPNETCORE_ENVIRONMENT</code> is <code class="inline">Production</code> by default on App Service. That single value is what switches off the developer exception page.</p>
+      </div>
+      <div class="card card--brand">
+        <span class="badge">Critical</span>
+        <h3 style="margin-top:var(--space-2)">The connection string</h3>
+        <p>Set it as an <strong>application setting</strong> in the portal — never in the committed <code class="inline">appsettings.json</code>. Session 07's warning, now unavoidable: the host's setting wins over the file.</p>
+      </div>
+      <div class="card">
+        <span class="badge badge--success">On</span>
+        <h3 style="margin-top:var(--space-2)">HTTPS</h3>
+        <p>The platform supplies a certificate for its domain. We confirm the setting that refuses plain HTTP altogether.</p>
+      </div>
+    </div>
+    <div class="callout callout--warn" style="margin-top:var(--space-6);font-size:var(--fs-slide-body);line-height:var(--lh-slide-body)">
+      Following along here needs an Azure account of your own. Watching is enough — the three settings are the point, and every hosting platform on earth has the same three.
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 36 ─ Production migrations -->
+<section class="slide">
+  <p class="eyebrow">In practice · .NET 10</p>
+  <h2>Migrations against a database that has real data in it</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <div class="stack">
+<pre>$ <span class="k">dotnet ef migrations script</span> --idempotent \
+    -o migrate.sql</pre>
+        <p class="body sm"><code class="inline">--idempotent</code> produces SQL that checks what has already been applied, so running it twice is harmless. We open the file and read the guard around each migration.</p>
+        <div class="callout callout--warn">Running <code class="inline">dotnet ef database update</code> against production from a laptop is not a habit to acquire. Generate the script, review it, let a pipeline or a DBA apply it.</div>
+      </div>
+      <ol class="list list--tight">
+        <li><strong>Back up</strong> the production database. Every time.</li>
+        <li><strong>Review the script</strong> — especially anything that drops or renames a column (Session 08's warning about guessed renames).</li>
+        <li><strong>Apply</strong> the script.</li>
+        <li><strong>Deploy</strong> the new code.</li>
+        <li><strong>Verify</strong>, and know how to roll back before we need to.</li>
+      </ol>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 37 ─ The tempting shortcut -->
+<section class="slide">
+  <p class="eyebrow">In practice · one honest caveat</p>
+  <h2>The tempting shortcut, and why it is a trap</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <div class="cols cols-2">
+      <div class="stack">
+<pre><span class="c">// convenient. also a trap.</span>
+context.Database.<span class="h">Migrate</span>();</pre>
+        <p class="body">Calling this at start-up means the application updates its own schema whenever it launches. For a course project that is genuinely fine, and we may well use it.</p>
+      </div>
+      <div class="stack">
+        <div class="card card--elevated">
+          <h3>Why it is not the professional default</h3>
+          <p>With several copies of the application starting at once, they race each other to alter the same schema.</p>
+          <p>It also grants the running web application permission to change the database structure — a permission a web front end should not hold.</p>
+          <p><strong>Fine for a student project. Say out loud that you know why it is not the default.</strong></p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 38 ─ Section: wrap-up -->
+<section class="slide slide--dark">
+  <div class="section-no">06</div>
+  <p class="eyebrow">Block 9 · 25 min</p>
+  <h2>The course, and the final project</h2>
+  <p class="lead" style="margin-top:var(--space-4)">Ten sessions in one page, the honest list of what we did not cover, and the project you will defend.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 39 ─ The arc -->
+<section class="slide">
+  <p class="eyebrow">Course wrap-up</p>
+  <h2>The whole course, one line per session</h2>
+  <div class="rule"></div>
+  <div class="content center">
+<pre><span class="k">01</span>  a request and a response are just text
+<span class="k">02</span>  a framework handles the repetitive part
+<span class="k">03</span>  a controller decides what happens              <span class="c">&#8592; our code</span>
+<span class="k">04</span>  a route decides which controller
+<span class="k">05</span>  a template turns data into HTML on the server
+<span class="k">06</span>  a view model carries exactly what a page needs
+<span class="k">07</span>  a database outlives the process; an ORM bridges the two
+<span class="k">08</span>  migrations version the schema alongside the code
+<span class="k">09</span>  forms change data &#8212; and every input is untrusted
+<span class="ok">10</span>  <span class="ok">we can find what broke, and put it where others can reach it</span></pre>
+    <p class="lead" style="margin-top:var(--space-6);text-align:center">Every one of those is a general web-development idea first, and a .NET feature second. That order is the point of the course.</p>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 40 ─ What we did not cover -->
+<section class="slide">
+  <p class="eyebrow">Course wrap-up</p>
+  <h2>What thirty hours could not cover — so the list is not finished</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <ul class="list list--tight">
+        <li><strong>Authentication and authorisation</strong> — logging in, roles, who may do what. ASP.NET Core Identity is the built-in answer, and it is the natural next thing to learn.</li>
+        <li><strong>Web APIs and JSON</strong> — the same controllers returning data instead of HTML, for mobile apps and front-end frameworks.</li>
+        <li><strong>Unit and integration testing</strong> — proving the application still works without clicking through it by hand.</li>
+        <li><strong>Front-end frameworks</strong> — React, Angular, Blazor: the browser doing more of the work.</li>
+      </ul>
+      <ul class="list list--tight">
+        <li><strong>Caching and performance</strong> — not asking the database the same question a thousand times a second.</li>
+        <li><strong>Background jobs</strong> — work that outlives a request: emails, imports, scheduled tasks.</li>
+        <li><strong>Docker</strong> — shipping the application together with its environment.</li>
+        <li><strong>CI/CD</strong> — a pipeline that builds, tests and deploys on every commit, so the procedure from the last block happens without anyone remembering it.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 41 ─ The final project brief -->
+<section class="slide slide--brand">
+  <p class="eyebrow">The final project</p>
+  <p class="statement" style="color:var(--neutral-white)">Build a data-driven ASP.NET Core MVC application<br>of your own choosing — not the blog.</p>
+  <div class="rule"></div>
+  <p class="lead">Pick a domain you actually care about: a recipe collection, a football league, a film library, a bug tracker. Two entities, one relationship, and everything this course has taught you.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 42 ─ Requirements -->
+<section class="slide">
+  <p class="eyebrow">The final project</p>
+  <h2>Minimum requirements</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <ul class="list list--tight">
+        <li>At least <strong>two related entities</strong> (one-to-many), created code-first with migrations.</li>
+        <li>Full <strong>CRUD</strong> for the main entity, with all four operations working.</li>
+        <li><strong>Server-side validation</strong> with meaningful messages, plus client-side hints.</li>
+        <li><strong>Anti-forgery tokens</strong> on every POST; nothing that changes state on a GET.</li>
+        <li>At least <strong>five views</strong> using a shared layout and at least one partial.</li>
+      </ul>
+      <ul class="list list--tight">
+        <li><strong>Responsive</strong> with Bootstrap; usable at 375px and at 1440px.</li>
+        <li><strong>Designed URLs</strong> — readable and consistent, on Session 04's principles.</li>
+        <li><strong>Seed data</strong>, so the application is not empty on first run.</li>
+        <li><strong>View models</strong>, not entities, wherever a page needs more or less than one entity.</li>
+        <li>A <code class="inline">README.md</code>: what it does, how to run it, what you would do next.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 43 ─ Assessment -->
+<section class="slide">
+  <p class="eyebrow">The final project</p>
+  <h2>How it is assessed</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+      <table>
+        <thead><tr><th>Criterion</th><th class="center" style="width:100px">Weight</th></tr></thead>
+        <tbody>
+          <tr><td>It works — the required features actually function</td><td class="center"><strong>30 %</strong></td></tr>
+          <tr><td>Correct MVC structure and separation of concerns</td><td class="center"><strong>20 %</strong></td></tr>
+          <tr><td>Data layer: modelling, migrations, sensible queries</td><td class="center"><strong>20 %</strong></td></tr>
+          <tr><td>Validation and security: validation, CSRF, no state-changing GETs</td><td class="center"><strong>15 %</strong></td></tr>
+          <tr><td>Presentation: layout, responsiveness, URL design</td><td class="center"><strong>10 %</strong></td></tr>
+          <tr><td>The defence: can you explain your own code?</td><td class="center"><strong>5 %</strong></td></tr>
+        </tbody>
+      </table>
+      <div class="card card--elevated">
+        <span class="badge">10 minutes</span>
+        <h3 style="margin-top:var(--space-2)">The defence</h3>
+        <p>Demonstrate the application, then answer questions about any part of your code.</p>
+        <p>Presenting something you cannot justify is the fastest way to lose marks — so write code you understand.</p>
+        <p class="muted">Submission format and defence dates are announced separately.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 44 ─ How to approach it -->
+<section class="slide">
+  <p class="eyebrow">The final project</p>
+  <h2>How to approach it</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <div class="cols cols-2">
+      <ol class="list list--tight">
+        <li><strong>Choose a domain</strong> and write down the two entities and the relationship between them, in one sentence, before writing any code.</li>
+        <li><strong>Build it in the order the course did</strong>: routes and controllers, then views and layout, then the model and migrations, then CRUD and validation, then error handling and polish.</li>
+      </ol>
+      <ol class="list list--tight" style="counter-reset:step 2">
+        <li><strong>Commit as you go</strong>, with meaningful messages. The history is part of the story you tell at the defence.</li>
+        <li><strong>Write the <code class="inline">README.md</code> first</strong>, not last. It forces you to decide what the application actually is while it is still cheap to change your mind.</li>
+      </ol>
+    </div>
+    <div class="callout" style="margin-top:var(--space-6)">Scope it so that everything on the requirements list works, rather than so that half of an ambitious idea works. A small, complete, defensible application scores higher than a large broken one — every time.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 45 ─ Misconceptions 1 -->
+<section class="slide">
+  <p class="eyebrow">Wrap-up</p>
+  <h2>Common misconceptions · debugging and errors</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <table>
+      <thead><tr><th style="width:46%">Misconception</th><th>Correction</th></tr></thead>
+      <tbody>
+        <tr><td>"Debugging means adding print statements."</td><td>The debugger shows every variable at once, without editing a single line of code.</td></tr>
+        <tr><td>"The debugger is for emergencies."</td><td>Stepping through code that <em>works</em> is the fastest way to understand it.</td></tr>
+        <tr><td>"The stack trace is noise."</td><td>It is the map of how execution reached the failure. Read it.</td></tr>
+        <tr><td>"Users should see the error so they can report it."</td><td>They should see an apology. We should see the log.</td></tr>
+        <tr><td>"Printing to the console is fine for logging."</td><td>There is no console on a server, no levels, no filtering and no timestamps.</td></tr>
+        <tr><td>"Log everything, just in case."</td><td>A log nobody reads hides the one line that mattered.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 46 ─ Misconceptions 2 -->
+<section class="slide">
+  <p class="eyebrow">Wrap-up</p>
+  <h2>Common misconceptions · deployment</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <table>
+      <thead><tr><th style="width:46%">Misconception</th><th>Correction</th></tr></thead>
+      <tbody>
+        <tr><td>"Deploying means copying my project folder."</td><td>You deploy the <em>published output</em>, not the source.</td></tr>
+        <tr><td>"It works locally, so it will work deployed."</td><td>Different environment, configuration, database, permissions and file system.</td></tr>
+        <tr><td>"The production database updates itself."</td><td>Migrations are applied deliberately, after a backup.</td></tr>
+        <tr><td>"<code class="inline">appsettings.json</code> is a fine place for the production password."</td><td>It is committed to source control. Use application settings, environment variables or a key vault.</td></tr>
+        <tr><td>"Debug and Release are the same."</td><td>Release is optimised and strips the debug information.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 47 ─ Check for understanding -->
+<section class="slide">
+  <p class="eyebrow">Check for understanding</p>
+  <h2>Seven questions</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <ol class="list list--tight">
+        <li>You get a 500 on the live site. List, in order, the first four things you do.</li>
+        <li>The same exception in Development and in Production: what differs on the user's screen, and what stays identical in the HTTP response?</li>
+        <li>When would you log <code class="inline">Warning</code> rather than <code class="inline">Error</code>? Give an example from your own project.</li>
+        <li>Why is <code class="inline">LogInformation("Article {Id} saved", id)</code> better than <code class="inline">LogInformation($"Article {id} saved")</code>?</li>
+      </ol>
+      <ol class="list list--tight" style="counter-reset:step 4">
+        <li>Name three things that must exist in production but not on your laptop.</li>
+        <li>You add a required column and deploy the code without running the migration. What does the user see, and what was the correct order?</li>
+        <li>Why should the production connection string not live in <code class="inline">appsettings.json</code>?</li>
+      </ol>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 48 ─ Lab walkthrough -->
+<section class="slide">
+  <p class="eyebrow">Walkthrough · integrated into the demos</p>
+  <h2>What we do on screen, end to end</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <ol class="list list--tight">
+        <li>We plant a bug in SimpleBlog and find it using only the debugger, naming out loud which value was wrong <em>first</em>.</li>
+        <li>We add <code class="inline">ILogger&lt;T&gt;</code> to <code class="inline">ArticlesController</code>: an <code class="inline">Information</code> on a successful create, a <code class="inline">Warning</code> on a not-found, an <code class="inline">Error</code> inside a <code class="inline">catch</code>.</li>
+        <li>We throw an exception in an action and view it in both Development and Production, reading the status code from DevTools each time.</li>
+        <li>We add a friendly 404 page and confirm it appears for an unknown article id.</li>
+      </ol>
+      <ol class="list list--tight" style="counter-reset:step 4">
+        <li>We run <code class="inline">dotnet publish -c Release -o ./publish</code> and list what landed in the folder — and what did not.</li>
+        <li>We generate <code class="inline">migrate.sql</code> with <code class="inline">--idempotent</code> and read the guard around each migration.</li>
+        <li>We deploy to App Service from the front and open the public URL together.</li>
+      </ol>
+    </div>
+    <div class="callout"><strong>By the end we will have</strong> a complete SimpleBlog: publicly reachable, with environment-appropriate error pages, real log entries at three levels, and a written migration procedure. The bug was found with the debugger, and the published output contains no <code class="inline">.cs</code> files.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 49 ─ Glossary -->
+<section class="slide">
+  <p class="eyebrow">Glossary</p>
+  <h2>Речник · EN → BG</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <table>
+        <thead><tr><th style="width:45%">English</th><th>Български</th></tr></thead>
+        <tbody>
+          <tr><td>debugger / breakpoint</td><td>дебъгер / точка на прекъсване</td></tr>
+          <tr><td>step over / into / out</td><td>прескачане / влизане / излизане</td></tr>
+          <tr><td>watch / locals</td><td>наблюдение / локални променливи</td></tr>
+          <tr><td>call stack</td><td>стек на извикванията</td></tr>
+          <tr><td>stack trace</td><td>следа на стека</td></tr>
+          <tr><td>exception page</td><td>страница за грешка</td></tr>
+          <tr><td>environment (dev / prod)</td><td>среда (разработка / продукция)</td></tr>
+          <tr><td>logging / log level</td><td>логване / ниво на логване</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <thead><tr><th style="width:45%">English</th><th>Български</th></tr></thead>
+        <tbody>
+          <tr><td>structured logging</td><td>структурирано логване</td></tr>
+          <tr><td>deployment / to publish</td><td>разгръщане / публикуване</td></tr>
+          <tr><td>build artifact</td><td>резултат от компилацията</td></tr>
+          <tr><td>hosting</td><td>хостинг</td></tr>
+          <tr><td>publish profile</td><td>профил за публикуване</td></tr>
+          <tr><td>idempotent script</td><td>идемпотентен скрипт</td></tr>
+          <tr><td>rollback / backup</td><td>връщане назад / резервно копие</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 50 ─ References -->
+<section class="slide">
+  <p class="eyebrow">References</p>
+  <h2>Where to read more</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <ul class="list list--tight">
+        <li><strong>Debugging in VS Code (C#)</strong><br><span class="sm muted">code.visualstudio.com/docs/csharp/debugging</span></li>
+        <li><strong>Error handling in ASP.NET Core</strong><br><span class="sm muted">learn.microsoft.com/aspnet/core/fundamentals/error-handling</span></li>
+        <li><strong>Logging in .NET</strong><br><span class="sm muted">learn.microsoft.com/aspnet/core/fundamentals/logging</span></li>
+        <li><strong>Use multiple environments</strong><br><span class="sm muted">learn.microsoft.com/aspnet/core/fundamentals/environments</span></li>
+      </ul>
+      <ul class="list list--tight">
+        <li><strong>Host and deploy ASP.NET Core</strong><br><span class="sm muted">learn.microsoft.com/aspnet/core/host-and-deploy</span></li>
+        <li><strong>Deploy to Azure App Service</strong><br><span class="sm muted">learn.microsoft.com/azure/app-service/quickstart-dotnetcore</span></li>
+        <li><strong>Host on IIS</strong><br><span class="sm muted">learn.microsoft.com/aspnet/core/host-and-deploy/iis</span></li>
+        <li><strong>Applying migrations in production</strong><br><span class="sm muted">learn.microsoft.com/ef/core/managing-schemas/migrations/applying</span></li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 51 ─ Closing -->
+<section class="slide slide--brand">
+  <p class="eyebrow">That is the course</p>
+  <h1 style="font-size:var(--fs-title-1);line-height:var(--lh-title-1)">Ten sessions ago, a request was just text.</h1>
+  <div class="rule"></div>
+  <p class="lead">You can now build a data-driven web application, find out why it misbehaves, and put it somewhere other people can reach it.<br>What remains is the project — and it is yours to choose.</p>
+  <div class="foot"><span>Questions?</span><span class="spacer"></span><span>Microsoft Web Technologies</span></div>
+</section>
+</div></div>
+<div id="hint">← → navigate · F fullscreen · P print</div>
+
+<script>
+(function(){
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var deck = document.getElementById('deck');
+  var progress = document.getElementById('progress');
+  var hint = document.getElementById('hint');
+  var total = slides.length;
+  var i = 0;
+
+  slides.forEach(function(s, n){
+    var num = s.querySelector('.num');
+    if (num) num.textContent = (n + 1) + ' / ' + total;
+  });
+
+  function show(n){
+    i = Math.max(0, Math.min(total - 1, n));
+    slides.forEach(function(s, k){ s.classList.toggle('is-active', k === i); });
+    progress.style.width = ((i + 1) / total * 100) + '%';
+    if (location.hash !== '#' + (i + 1)) history.replaceState(null, '', '#' + (i + 1));
+  }
+
+  function fit(){
+    var scale = Math.min(window.innerWidth / 1280, window.innerHeight / 720);
+    deck.style.transform = 'scale(' + scale + ')';
+  }
+
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); show(i + 1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(i - 1); }
+    else if (e.key === 'Home') { show(0); }
+    else if (e.key === 'End') { show(total - 1); }
+    else if (e.key === 'f' || e.key === 'F') {
+      if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen();
+    }
+    else if (e.key === 'p' || e.key === 'P') { window.print(); }
+  });
+
+  document.getElementById('stage').addEventListener('click', function(e){
+    show(e.clientX < window.innerWidth / 3 ? i - 1 : i + 1);
+  });
+
+  window.addEventListener('resize', fit);
+  window.addEventListener('hashchange', function(){ show((parseInt(location.hash.slice(1), 10) || 1) - 1); });
+
+  fit();
+  show((parseInt(location.hash.slice(1), 10) || 1) - 1);
+  setTimeout(function(){ hint.classList.add('is-hidden'); }, 4000);
+})();
+</script>
+</body>
+</html>

@@ -10,12 +10,25 @@
                     <!-- Article header -->
                     <div class="mb-4">
                         <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-2 mb-3">
-                            Article
+                            @(string.IsNullOrEmpty(Model.Category) ? "Article" : Model.Category)
                         </span>
+                        @if (Model.IsSatire)
+                        {
+                            <span class="badge bg-warning-subtle text-warning-emphasis rounded-pill px-3 py-2 mb-3">
+                                Пародия
+                            </span>
+                        }
 
-                        <h1 class="display-6 fw-bold text-dark mb-3">
+                        <h1 class="display-6 fw-bold text-dark mb-2">
                             @Model.Title
                         </h1>
+
+                        @if (!string.IsNullOrEmpty(Model.Subtitle))
+                        {
+                            <p class="lead text-body-secondary mb-3">@Model.Subtitle</p>
+                        }
+
+                        <img src="@Model.ImagePath" alt="">
 
                         <div class="d-flex flex-wrap align-items-center gap-3 text-secondary small">
                             <div class="d-flex align-items-center gap-2">

@@ -1,0 +1,1044 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Session 01 — How the Web Works</title>
+<link rel="stylesheet" href="../../design-system/styles.css">
+<style>
+/* ── Deck-level extensions to the design system ────────────────────────────
+   Slides are authored on a fixed 1280×720 stage and scaled to the viewport,
+   so every size below is a *slide* size, not a screen size. Body copy is
+   stepped up from --fs-body (14px, UI density) to projection density. */
+:root{
+  --stage-w:1280px; --stage-h:720px;
+  --fs-slide-body:20px;  --lh-slide-body:30px;
+  --fs-slide-lead:24px;  --lh-slide-lead:34px;
+  --fs-slide-sm:16px;    --lh-slide-sm:24px;
+  --fs-slide-code:16px;  --lh-slide-code:26px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  background:var(--neutral-grey-160);
+  font-family:var(--font-sans-text);
+  color:var(--text-primary);
+  overflow:hidden;
+}
+
+/* ── Stage ─────────────────────────────────────────────────────────────── */
+#stage{position:fixed;inset:0;display:grid;place-items:center}
+#deck{width:var(--stage-w);height:var(--stage-h);position:relative;transform-origin:center center}
+.slide{
+  position:absolute;inset:0;
+  width:var(--stage-w);height:var(--stage-h);
+  background:var(--surface-page);
+  display:none;flex-direction:column;
+  padding:var(--space-16) var(--space-16) var(--space-10);
+  overflow:hidden;
+}
+.slide.is-active{display:flex}
+
+/* ── Slide chrome ──────────────────────────────────────────────────────── */
+.eyebrow{
+  margin:0 0 var(--space-3);
+  font-family:var(--font-sans-text);
+  font-size:var(--fs-body-sm);line-height:var(--lh-body-sm);
+  font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--brand-pressed);
+}
+h1,h2,h3{margin:0;font-family:var(--font-sans);color:var(--text-primary)}
+h1{font-size:var(--fs-display);line-height:var(--lh-display);font-weight:var(--fw-display);letter-spacing:-.02em}
+h2{font-size:var(--fs-title-1);line-height:var(--lh-title-1);font-weight:var(--fw-title-1);letter-spacing:-.01em}
+h3{font-size:var(--fs-title-3);line-height:var(--lh-title-3);font-weight:var(--fw-title-3)}
+.rule{width:56px;height:3px;background:var(--brand-base);border-radius:var(--radius-pill);margin:var(--space-4) 0 var(--space-6)}
+.body{margin:0;font-size:var(--fs-slide-body);line-height:var(--lh-slide-body);color:var(--text-primary)}
+.lead{margin:0;font-size:var(--fs-slide-lead);line-height:var(--lh-slide-lead);color:var(--text-secondary)}
+.muted{color:var(--text-secondary)}
+.sm{font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm)}
+strong{font-weight:600}
+.content{flex:1;min-height:0;display:flex;flex-direction:column;gap:var(--space-5)}
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.foot{
+  display:flex;align-items:center;gap:var(--space-4);
+  padding-top:var(--space-5);margin-top:auto;
+  border-top:1px solid var(--border-default);
+  font-size:var(--fs-caption);line-height:var(--lh-caption);
+  letter-spacing:.06em;text-transform:uppercase;color:var(--text-disabled);
+}
+.foot .spacer{flex:1}
+
+/* ── Brand-block slides (title + section dividers) ─────────────────────── */
+.slide--brand{background:var(--brand-base);color:var(--text-on-brand);justify-content:center}
+.slide--brand h1,.slide--brand h2{color:var(--text-on-brand)}
+.slide--brand .eyebrow{color:var(--brand-tint-20)}
+.slide--brand .lead,.slide--brand .body{color:var(--brand-tint-30)}
+.slide--brand .rule{background:var(--neutral-white)}
+.slide--brand .foot{border-top-color:rgba(255,255,255,.24);color:var(--brand-tint-20)}
+.slide--dark{background:var(--brand-shade-20)}
+.slide--dark h1,.slide--dark h2{color:var(--text-on-brand)}
+.slide--dark .eyebrow{color:var(--brand-tint-10)}
+.slide--dark .lead,.slide--dark .body{color:var(--brand-tint-30)}
+.slide--dark .foot{border-top-color:rgba(255,255,255,.18);color:var(--brand-tint-10)}
+.section-no{
+  font-family:var(--font-sans);font-size:120px;line-height:1;font-weight:600;
+  color:rgba(255,255,255,.22);letter-spacing:-.03em;margin-bottom:var(--space-4);
+}
+
+/* ── Layout helpers ────────────────────────────────────────────────────── */
+.cols{display:grid;gap:var(--space-6);flex:1;min-height:0}
+.cols-2{grid-template-columns:1fr 1fr}
+.cols-3{grid-template-columns:repeat(3,1fr)}
+.cols-2-1{grid-template-columns:1.4fr 1fr}
+.cols--auto{flex:0 0 auto;min-height:auto}
+.stack{display:flex;flex-direction:column;gap:var(--space-4);min-height:0}
+.center{justify-content:center}
+
+/* ── Card (design-system surfaces/Card, slide-scaled) ──────────────────── */
+.card{
+  background:var(--surface-card);border:1px solid var(--border-default);
+  border-radius:var(--radius-lg);padding:var(--space-5);
+  display:flex;flex-direction:column;gap:var(--space-2);
+}
+.card--elevated{border:none;box-shadow:var(--shadow-8)}
+.card--brand{background:var(--brand-tint-40);border-color:var(--brand-tint-20)}
+.card h3{font-size:var(--fs-title-3);line-height:var(--lh-title-3)}
+.card p{margin:0;font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm);color:var(--text-secondary)}
+
+/* ── Badge (design-system feedback/Badge, slide-scaled) ────────────────── */
+.badge{
+  display:inline-flex;align-items:center;align-self:flex-start;height:26px;padding:0 var(--space-3);
+  border-radius:var(--radius-pill);font-size:var(--fs-slide-sm);font-weight:600;
+  background:var(--brand-tint-40);color:var(--brand-pressed);white-space:nowrap;
+}
+.badge--neutral{background:var(--surface-subtle);color:var(--text-secondary)}
+.badge--success{background:var(--color-success-bg);color:var(--color-success)}
+.badge--warning{background:var(--color-warning-bg);color:var(--color-warning)}
+.badge--danger{background:var(--color-danger-bg);color:var(--color-danger)}
+.badge--mono{font-family:var(--font-mono);font-weight:600}
+
+/* ── Lists ─────────────────────────────────────────────────────────────── */
+ul.list,ol.list{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:var(--space-4)}
+ul.list li,ol.list li{
+  position:relative;padding-left:var(--space-8);
+  font-size:var(--fs-slide-body);line-height:var(--lh-slide-body);
+}
+ul.list li::before{
+  content:"";position:absolute;left:var(--space-2);top:11px;
+  width:8px;height:8px;border-radius:var(--radius-circular);background:var(--brand-base);
+}
+ol.list{counter-reset:step}
+ol.list li{counter-increment:step;padding-left:var(--space-10)}
+ol.list li::before{
+  content:counter(step);position:absolute;left:0;top:2px;
+  width:28px;height:28px;border-radius:var(--radius-circular);
+  background:var(--brand-tint-40);color:var(--brand-pressed);
+  font-family:var(--font-sans);font-size:var(--fs-slide-sm);font-weight:600;
+  display:grid;place-items:center;
+}
+.list--tight li{font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm)}
+.list--tight{gap:var(--space-3)}
+
+/* ── Table ─────────────────────────────────────────────────────────────── */
+table{
+  width:100%;border-collapse:collapse;
+  background:var(--surface-card);border:1px solid var(--border-default);
+  border-radius:var(--radius-lg);overflow:hidden;
+  font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm);
+}
+thead th{
+  text-align:left;background:var(--surface-subtle);color:var(--text-secondary);
+  font-weight:600;font-size:var(--fs-body-sm);letter-spacing:.06em;text-transform:uppercase;
+  padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border-default);
+}
+tbody td{padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border-default);vertical-align:top}
+tbody tr:last-child td{border-bottom:none}
+tbody th{
+  text-align:left;padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border-default);
+  font-weight:600;white-space:nowrap;
+}
+tbody tr:last-child th{border-bottom:none}
+td.center,th.center{text-align:center}
+
+/* ── Code ──────────────────────────────────────────────────────────────── */
+pre,code{font-family:var(--font-mono)}
+pre{
+  margin:0;background:var(--brand-shade-30);color:var(--brand-tint-30);
+  border-radius:var(--radius-lg);padding:var(--space-5) var(--space-6);
+  font-size:var(--fs-slide-code);line-height:var(--lh-slide-code);
+  overflow:hidden;white-space:pre;
+}
+pre .k{color:#4fc3f7;font-weight:600}
+pre .h{color:var(--neutral-white)}
+pre .c{color:var(--neutral-grey-90)}
+pre .ok{color:#6bd66b;font-weight:600}
+code.inline{
+  background:var(--surface-subtle);border:1px solid var(--border-default);
+  border-radius:var(--radius-sm);padding:1px 6px;font-size:.92em;color:var(--brand-pressed);
+}
+.slide--brand code.inline,.slide--dark code.inline{
+  background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.24);color:var(--neutral-white);
+}
+
+/* ── Callout ───────────────────────────────────────────────────────────── */
+.callout{
+  background:var(--brand-tint-40);border:1px solid var(--brand-tint-20);
+  border-radius:var(--radius-lg);padding:var(--space-4) var(--space-5);
+  font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm);color:var(--brand-shade-10);
+}
+.callout--warn{background:var(--color-warning-bg);border-color:#f0d98a;color:var(--color-warning)}
+
+/* ── Big statement ─────────────────────────────────────────────────────── */
+.statement{margin:0;font-family:var(--font-sans);font-size:var(--fs-title-1);line-height:var(--lh-title-1);font-weight:600}
+
+/* ── Progress bar ──────────────────────────────────────────────────────── */
+#progress{position:fixed;left:0;top:0;height:3px;background:var(--brand-tint-10);width:0;
+  transition:width var(--duration-normal) var(--ease-standard);z-index:10}
+
+/* ── Help hint ─────────────────────────────────────────────────────────── */
+#hint{
+  position:fixed;right:16px;bottom:14px;z-index:10;
+  font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--neutral-grey-90);font-family:var(--font-sans-text);
+  transition:opacity var(--duration-slow) var(--ease-standard);
+}
+#hint.is-hidden{opacity:0}
+
+/* ── Print / PDF export: one slide per landscape page ──────────────────── */
+@media print{
+  @page{size:1280px 720px;margin:0}
+  body{background:var(--neutral-white);overflow:visible}
+  #stage{position:static;display:block}
+  #deck{width:auto;height:auto;transform:none!important}
+  #progress,#hint{display:none}
+  .slide{position:static;display:flex!important;page-break-after:always;break-after:page}
+}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<div id="stage"><div id="deck">
+
+<!-- 1 ─ Title -->
+<section class="slide slide--brand">
+  <p class="eyebrow">Microsoft Web Technologies · Session 01</p>
+  <h1>How the Web Works</h1>
+  <div class="rule"></div>
+  <p class="lead">Client and server, URLs, HTTP requests and responses,<br>methods and status codes.</p>
+  <div class="foot"><span>Lecture 1 · HTTP</span><span class="spacer"></span><span>~180 min · no code</span></div>
+</section>
+
+<!-- 2 ─ Before we start -->
+<section class="slide">
+  <p class="eyebrow">Before we start</p>
+  <h2>No code in this session. The tool is the browser.</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-3">
+      <div class="card"><h3>No prerequisites</h3><p>This is the first session. We assume no programming background whatsoever.</p></div>
+      <div class="card"><h3>Nothing to install</h3><p>Everything in this session happens in a browser you already have. We install the toolchain before Session 02.</p></div>
+      <div class="card card--brand"><h3>Ideas, not vendors</h3><p>Every concept here works the same in any language or stack. .NET comes next.</p></div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 3 ─ Learning objectives -->
+<section class="slide">
+  <p class="eyebrow">Learning objectives</p>
+  <h2>By the end of this session you can…</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <ol class="list">
+        <li>Explain the client–server model and say who does what when a page loads.</li>
+        <li>Read a URL and name each of its parts.</li>
+        <li>Describe the structure of an HTTP request and an HTTP response.</li>
+      </ol>
+      <ol class="list" start="4" style="counter-reset:step 3">
+        <li>Choose the correct HTTP method for a given action.</li>
+        <li>Interpret the status codes 200, 301, 302, 400, 401, 403, 404 and 500.</li>
+        <li>Inspect real traffic in the browser's DevTools Network tab.</li>
+      </ol>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 4 ─ Agenda -->
+<section class="slide">
+  <p class="eyebrow">Agenda</p>
+  <h2>Three hours, two breaks</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <table>
+        <thead><tr><th style="width:34px">#</th><th>Block</th><th class="center" style="width:64px">Min</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Course intro: what we build, how you're assessed</td><td class="center">15</td></tr>
+          <tr><td>2</td><td>The client–server model</td><td class="center">25</td></tr>
+          <tr><td>3</td><td>Anatomy of a URL</td><td class="center">15</td></tr>
+          <tr><td>4</td><td class="muted">Break</td><td class="center">10</td></tr>
+          <tr><td>5</td><td>The HTTP request</td><td class="center">25</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <thead><tr><th style="width:34px">#</th><th>Block</th><th class="center" style="width:64px">Min</th></tr></thead>
+        <tbody>
+          <tr><td>6</td><td>The HTTP response and status codes</td><td class="center">25</td></tr>
+          <tr><td>7</td><td class="muted">Break</td><td class="center">10</td></tr>
+          <tr><td>8</td><td>Demo: watching real requests in DevTools</td><td class="center">20</td></tr>
+          <tr><td>9</td><td>Walkthrough: we investigate a website together</td><td class="center">30</td></tr>
+          <tr><td>10</td><td>Wrap-up and Q&amp;A</td><td class="center">5</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 5 ─ Section: course intro -->
+<section class="slide slide--dark">
+  <div class="section-no">01</div>
+  <p class="eyebrow">Block 1 · 15 min</p>
+  <h2>Course intro</h2>
+  <p class="lead" style="margin-top:var(--space-4)">What we build, how it works, how you're assessed.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 6 ─ What we will build -->
+<section class="slide">
+  <p class="eyebrow">Course intro</p>
+  <h2>What we will build</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <p class="lead">Over ten sessions: a small blog / news website with a database behind it,
+      in which you can add, edit and delete articles.</p>
+    <div class="cols cols-3 cols--auto">
+      <div class="card"><h3>Sessions 01–04</h3><p>How the web works · the language and the framework · handling a request · routing and URL design.</p></div>
+      <div class="card"><h3>Sessions 05–08</h3><p>HTML, CSS and Razor templates · view models and Bootstrap · databases and ORMs · code-first and migrations.</p></div>
+      <div class="card"><h3>Sessions 09–10</h3><p>Forms, CRUD and validation · debugging, logging and deployment.</p></div>
+    </div>
+    <div class="callout">The app is called <strong>SimpleBlog</strong>. Every session moves the same app forward, and each session's notes record exactly what state it is in — so a missed week is recoverable.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 7 ─ How the course works -->
+<section class="slide">
+  <p class="eyebrow">Course intro</p>
+  <h2>How the course works</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <div class="stack">
+        <div class="card card--brand">
+          <h3>Idea first, technology second</h3>
+          <p>Every concept is introduced as a general web-development idea, with no Microsoft vocabulary attached. Ideas transfer to any language or stack.</p>
+        </div>
+        <div class="card">
+          <h3>Then concrete, in .NET</h3>
+          <p>Once the idea has landed, we name it and build it in ASP.NET Core MVC on .NET 10.</p>
+        </div>
+      </div>
+      <div class="stack">
+        <div class="card">
+          <h3>Assessment</h3>
+          <p>In-class practical tasks, plus a final project that you present and defend.</p>
+        </div>
+        <div class="card">
+          <h3>Housekeeping</h3>
+          <p>One thing we install before Session 02 — the .NET 10 SDK and an editor. Details on the setup slide at the end.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 8 ─ Section: client–server -->
+<section class="slide slide--dark">
+  <div class="section-no">02</div>
+  <p class="eyebrow">Block 2 · 25 min</p>
+  <h2>The client–server model</h2>
+  <p class="lead" style="margin-top:var(--space-4)">Who asks, who answers, and in what order.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 9 ─ Restaurant analogy -->
+<section class="slide">
+  <p class="eyebrow">The client–server model</p>
+  <h2>Analogy: the restaurant</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+      <ul class="list">
+        <li>You — the <strong>client</strong> — sit at a table and read a menu.</li>
+        <li>You give the waiter an order. That is a <strong>request</strong>.</li>
+        <li>The kitchen — the <strong>server</strong> — prepares it.</li>
+        <li>The waiter brings back your dish, or a message: <em>"sorry, we're out of that."</em> Either way, that is a <strong>response</strong>.</li>
+      </ul>
+      <div class="card card--elevated center">
+        <h3>You never enter the kitchen</h3>
+        <p>You never see how the dish is made. You only send requests and receive responses. The same is true of every website you have ever used.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 10 ─ Diagram -->
+<section class="slide">
+  <p class="eyebrow">The client–server model</p>
+  <h2>Request, then response — always in that order</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <svg viewBox="0 0 1100 300" style="width:auto;height:236px;align-self:center" role="img" aria-label="Browser sends a request to a server, the server sends a response back, and a database sits behind the server">
+      <g style="font-family:var(--font-sans-text)">
+        <rect x="20" y="90" width="250" height="120" rx="8" style="fill:var(--surface-card);stroke:var(--border-default)"/>
+        <text x="145" y="140" text-anchor="middle" font-size="24" font-weight="600" style="fill:var(--text-primary)">Browser</text>
+        <text x="145" y="170" text-anchor="middle" font-size="16" style="fill:var(--text-secondary)">the client &#8212; it asks</text>
+
+        <rect x="430" y="90" width="250" height="120" rx="8" style="fill:var(--brand-base)"/>
+        <text x="555" y="140" text-anchor="middle" font-size="24" font-weight="600" style="fill:#ffffff">Server</text>
+        <text x="555" y="170" text-anchor="middle" font-size="16" style="fill:var(--brand-tint-20)">always listening &#8212; it answers</text>
+
+        <rect x="820" y="90" width="250" height="120" rx="8" stroke-dasharray="6 5" style="fill:var(--surface-card);stroke:var(--border-default)"/>
+        <text x="945" y="140" text-anchor="middle" font-size="24" font-weight="600" style="fill:var(--text-disabled)">Database</text>
+        <text x="945" y="170" text-anchor="middle" font-size="16" style="fill:var(--text-disabled)">Session 07</text>
+
+        <defs>
+          <marker id="ar" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+            <path d="M0,0 L10,4 L0,8 Z" style="fill:var(--brand-base)"/>
+          </marker>
+          <marker id="arg" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+            <path d="M0,0 L10,4 L0,8 Z" style="fill:var(--neutral-grey-110)"/>
+          </marker>
+        </defs>
+        <line x1="278" y1="128" x2="420" y2="128" stroke-width="2.5" marker-end="url(#ar)" style="stroke:var(--brand-base)"/>
+        <text x="349" y="114" text-anchor="middle" font-size="16" font-weight="600" style="fill:var(--brand-pressed)">request</text>
+        <line x1="422" y1="176" x2="280" y2="176" stroke-width="2.5" marker-end="url(#arg)" style="stroke:var(--neutral-grey-110)"/>
+        <text x="351" y="204" text-anchor="middle" font-size="16" font-weight="600" style="fill:var(--text-secondary)">response</text>
+        <line x1="688" y1="150" x2="812" y2="150" stroke-width="2.5" stroke-dasharray="6 5" marker-end="url(#arg)" style="stroke:var(--neutral-grey-60)"/>
+      </g>
+    </svg>
+    <div class="cols cols-3 cols--auto" style="margin-top:var(--space-4)">
+      <div class="card"><h3>Two roles, not two machines</h3><p>Client = the one who asks. Server = the one who answers. Your laptop can be both at once.</p></div>
+      <div class="card"><h3>Many kinds of client</h3><p>A browser is a client. So is a mobile app, a smart TV, or another program.</p></div>
+      <div class="card"><h3>The server never speaks first</h3><p>It is a program that is always listening on a machine that is always on. It only ever replies.</p></div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 11 ─ Statelessness -->
+<section class="slide slide--brand">
+  <p class="eyebrow">The client–server model</p>
+  <p class="statement" style="color:var(--neutral-white)">Every request is independent.<br>
+    The server does not remember the previous one.</p>
+  <div class="rule"></div>
+  <p class="lead">This is called <strong style="color:#fff">statelessness</strong>. How sites nevertheless "remember" you — logins, shopping baskets — is a later topic.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 12 ─ What happens when you click a link -->
+<section class="slide">
+  <p class="eyebrow">The client–server model</p>
+  <h2>What happens between clicking a link and seeing the page?</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <ol class="list list--tight">
+        <li>You type or click a <strong>URL</strong>.</li>
+        <li>The browser resolves the domain name to an address — <strong>DNS</strong>, like a phone book.</li>
+        <li>The browser opens a connection to that address.</li>
+        <li>The browser sends a <strong>request</strong>.</li>
+      </ol>
+      <ol class="list list--tight" style="counter-reset:step 4">
+        <li>The server does some work and sends a <strong>response</strong> — usually an HTML document.</li>
+        <li>The browser reads the HTML, discovers it needs more files — CSS, images, scripts — and sends <strong>more requests</strong>, one for each.</li>
+        <li>The browser draws the page.</li>
+      </ol>
+    </div>
+    <div class="callout">Step 6 is the one to hold on to. We will watch it happen in the demo.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 13 ─ One page, many requests -->
+<section class="slide slide--brand">
+  <p class="eyebrow">The number to remember</p>
+  <p class="statement" style="color:var(--neutral-white)">One page is not one request.</p>
+  <div class="rule"></div>
+  <div class="content">
+    <svg viewBox="0 0 1152 340" style="width:100%;height:auto;max-height:340px" role="img"
+         aria-label="One HTML document request fans out into 86 further requests: 6 stylesheets, 14 scripts, 48 images, 3 fonts and 15 others, 87 in total">
+      <g style="font-family:var(--font-sans-text)">
+        <text x="0" y="120" font-size="13" font-weight="600" letter-spacing="1.6" style="fill:var(--brand-tint-20)">REQUEST 1</text>
+        <text x="622" y="22" font-size="13" font-weight="600" letter-spacing="1.6" style="fill:var(--brand-tint-20)">REQUESTS 2 &#8211; 87</text>
+
+        <path d="M330,184 C470,184 480,64 614,64" fill="none" stroke-width="2" style="stroke:rgba(255,255,255,.45)"/>
+        <path d="M330,184 C470,184 480,124 614,124" fill="none" stroke-width="2" style="stroke:rgba(255,255,255,.45)"/>
+        <path d="M330,184 C470,184 480,184 614,184" fill="none" stroke-width="2" style="stroke:rgba(255,255,255,.45)"/>
+        <path d="M330,184 C470,184 480,244 614,244" fill="none" stroke-width="2" style="stroke:rgba(255,255,255,.45)"/>
+        <path d="M330,184 C470,184 480,304 614,304" fill="none" stroke-width="2" style="stroke:rgba(255,255,255,.45)"/>
+
+        <rect x="0" y="137" width="330" height="94" rx="8" style="fill:#ffffff"/>
+        <text x="24" y="176" font-size="19" font-weight="600" style="font-family:var(--font-mono);fill:var(--brand-pressed)">GET /articles/42</text>
+        <text x="24" y="204" font-size="16" style="fill:var(--neutral-grey-130)">the HTML document</text>
+
+      <g>
+        <rect x="622" y="40" width="530" height="48" rx="8" style="fill:rgba(255,255,255,.13);stroke:rgba(255,255,255,.32)"/>
+        <text x="646" y="71" font-size="18" font-weight="600" style="fill:#ffffff">Stylesheets</text>
+        <text x="880" y="70" font-size="15" style="fill:var(--brand-tint-20)">the look</text>
+        <text x="1128" y="72" text-anchor="end" font-size="21" font-weight="600" style="font-family:var(--font-mono);fill:#ffffff">6</text>
+      </g>
+      <g>
+        <rect x="622" y="100" width="530" height="48" rx="8" style="fill:rgba(255,255,255,.13);stroke:rgba(255,255,255,.32)"/>
+        <text x="646" y="131" font-size="18" font-weight="600" style="fill:#ffffff">Scripts</text>
+        <text x="880" y="130" font-size="15" style="fill:var(--brand-tint-20)">the behaviour</text>
+        <text x="1128" y="132" text-anchor="end" font-size="21" font-weight="600" style="font-family:var(--font-mono);fill:#ffffff">14</text>
+      </g>
+      <g>
+        <rect x="622" y="160" width="530" height="48" rx="8" style="fill:rgba(255,255,255,.13);stroke:rgba(255,255,255,.32)"/>
+        <text x="646" y="191" font-size="18" font-weight="600" style="fill:#ffffff">Images</text>
+        <text x="880" y="190" font-size="15" style="fill:var(--brand-tint-20)">photos, icons, logos</text>
+        <text x="1128" y="192" text-anchor="end" font-size="21" font-weight="600" style="font-family:var(--font-mono);fill:#ffffff">48</text>
+      </g>
+      <g>
+        <rect x="622" y="220" width="530" height="48" rx="8" style="fill:rgba(255,255,255,.13);stroke:rgba(255,255,255,.32)"/>
+        <text x="646" y="251" font-size="18" font-weight="600" style="fill:#ffffff">Fonts</text>
+        <text x="880" y="250" font-size="15" style="fill:var(--brand-tint-20)">the typefaces</text>
+        <text x="1128" y="252" text-anchor="end" font-size="21" font-weight="600" style="font-family:var(--font-mono);fill:#ffffff">3</text>
+      </g>
+      <g>
+        <rect x="622" y="280" width="530" height="48" rx="8" style="fill:rgba(255,255,255,.13);stroke:rgba(255,255,255,.32)"/>
+        <text x="646" y="311" font-size="18" font-weight="600" style="fill:#ffffff">Everything else</text>
+        <text x="880" y="310" font-size="15" style="fill:var(--brand-tint-20)">trackers, JSON, favicons</text>
+        <text x="1128" y="312" text-anchor="end" font-size="21" font-weight="600" style="font-family:var(--font-mono);fill:#ffffff">15</text>
+      </g>
+      </g>
+    </svg>
+    <p class="lead" style="margin-top:var(--space-4)">The browser reads that one document, finds everything it refers to,
+      and asks for each of them separately. <strong style="color:#fff">Exactly one of the 87 rows is the page.</strong></p>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 14 ─ What is HTTP -->
+<section class="slide">
+  <p class="eyebrow">The client–server model</p>
+  <h2>What is HTTP?</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <p class="lead">Both sides must agree on the <em>format</em> of the messages. That agreement is a <strong>protocol</strong>.</p>
+    <div class="cols cols-3 cols--auto">
+      <div class="card"><h3>HTTP</h3><p><strong>H</strong>yper<strong>T</strong>ext <strong>T</strong>ransfer <strong>P</strong>rotocol — the rules for how a web request and a web response are written down.</p></div>
+      <div class="card card--brand"><h3>It is text</h3><p>A request is human-readable. That is precisely why we can learn it by reading it — which is what we do next.</p></div>
+      <div class="card"><h3>HTTPS</h3><p>The same protocol, inside an encrypted tunnel. Same rules, private channel. Everything in this course applies identically.</p></div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 15 ─ Section: URL -->
+<section class="slide slide--dark">
+  <div class="section-no">03</div>
+  <p class="eyebrow">Block 3 · 15 min</p>
+  <h2>Anatomy of a URL</h2>
+  <p class="lead" style="margin-top:var(--space-4)">Six parts, each with one job.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 16 ─ URL dissected -->
+<section class="slide">
+  <p class="eyebrow">Anatomy of a URL</p>
+  <h2>Read it piece by piece</h2>
+  <div class="rule"></div>
+  <div class="content center">
+<pre><span class="k">https</span>://<span class="h">news.example.com</span>:<span class="k">443</span><span class="h">/articles/42</span><span class="k">?lang=en&amp;sort=new</span><span class="h">#comments</span>
+<span class="c">└─┬─┘   └───────┬───────┘└┬┘└────┬─────┘└───────┬────────┘└───┬───┘
+scheme       host        port   path        query string   fragment</span></pre>
+    <div class="cols cols-3 cols--auto" style="margin-top:var(--space-8)">
+      <div class="card"><h3>scheme</h3><p>Which protocol — <code class="inline">http</code> or <code class="inline">https</code>.</p></div>
+      <div class="card"><h3>host</h3><p>Which server. Resolved to an address via DNS.</p></div>
+      <div class="card"><h3>port</h3><p>Which door on that server. Usually implied: 80 for http, 443 for https.</p></div>
+    </div>
+    <div class="cols cols-3 cols--auto" style="margin-top:var(--space-4)">
+      <div class="card card--brand"><h3>path</h3><p>Which resource on that server. This is what <em>we</em> will design — Session 04.</p></div>
+      <div class="card"><h3>query string</h3><p>Extra named parameters, <code class="inline">key=value</code>, joined by <code class="inline">&amp;</code>.</p></div>
+      <div class="card"><h3>fragment</h3><p>A position <em>within</em> the page. Never sent to the server.</p></div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 17 ─ Two facts -->
+<section class="slide">
+  <p class="eyebrow">Anatomy of a URL</p>
+  <h2>Two facts worth stressing</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <div class="cols cols-2">
+      <div class="card card--elevated center">
+        <span class="badge badge--mono">/articles/42</span>
+        <h3 style="margin-top:var(--space-3)">The path is ours to interpret</h3>
+        <p>The path is the part <em>our</em> application is responsible for reading and acting on. It is not a file path on a disk — not since about 1995.</p>
+      </div>
+      <div class="card card--elevated center">
+        <span class="badge badge--mono badge--warning">#comments</span>
+        <h3 style="margin-top:var(--space-3)">The fragment never leaves the browser</h3>
+        <p>It is stripped before the request is sent. The server has no idea it existed. This surprises people later — remember it now.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 18 ─ Section: request -->
+<section class="slide slide--dark">
+  <div class="section-no">04</div>
+  <p class="eyebrow">Block 5 · 25 min</p>
+  <h2>The HTTP request</h2>
+  <p class="lead" style="margin-top:var(--space-4)">What the client actually sends.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 19 ─ Raw request -->
+<section class="slide">
+  <p class="eyebrow">The HTTP request</p>
+  <h2>A real request, line by line</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre><span class="k">GET</span> <span class="h">/articles/42?lang=en</span> HTTP/1.1
+<span class="k">Host:</span> news.example.com
+<span class="k">User-Agent:</span> Mozilla/5.0 ...
+<span class="k">Accept:</span> text/html
+<span class="k">Cookie:</span> session=abc123
+<span class="c">(blank line — then the body, if any)</span></pre>
+      <ol class="list list--tight">
+        <li><strong>Method</strong> — what do you want done?</li>
+        <li><strong>Path and query</strong> — to which resource?</li>
+        <li><strong>Headers</strong> — metadata: who is asking, what formats they accept, what language they prefer, what cookies they carry. Name–value pairs, one per line.</li>
+        <li><strong>Body</strong> — the data being sent, if any. A <code class="inline">GET</code> has none. A form submission does.</li>
+      </ol>
+    </div>
+    <div class="callout">This is plain text. Nothing here is hidden or magical — a request is something you could type by hand.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 20 ─ Methods -->
+<section class="slide">
+  <p class="eyebrow">The HTTP request</p>
+  <h2>Methods are verbs of intent</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <table>
+      <thead><tr><th style="width:130px">Method</th><th>Intent</th><th class="center" style="width:130px">Has body?</th><th class="center" style="width:170px">Safe?</th><th class="center" style="width:150px">Idempotent?</th></tr></thead>
+      <tbody>
+        <tr><th><span class="badge badge--mono">GET</span></th><td>Give me this resource.</td><td class="center">no</td><td class="center">yes — changes nothing</td><td class="center">yes</td></tr>
+        <tr><th><span class="badge badge--mono">POST</span></th><td>Here is data — create or process it.</td><td class="center">yes</td><td class="center">no</td><td class="center">no</td></tr>
+        <tr><th><span class="badge badge--mono">PUT</span></th><td>Replace this resource with what I send.</td><td class="center">yes</td><td class="center">no</td><td class="center">yes</td></tr>
+        <tr><th><span class="badge badge--mono">DELETE</span></th><td>Remove this resource.</td><td class="center">usually no</td><td class="center">no</td><td class="center">yes</td></tr>
+      </tbody>
+    </table>
+    <div class="cols cols-2 cols--auto">
+      <div class="callout"><strong>Safe</strong> = does not change anything on the server.</div>
+      <div class="callout"><strong>Idempotent</strong> = doing it twice has the same effect as doing it once.</div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 21 ─ Why safe matters -->
+<section class="slide">
+  <p class="eyebrow">The HTTP request</p>
+  <h2>Why "safe" is not a technicality</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <p class="lead">A browser will happily re-issue a <code class="inline">GET</code> — on the back button, on refresh, on prefetch.
+      Search engines follow every link they find, without being asked.</p>
+    <div class="callout callout--warn" style="font-size:var(--fs-slide-body);line-height:var(--lh-slide-body)">
+      If your "delete" is a <code class="inline">GET</code>, a crawler can wipe your database just by following links.
+      This has happened to real sites, more than once.
+    </div>
+    <div class="cols cols-2 cols--auto">
+      <div class="card"><h3>In the browser</h3><p>HTML forms only ever send <code class="inline">GET</code> and <code class="inline">POST</code>. That is a limitation of forms, not of HTTP.</p></div>
+      <div class="card"><h3>In APIs</h3><p><code class="inline">PUT</code> and <code class="inline">DELETE</code> matter there. We name them now and use them later.</p></div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 22 ─ Section: response -->
+<section class="slide slide--dark">
+  <div class="section-no">05</div>
+  <p class="eyebrow">Block 6 · 25 min</p>
+  <h2>The HTTP response</h2>
+  <p class="lead" style="margin-top:var(--space-4)">What comes back, and what the number at the top means.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 23 ─ Raw response -->
+<section class="slide">
+  <p class="eyebrow">The HTTP response</p>
+  <h2>Status line, headers, body</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre>HTTP/1.1 <span class="ok">200 OK</span>
+<span class="k">Content-Type:</span> text/html; charset=utf-8
+<span class="k">Content-Length:</span> 1543
+
+<span class="h">&lt;!DOCTYPE html&gt;
+&lt;html&gt;...&lt;/html&gt;</span></pre>
+      <ol class="list list--tight">
+        <li><strong>Status line</strong> — the protocol version and the outcome.</li>
+        <li><strong>Headers</strong> — metadata about the answer.</li>
+        <li><strong>Body</strong> — whatever was asked for: an HTML page, an image, a stylesheet, JSON data.</li>
+      </ol>
+    </div>
+    <div class="callout"><code class="inline">Content-Type</code> is how the browser knows what those bytes <em>are</em>. The same bytes could be a page, a picture, or a font — the header decides.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 24 ─ Status families -->
+<section class="slide">
+  <p class="eyebrow">Status codes</p>
+  <h2>Learn the families first — the first digit is the whole story</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <div class="cols cols-3 cols--auto">
+      <div class="card"><span class="badge badge--neutral badge--mono">1xx</span><h3>Informational</h3><p>"Hold on."</p></div>
+      <div class="card"><span class="badge badge--success badge--mono">2xx</span><h3>Success</h3><p>"Here you go."</p></div>
+      <div class="card"><span class="badge badge--mono">3xx</span><h3>Redirection</h3><p>"It's over there."</p></div>
+    </div>
+    <div class="cols cols-2 cols--auto" style="margin-top:var(--space-5)">
+      <div class="card"><span class="badge badge--warning badge--mono">4xx</span><h3>Client error</h3><p><em>You</em> made a mistake.</p></div>
+      <div class="card"><span class="badge badge--danger badge--mono">5xx</span><h3>Server error</h3><p><em>We</em> made a mistake.</p></div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 25 ─ The eight codes -->
+<section class="slide">
+  <p class="eyebrow">Status codes</p>
+  <h2>The eight you must know</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <table>
+      <thead><tr><th style="width:110px">Code</th><th style="width:230px">Name</th><th>When you see it</th></tr></thead>
+      <tbody>
+        <tr><th><span class="badge badge--success badge--mono">200</span></th><td>OK</td><td>The normal case.</td></tr>
+        <tr><th><span class="badge badge--mono">301</span></th><td>Moved Permanently</td><td>The site moved to a new address, forever — update your links.</td></tr>
+        <tr><th><span class="badge badge--mono">302</span></th><td>Found</td><td>Temporary redirect — for example after submitting a form (Session 09).</td></tr>
+        <tr><th><span class="badge badge--warning badge--mono">400</span></th><td>Bad Request</td><td>The request itself is malformed.</td></tr>
+        <tr><th><span class="badge badge--warning badge--mono">401</span></th><td>Unauthorized</td><td>You are not logged in.</td></tr>
+        <tr><th><span class="badge badge--warning badge--mono">403</span></th><td>Forbidden</td><td>You <em>are</em> logged in, but you're not allowed.</td></tr>
+        <tr><th><span class="badge badge--warning badge--mono">404</span></th><td>Not Found</td><td>No such resource.</td></tr>
+        <tr><th><span class="badge badge--danger badge--mono">500</span></th><td>Internal Server Error</td><td>Our code crashed.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 26 ─ 401 vs 403, 4xx vs 5xx -->
+<section class="slide">
+  <p class="eyebrow">Status codes</p>
+  <h2>Two distinctions worth the minute</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <div class="cols cols-2">
+      <div class="card card--elevated center">
+        <h3>401 versus 403</h3>
+        <p class="body" style="margin-top:var(--space-2)"><strong>401</strong> — "Who are you?"</p>
+        <p class="body"><strong>403</strong> — "I know who you are, and no."</p>
+        <p style="margin-top:var(--space-3)">One is about identity, the other about permission.</p>
+      </div>
+      <div class="card card--elevated center">
+        <h3>4xx versus 5xx</h3>
+        <p class="body" style="margin-top:var(--space-2)">This one tells you <strong>whose bug it is.</strong></p>
+        <p style="margin-top:var(--space-3)">When your app returns a 500 in Session 10, that is your own code throwing an exception. A 404 is the server answering <em>correctly</em>.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 27 ─ Section: demo -->
+<section class="slide slide--dark">
+  <div class="section-no">06</div>
+  <p class="eyebrow">Block 8 · 20 min · demo</p>
+  <h2>Seeing it for real</h2>
+  <p class="lead" style="margin-top:var(--space-4)">No .NET yet — nothing to run. The tool every one of you already has: DevTools.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 28 ─ DevTools demo -->
+<section class="slide">
+  <p class="eyebrow">Demo</p>
+  <h2>The DevTools Network tab</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <ol class="list list--tight">
+        <li>Press <code class="inline">F12</code> (or <code class="inline">Cmd+Option+I</code>) and select <strong>Network</strong>.</li>
+        <li>Tick <strong>Preserve log</strong> and <strong>Disable cache</strong>.</li>
+        <li>Load a content-heavy site and let the list fill up. <em>One page — how many rows?</em></li>
+        <li>Click the <strong>first</strong> row, the HTML document: request method, URL and status code; request headers <code class="inline">Host</code>, <code class="inline">User-Agent</code>, <code class="inline">Accept</code>, <code class="inline">Cookie</code>; response headers <code class="inline">Content-Type</code>, <code class="inline">Content-Length</code>; and the raw HTML in <strong>Response</strong>.</li>
+      </ol>
+      <ol class="list list--tight" style="counter-reset:step 4">
+        <li>Filter by type: <strong>Doc</strong>, <strong>CSS</strong>, <strong>JS</strong>, <strong>Img</strong>. One page, many kinds of resource.</li>
+        <li>Type a deliberately wrong URL → a <strong>404</strong> row, in red.</li>
+        <li>Visit an <code class="inline">http://</code> URL that redirects → a <strong>301/302</strong> row with its <code class="inline">Location</code> header, then the follow-up request.</li>
+        <li>Open a members-only page in a private window → a <strong>401</strong> or <strong>403</strong>.</li>
+      </ol>
+    </div>
+    <div class="callout">That raw HTML in the Response panel is what our app will spend the rest of this course producing.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 29 ─ curl -->
+<section class="slide">
+  <p class="eyebrow">Demo · optional</p>
+  <h2>The browser is not magic</h2>
+  <div class="rule"></div>
+  <div class="content center">
+<pre>$ <span class="k">curl -i</span> https://example.com
+
+HTTP/1.1 <span class="ok">200 OK</span>
+<span class="k">Content-Type:</span> text/html; charset=UTF-8
+<span class="k">Content-Length:</span> 1256
+
+<span class="h">&lt;!doctype html&gt;
+&lt;html&gt;...</span></pre>
+    <p class="lead" style="margin-top:var(--space-8);text-align:center">
+      The whole response — status line, headers, blank line, body — in one screen, with no browser in the way.<br>
+      <strong>It sends text and reads text.</strong></p>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 30 ─ Misconceptions -->
+<section class="slide">
+  <p class="eyebrow">Wrap-up</p>
+  <h2>Common misconceptions</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <table>
+      <thead><tr><th style="width:44%">Misconception</th><th>Correction</th></tr></thead>
+      <tbody>
+        <tr><td>"One page = one request."</td><td>One page is dozens of requests: HTML, then CSS, JS, images, fonts.</td></tr>
+        <tr><td>"The server sends the whole website."</td><td>The server answers <em>one request at a time</em>, with one resource each.</td></tr>
+        <tr><td>"The URL is the file path on the server."</td><td>It <em>used</em> to be, in 1995. Today the path is interpreted by the app — Session 04.</td></tr>
+        <tr><td>"HTTPS is a different protocol."</td><td>Same HTTP, wrapped in encryption.</td></tr>
+        <tr><td>"404 means the site is broken."</td><td>404 means <em>that resource</em> does not exist. The server answered correctly.</td></tr>
+        <tr><td>"The server remembers me between requests."</td><td>It does not, by default. Every request is independent.</td></tr>
+        <tr><td>"GET and POST are interchangeable."</td><td>GET must never change data. Refresh, back button and crawlers repeat GETs freely.</td></tr>
+        <tr><td>"The <code class="inline">#fragment</code> is sent to the server."</td><td>It never leaves the browser.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 31 ─ Check for understanding -->
+<section class="slide">
+  <p class="eyebrow">Check for understanding</p>
+  <h2>Five questions</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <ol class="list list--tight">
+        <li>In <code class="inline">https://shop.example.com/products/17?color=red#reviews</code> — which part does the server never see? Which part identifies the resource?</li>
+        <li>A page says "You must be logged in to view this." Which status code — 401 or 403? What if it says "Admins only" and you <em>are</em> logged in?</li>
+        <li>You click a link and the page appears; you click again and it appears again, unchanged. Which method was almost certainly used, and why does that matter?</li>
+      </ol>
+      <ol class="list list--tight" style="counter-reset:step 3">
+        <li>Your browser shows an error page. The status code is 500. Whose bug is it?</li>
+        <li>Loading one news article produced 87 rows in the Network tab. Explain that number to someone who has never opened DevTools.</li>
+      </ol>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 32 ─ Lab -->
+<section class="slide">
+  <p class="eyebrow">Walkthrough · 30 min · together</p>
+  <h2>Let's investigate a website</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <p class="lead">We pick a public website and work through it on screen. Nothing to hand in — follow along on your own machine if you like, and stop me whenever a row does not make sense.</p>
+    <div class="cols cols-2">
+      <ol class="list list--tight">
+        <li>We count the requests the home page makes, and find the largest single resource.</li>
+        <li>We find one request of each type: a document, a stylesheet, an image.</li>
+        <li>We read the full request line and three request headers of the main document.</li>
+      </ol>
+      <ol class="list list--tight" style="counter-reset:step 3">
+        <li>We read the status line and the <code class="inline">Content-Type</code> header of the response.</li>
+        <li>We trigger a <strong>404</strong> and watch what the site does with it.</li>
+        <li>We find a request whose status is <strong>not</strong> 200 and work out what happened.</li>
+      </ol>
+    </div>
+    <div class="callout"><strong>By the end we will have</strong> named the method, path, status code and content type for at least three distinct requests, and explained one non-200 response.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 33 ─ Setup for Session 02 -->
+<section class="slide">
+  <p class="eyebrow">Wrap-up</p>
+  <h2>Before we move on</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-3">
+      <div class="card card--brand">
+        <span class="badge">Required</span>
+        <h3 style="margin-top:var(--space-2)">Install the toolchain</h3>
+        <p>We start coding in the next session.</p>
+        <p>· .NET 10 SDK — <code class="inline">dotnet.microsoft.com/download</code></p>
+        <p>· VS Code + the <strong>C# Dev Kit</strong> extension, or Visual Studio Community on Windows.</p>
+        <p>· We verify with <code class="inline">dotnet --version</code> before we begin.</p>
+      </div>
+      <div class="card">
+        <span class="badge badge--neutral">Together</span>
+        <h3 style="margin-top:var(--space-2)">Dissect five URLs</h3>
+        <p>We take a site you use often and label scheme, host, path, query and fragment on five of its URLs.</p>
+      </div>
+      <div class="card">
+        <span class="badge badge--neutral">Together</span>
+        <h3 style="margin-top:var(--space-2)">Choose the method</h3>
+        <p>We pick the HTTP method for each action, and say why: viewing an article, publishing a comment, editing your profile, removing a photo.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 34 ─ Glossary -->
+<section class="slide">
+  <p class="eyebrow">Glossary</p>
+  <h2>Речник · EN → BG</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <table>
+        <thead><tr><th style="width:45%">English</th><th>Български</th></tr></thead>
+        <tbody>
+          <tr><td>client</td><td>клиент</td></tr>
+          <tr><td>server</td><td>сървър</td></tr>
+          <tr><td>request</td><td>заявка</td></tr>
+          <tr><td>response</td><td>отговор</td></tr>
+          <tr><td>protocol</td><td>протокол</td></tr>
+          <tr><td>stateless</td><td>без запазване на състояние</td></tr>
+          <tr><td>header</td><td>хедър / заглавна част</td></tr>
+          <tr><td>body (of a message)</td><td>тяло (на съобщение)</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <thead><tr><th style="width:45%">English</th><th>Български</th></tr></thead>
+        <tbody>
+          <tr><td>method (HTTP)</td><td>метод</td></tr>
+          <tr><td>status code</td><td>статус код</td></tr>
+          <tr><td>redirect</td><td>пренасочване</td></tr>
+          <tr><td>resource</td><td>ресурс</td></tr>
+          <tr><td>query string</td><td>заявков низ / query параметри</td></tr>
+          <tr><td>fragment</td><td>фрагмент</td></tr>
+          <tr><td>DNS</td><td>система за имена на домейни</td></tr>
+          <tr><td>safe / idempotent</td><td>безопасен / идемпотентен</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 35 ─ References -->
+<section class="slide">
+  <p class="eyebrow">References</p>
+  <h2>Where to read more</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <ul class="list">
+      <li><strong>MDN — An overview of HTTP</strong><br><span class="sm muted">developer.mozilla.org/en-US/docs/Web/HTTP/Overview</span></li>
+      <li><strong>MDN — HTTP request methods</strong><br><span class="sm muted">developer.mozilla.org/en-US/docs/Web/HTTP/Methods</span></li>
+      <li><strong>MDN — HTTP response status codes</strong><br><span class="sm muted">developer.mozilla.org/en-US/docs/Web/HTTP/Status</span></li>
+      <li><strong>MDN — What is a URL</strong><br><span class="sm muted">developer.mozilla.org/en-US/docs/Learn/Common_questions/Web_mechanics/What_is_a_URL</span></li>
+      <li><strong>Chrome DevTools — Network features reference</strong><br><span class="sm muted">developer.chrome.com/docs/devtools/network</span></li>
+    </ul>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 36 ─ Closing -->
+<section class="slide slide--brand">
+  <p class="eyebrow">Next session</p>
+  <h1 style="font-size:var(--fs-title-1);line-height:var(--lh-title-1)">02 · From Language to Framework</h1>
+  <div class="rule"></div>
+  <p class="lead">C# essentials, what an SDK / runtime / framework actually are,<br>and your first MVC project. We will have .NET installed and a working <code class="inline">dotnet --version</code> before we start.</p>
+  <div class="foot"><span>Questions?</span><span class="spacer"></span><span>Microsoft Web Technologies</span></div>
+</section>
+
+</div></div>
+<div id="hint">← → navigate · F fullscreen · P print</div>
+
+<script>
+(function(){
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var deck = document.getElementById('deck');
+  var progress = document.getElementById('progress');
+  var hint = document.getElementById('hint');
+  var total = slides.length;
+  var i = 0;
+
+  slides.forEach(function(s, n){
+    var num = s.querySelector('.num');
+    if (num) num.textContent = (n + 1) + ' / ' + total;
+  });
+
+  function show(n){
+    i = Math.max(0, Math.min(total - 1, n));
+    slides.forEach(function(s, k){ s.classList.toggle('is-active', k === i); });
+    progress.style.width = ((i + 1) / total * 100) + '%';
+    if (location.hash !== '#' + (i + 1)) history.replaceState(null, '', '#' + (i + 1));
+  }
+
+  function fit(){
+    var scale = Math.min(window.innerWidth / 1280, window.innerHeight / 720);
+    deck.style.transform = 'scale(' + scale + ')';
+  }
+
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); show(i + 1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(i - 1); }
+    else if (e.key === 'Home') { show(0); }
+    else if (e.key === 'End') { show(total - 1); }
+    else if (e.key === 'f' || e.key === 'F') {
+      if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen();
+    }
+    else if (e.key === 'p' || e.key === 'P') { window.print(); }
+  });
+
+  document.getElementById('stage').addEventListener('click', function(e){
+    show(e.clientX < window.innerWidth / 3 ? i - 1 : i + 1);
+  });
+
+  window.addEventListener('resize', fit);
+  window.addEventListener('hashchange', function(){ show((parseInt(location.hash.slice(1), 10) || 1) - 1); });
+
+  fit();
+  show((parseInt(location.hash.slice(1), 10) || 1) - 1);
+  setTimeout(function(){ hint.classList.add('is-hidden'); }, 4000);
+})();
+</script>
+</body>
+</html>

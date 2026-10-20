@@ -1,0 +1,1440 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Session 05 — Templates: HTML, CSS and Razor</title>
+<link rel="stylesheet" href="../../design-system/styles.css">
+<style>
+/* ── Deck-level extensions to the design system ────────────────────────────
+   Slides are authored on a fixed 1280×720 stage and scaled to the viewport,
+   so every size below is a *slide* size, not a screen size. Body copy is
+   stepped up from --fs-body (14px, UI density) to projection density. */
+:root{
+  --stage-w:1280px; --stage-h:720px;
+  --fs-slide-body:20px;  --lh-slide-body:30px;
+  --fs-slide-lead:24px;  --lh-slide-lead:34px;
+  --fs-slide-sm:16px;    --lh-slide-sm:24px;
+  --fs-slide-code:16px;  --lh-slide-code:26px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  background:var(--neutral-grey-160);
+  font-family:var(--font-sans-text);
+  color:var(--text-primary);
+  overflow:hidden;
+}
+
+/* ── Stage ─────────────────────────────────────────────────────────────── */
+#stage{position:fixed;inset:0;display:grid;place-items:center}
+#deck{width:var(--stage-w);height:var(--stage-h);position:relative;transform-origin:center center}
+.slide{
+  position:absolute;inset:0;
+  width:var(--stage-w);height:var(--stage-h);
+  background:var(--surface-page);
+  display:none;flex-direction:column;
+  padding:var(--space-16) var(--space-16) var(--space-10);
+  overflow:hidden;
+}
+.slide.is-active{display:flex}
+
+/* ── Slide chrome ──────────────────────────────────────────────────────── */
+.eyebrow{
+  margin:0 0 var(--space-3);
+  font-family:var(--font-sans-text);
+  font-size:var(--fs-body-sm);line-height:var(--lh-body-sm);
+  font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--brand-pressed);
+}
+h1,h2,h3{margin:0;font-family:var(--font-sans);color:var(--text-primary)}
+h1{font-size:var(--fs-display);line-height:var(--lh-display);font-weight:var(--fw-display);letter-spacing:-.02em}
+h2{font-size:var(--fs-title-1);line-height:var(--lh-title-1);font-weight:var(--fw-title-1);letter-spacing:-.01em}
+h3{font-size:var(--fs-title-3);line-height:var(--lh-title-3);font-weight:var(--fw-title-3)}
+.rule{width:56px;height:3px;background:var(--brand-base);border-radius:var(--radius-pill);margin:var(--space-4) 0 var(--space-6)}
+.body{margin:0;font-size:var(--fs-slide-body);line-height:var(--lh-slide-body);color:var(--text-primary)}
+.lead{margin:0;font-size:var(--fs-slide-lead);line-height:var(--lh-slide-lead);color:var(--text-secondary)}
+.muted{color:var(--text-secondary)}
+.sm{font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm)}
+strong{font-weight:600}
+.content{flex:1;min-height:0;display:flex;flex-direction:column;gap:var(--space-5)}
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.foot{
+  display:flex;align-items:center;gap:var(--space-4);
+  padding-top:var(--space-5);margin-top:auto;
+  border-top:1px solid var(--border-default);
+  font-size:var(--fs-caption);line-height:var(--lh-caption);
+  letter-spacing:.06em;text-transform:uppercase;color:var(--text-disabled);
+}
+.foot .spacer{flex:1}
+
+/* ── Brand-block slides (title + section dividers) ─────────────────────── */
+.slide--brand{background:var(--brand-base);color:var(--text-on-brand);justify-content:center}
+.slide--brand h1,.slide--brand h2{color:var(--text-on-brand)}
+.slide--brand .eyebrow{color:var(--brand-tint-20)}
+.slide--brand .lead,.slide--brand .body{color:var(--brand-tint-30)}
+.slide--brand .rule{background:var(--neutral-white)}
+.slide--brand .foot{border-top-color:rgba(255,255,255,.24);color:var(--brand-tint-20)}
+.slide--dark{background:var(--brand-shade-20)}
+.slide--dark h1,.slide--dark h2{color:var(--text-on-brand)}
+.slide--dark .eyebrow{color:var(--brand-tint-10)}
+.slide--dark .lead,.slide--dark .body{color:var(--brand-tint-30)}
+.slide--dark .foot{border-top-color:rgba(255,255,255,.18);color:var(--brand-tint-10)}
+.section-no{
+  font-family:var(--font-sans);font-size:120px;line-height:1;font-weight:600;
+  color:rgba(255,255,255,.22);letter-spacing:-.03em;margin-bottom:var(--space-4);
+}
+
+/* ── Layout helpers ────────────────────────────────────────────────────── */
+.cols{display:grid;gap:var(--space-6);flex:1;min-height:0}
+.cols-2{grid-template-columns:1fr 1fr}
+.cols-3{grid-template-columns:repeat(3,1fr)}
+.cols-2-1{grid-template-columns:1.4fr 1fr}
+.cols--auto{flex:0 0 auto;min-height:auto}
+.stack{display:flex;flex-direction:column;gap:var(--space-4);min-height:0}
+.center{justify-content:center}
+
+/* ── Card (design-system surfaces/Card, slide-scaled) ──────────────────── */
+.card{
+  background:var(--surface-card);border:1px solid var(--border-default);
+  border-radius:var(--radius-lg);padding:var(--space-5);
+  display:flex;flex-direction:column;gap:var(--space-2);
+}
+.card--elevated{border:none;box-shadow:var(--shadow-8)}
+.card--brand{background:var(--brand-tint-40);border-color:var(--brand-tint-20)}
+.card h3{font-size:var(--fs-title-3);line-height:var(--lh-title-3)}
+.card p{margin:0;font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm);color:var(--text-secondary)}
+
+/* ── Badge (design-system feedback/Badge, slide-scaled) ────────────────── */
+.badge{
+  display:inline-flex;align-items:center;align-self:flex-start;height:26px;padding:0 var(--space-3);
+  border-radius:var(--radius-pill);font-size:var(--fs-slide-sm);font-weight:600;
+  background:var(--brand-tint-40);color:var(--brand-pressed);white-space:nowrap;
+}
+.badge--neutral{background:var(--surface-subtle);color:var(--text-secondary)}
+.badge--success{background:var(--color-success-bg);color:var(--color-success)}
+.badge--warning{background:var(--color-warning-bg);color:var(--color-warning)}
+.badge--danger{background:var(--color-danger-bg);color:var(--color-danger)}
+.badge--mono{font-family:var(--font-mono);font-weight:600}
+
+/* ── Lists ─────────────────────────────────────────────────────────────── */
+ul.list,ol.list{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:var(--space-4)}
+ul.list li,ol.list li{
+  position:relative;padding-left:var(--space-8);
+  font-size:var(--fs-slide-body);line-height:var(--lh-slide-body);
+}
+ul.list li::before{
+  content:"";position:absolute;left:var(--space-2);top:11px;
+  width:8px;height:8px;border-radius:var(--radius-circular);background:var(--brand-base);
+}
+ol.list{counter-reset:step}
+ol.list li{counter-increment:step;padding-left:var(--space-10)}
+ol.list li::before{
+  content:counter(step);position:absolute;left:0;top:2px;
+  width:28px;height:28px;border-radius:var(--radius-circular);
+  background:var(--brand-tint-40);color:var(--brand-pressed);
+  font-family:var(--font-sans);font-size:var(--fs-slide-sm);font-weight:600;
+  display:grid;place-items:center;
+}
+.list--tight li{font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm)}
+.list--tight{gap:var(--space-3)}
+
+/* ── Table ─────────────────────────────────────────────────────────────── */
+table{
+  width:100%;border-collapse:collapse;
+  background:var(--surface-card);border:1px solid var(--border-default);
+  border-radius:var(--radius-lg);overflow:hidden;
+  font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm);
+}
+thead th{
+  text-align:left;background:var(--surface-subtle);color:var(--text-secondary);
+  font-weight:600;font-size:var(--fs-body-sm);letter-spacing:.06em;text-transform:uppercase;
+  padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border-default);
+}
+tbody td{padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border-default);vertical-align:top}
+tbody tr:last-child td{border-bottom:none}
+tbody th{
+  text-align:left;padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border-default);
+  font-weight:600;white-space:nowrap;
+}
+tbody tr:last-child th{border-bottom:none}
+td.center,th.center{text-align:center}
+
+/* ── Code ──────────────────────────────────────────────────────────────── */
+pre,code{font-family:var(--font-mono)}
+pre{
+  margin:0;background:var(--brand-shade-30);color:var(--brand-tint-30);
+  border-radius:var(--radius-lg);padding:var(--space-5) var(--space-6);
+  font-size:var(--fs-slide-code);line-height:var(--lh-slide-code);
+  overflow:hidden;white-space:pre;
+}
+pre .k{color:#4fc3f7;font-weight:600}
+pre .h{color:var(--neutral-white)}
+pre .c{color:var(--neutral-grey-90)}
+pre .ok{color:#6bd66b;font-weight:600}
+code.inline{
+  background:var(--surface-subtle);border:1px solid var(--border-default);
+  border-radius:var(--radius-sm);padding:1px 6px;font-size:.92em;color:var(--brand-pressed);
+}
+.slide--brand code.inline,.slide--dark code.inline{
+  background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.24);color:var(--neutral-white);
+}
+
+/* ── Callout ───────────────────────────────────────────────────────────── */
+.callout{
+  background:var(--brand-tint-40);border:1px solid var(--brand-tint-20);
+  border-radius:var(--radius-lg);padding:var(--space-4) var(--space-5);
+  font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm);color:var(--brand-shade-10);
+}
+.callout--warn{background:var(--color-warning-bg);border-color:#f0d98a;color:var(--color-warning)}
+
+/* ── Big statement ─────────────────────────────────────────────────────── */
+.statement{margin:0;font-family:var(--font-sans);font-size:var(--fs-title-1);line-height:var(--lh-title-1);font-weight:600}
+
+/* ── Progress bar ──────────────────────────────────────────────────────── */
+#progress{position:fixed;left:0;top:0;height:3px;background:var(--brand-tint-10);width:0;
+  transition:width var(--duration-normal) var(--ease-standard);z-index:10}
+
+/* ── Help hint ─────────────────────────────────────────────────────────── */
+#hint{
+  position:fixed;right:16px;bottom:14px;z-index:10;
+  font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--neutral-grey-90);font-family:var(--font-sans-text);
+  transition:opacity var(--duration-slow) var(--ease-standard);
+}
+#hint.is-hidden{opacity:0}
+
+/* ── Print / PDF export: one slide per landscape page ──────────────────── */
+@media print{
+  @page{size:1280px 720px;margin:0}
+  body{background:var(--neutral-white);overflow:visible}
+  #stage{position:static;display:block}
+  #deck{width:auto;height:auto;transform:none!important}
+  #progress,#hint{display:none}
+  .slide{position:static;display:flex!important;page-break-after:always;break-after:page}
+}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<div id="stage"><div id="deck">
+
+<!-- 1 ─ Title -->
+<section class="slide slide--brand">
+  <p class="eyebrow">Microsoft Web Technologies · Session 05</p>
+  <h1>Templates: HTML, CSS and Razor</h1>
+  <div class="rule"></div>
+  <p class="lead">The structure of a document, the look of a document,<br>and how a server turns data into one.</p>
+  <div class="foot"><span>Lecture 3 · Views, HTML/CSS, Razor</span><span class="spacer"></span><span>~180 min</span></div>
+</section>
+
+<!-- 2 ─ Where we left off -->
+<section class="slide">
+  <p class="eyebrow">Where we left off</p>
+  <h2>The framework told us exactly where to put a file. Now we find out what goes in it.</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-3 cols--auto">
+      <div class="card"><h3>Session 01</h3><p>The response body is usually an HTML document. We read one in the DevTools Response panel and said it was what this app would spend the course producing.</p></div>
+      <div class="card"><h3>Session 03</h3><p><code class="inline">return View()</code> ended in an error page — <em>"the view was not found"</em> — followed by a list of the paths that were searched.</p></div>
+      <div class="card"><h3>Session 04</h3><p><code class="inline">asp-controller</code> and <code class="inline">asp-action</code> appeared in a link and we deferred them. They come back here.</p></div>
+    </div>
+    <div class="callout">Three of the first four sessions have pointed at the same missing piece: the file that produces the HTML. We write it in this session — but not before we can read HTML and CSS, which the syllabus assumes and we do not.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 3 ─ Learning objectives -->
+<section class="slide">
+  <p class="eyebrow">Learning objectives</p>
+  <h2>By the end of this session you can…</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <ol class="list">
+        <li>Write a valid HTML document using the common structural elements.</li>
+        <li>Style it with CSS selectors, and explain the box model.</li>
+        <li>Explain server-side rendering: how a template plus data becomes HTML.</li>
+      </ol>
+      <ol class="list" style="counter-reset:step 3">
+        <li>Write Razor views using <code class="inline">@</code>, <code class="inline">@if</code>, <code class="inline">@foreach</code> and <code class="inline">@model</code>.</li>
+        <li>Use a layout to avoid repeating the page chrome, and a partial view to avoid repeating a fragment.</li>
+        <li>Explain how the framework finds a view for an action.</li>
+      </ol>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 4 ─ Agenda -->
+<section class="slide">
+  <p class="eyebrow">Agenda</p>
+  <h2>Three hours, two breaks</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <table>
+        <thead><tr><th style="width:34px">#</th><th>Block</th><th class="center" style="width:64px">Min</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Recap and objectives</td><td class="center">10</td></tr>
+          <tr><td>2</td><td>HTML: structure and the common elements</td><td class="center">30</td></tr>
+          <tr><td>3</td><td>CSS: selectors and the box model</td><td class="center">25</td></tr>
+          <tr><td>4</td><td class="muted">Break</td><td class="center">10</td></tr>
+          <tr><td>5</td><td>Templates and server-side rendering</td><td class="center">15</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <thead><tr><th style="width:34px">#</th><th>Block</th><th class="center" style="width:64px">Min</th></tr></thead>
+        <tbody>
+          <tr><td>6</td><td>Razor: syntax, <code class="inline">@model</code>, control flow</td><td class="center">30</td></tr>
+          <tr><td>7</td><td class="muted">Break</td><td class="center">10</td></tr>
+          <tr><td>8</td><td>Layouts, partial views, sections</td><td class="center">20</td></tr>
+          <tr><td>9</td><td>Lab: we give SimpleBlog real pages</td><td class="center">25</td></tr>
+          <tr><td>10</td><td>Wrap-up and Q&amp;A</td><td class="center">5</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 5 ─ Section: HTML -->
+<section class="slide slide--dark">
+  <div class="section-no">01</div>
+  <p class="eyebrow">Block 2 · 30 min</p>
+  <h2>HTML: the structure of a document</h2>
+  <p class="lead" style="margin-top:var(--space-4)">Labelling the parts of a page so that a browser knows what they are.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 6 ─ HTML is not a programming language -->
+<section class="slide">
+  <p class="eyebrow">HTML</p>
+  <h2>Analogy: the newspaper page</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+      <ul class="list">
+        <li>A newspaper page has a masthead, a headline, a byline, body paragraphs, a photo with a caption, a sidebar.</li>
+        <li>HTML gives each of those parts a <strong>name</strong>. That is all it does.</li>
+        <li>The <strong>label</strong> is the HTML. The <strong>look</strong> is CSS — the next block.</li>
+        <li>The reader of those labels is the browser, and also a screen reader and a search engine.</li>
+      </ul>
+      <div class="card card--elevated center">
+        <h3>HTML is not a programming language</h3>
+        <p>It has no decisions, no loops, no variables and no arithmetic. It is a <strong>markup language</strong>: it marks up a document, and nothing more.</p>
+        <p style="margin-top:var(--space-3)">Anything that decides or repeats happens elsewhere. That is the whole second half of this session.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 7 ─ Anatomy of an element -->
+<section class="slide">
+  <p class="eyebrow">HTML</p>
+  <h2>One element, four parts</h2>
+  <div class="rule"></div>
+  <div class="content center">
+<pre><span class="h">&lt;p class="lead"&gt;Hello&lt;/p&gt;</span>
+<span class="c">└┬┘└────┬─────┘ └─┬─┘└─┬┘
+ │      │         │    └── closing tag — same name, with a slash
+ │      │         └── content — what the reader sees
+ │      └── attribute — name="value", extra information
+ └── opening tag — what this thing is</span></pre>
+    <div class="cols cols-2 cols--auto" style="margin-top:var(--space-6)">
+      <div class="callout">A few elements have no content and no closing tag — <code class="inline">&lt;br&gt;</code>, <code class="inline">&lt;hr&gt;</code>, <code class="inline">&lt;img&gt;</code>, <code class="inline">&lt;meta&gt;</code>. They are written on their own.</div>
+      <div class="callout">Attributes always live in the <em>opening</em> tag, never in the closing one.</div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 8 ─ The minimum document -->
+<section class="slide">
+  <p class="eyebrow">HTML</p>
+  <h2>The smallest document that is worth writing</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre><span class="k">&lt;!DOCTYPE html&gt;</span>
+&lt;html lang="en"&gt;
+&lt;head&gt;
+    &lt;meta charset="utf-8" /&gt;
+    &lt;meta name="viewport"
+          content="width=device-width, initial-scale=1" /&gt;
+    &lt;title&gt;<span class="h">SimpleBlog</span>&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;h1&gt;<span class="h">Latest articles</span>&lt;/h1&gt;
+&lt;/body&gt;
+&lt;/html&gt;</pre>
+      <div class="stack">
+        <div class="card"><h3><code class="inline">&lt;head&gt;</code></h3><p>Information <em>about</em> the page. Nothing here is displayed.</p></div>
+        <div class="card"><h3><code class="inline">&lt;body&gt;</code></h3><p>Everything the reader sees.</p></div>
+        <div class="card"><h3><code class="inline">&lt;title&gt;</code></h3><p>The browser tab, and the heading in a search result.</p></div>
+      </div>
+    </div>
+    <div class="cols cols-2 cols--auto">
+      <div class="callout"><code class="inline">charset="utf-8"</code> — without it, Cyrillic text arrives as mojibake. We delete the line and watch it happen.</div>
+      <div class="callout"><code class="inline">viewport</code> — required for the page to behave on a phone. We come back to it in Session 06.</div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 9 ─ Elements by job -->
+<section class="slide">
+  <p class="eyebrow">HTML</p>
+  <h2>The elements worth knowing, grouped by job</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <table>
+        <thead><tr><th style="width:96px">Job</th><th>Elements</th></tr></thead>
+        <tbody>
+          <tr><th>Headings</th><td><code class="inline">&lt;h1&gt;</code> … <code class="inline">&lt;h6&gt;</code> — one <code class="inline">&lt;h1&gt;</code> per page, and never skip a level</td></tr>
+          <tr><th>Text</th><td><code class="inline">&lt;p&gt;</code>, <code class="inline">&lt;strong&gt;</code>, <code class="inline">&lt;em&gt;</code>, <code class="inline">&lt;br&gt;</code>, <code class="inline">&lt;hr&gt;</code></td></tr>
+          <tr><th>Lists</th><td><code class="inline">&lt;ul&gt;</code> / <code class="inline">&lt;ol&gt;</code> containing <code class="inline">&lt;li&gt;</code></td></tr>
+          <tr><th>Links</th><td><code class="inline">&lt;a href="/articles/42"&gt;Read&lt;/a&gt;</code></td></tr>
+          <tr><th>Images</th><td><code class="inline">&lt;img src="…" alt="…"&gt;</code> — <code class="inline">alt</code> is not optional</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <thead><tr><th style="width:96px">Job</th><th>Elements</th></tr></thead>
+        <tbody>
+          <tr><th>Tables</th><td><code class="inline">&lt;table&gt;</code>, <code class="inline">&lt;thead&gt;</code>, <code class="inline">&lt;tbody&gt;</code>, <code class="inline">&lt;tr&gt;</code>, <code class="inline">&lt;th&gt;</code>, <code class="inline">&lt;td&gt;</code></td></tr>
+          <tr><th>Forms</th><td><code class="inline">&lt;form&gt;</code>, <code class="inline">&lt;input&gt;</code>, <code class="inline">&lt;label&gt;</code>, <code class="inline">&lt;textarea&gt;</code>, <code class="inline">&lt;button&gt;</code> — Session 09</td></tr>
+          <tr><th>Grouping</th><td><code class="inline">&lt;div&gt;</code> (block) and <code class="inline">&lt;span&gt;</code> (inline) — boxes with no meaning of their own</td></tr>
+          <tr><th>Semantics</th><td><code class="inline">&lt;header&gt;</code>, <code class="inline">&lt;nav&gt;</code>, <code class="inline">&lt;main&gt;</code>, <code class="inline">&lt;article&gt;</code>, <code class="inline">&lt;section&gt;</code>, <code class="inline">&lt;footer&gt;</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 10 ─ Two rules -->
+<section class="slide">
+  <p class="eyebrow">HTML</p>
+  <h2>Two rules that prevent most beginner pain</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <div class="cols cols-2">
+      <div class="card card--elevated">
+        <span class="badge">Rule 1</span>
+        <h3 style="margin-top:var(--space-2)">Nesting must be balanced</h3>
+<pre style="margin-top:var(--space-3)"><span class="ok">&lt;p&gt;&lt;strong&gt;x&lt;/strong&gt;&lt;/p&gt;</span>
+
+<span class="c">&lt;p&gt;&lt;strong&gt;x&lt;/p&gt;&lt;/strong&gt;</span></pre>
+        <p style="margin-top:var(--space-3)">Elements open and close like brackets. The one opened last is closed first. A browser will guess when you get this wrong, and it will guess differently from the next browser.</p>
+      </div>
+      <div class="card card--elevated">
+        <span class="badge">Rule 2</span>
+        <h3 style="margin-top:var(--space-2)">Prefer a semantic element to a <code class="inline">&lt;div&gt;</code></h3>
+<pre style="margin-top:var(--space-3)"><span class="ok">&lt;nav&gt; … &lt;/nav&gt;</span>
+
+<span class="c">&lt;div class="nav"&gt; … &lt;/div&gt;</span></pre>
+        <p style="margin-top:var(--space-3)"><code class="inline">&lt;nav&gt;</code> says "navigation" to a screen reader and to a search engine. <code class="inline">&lt;div class="nav"&gt;</code> says nothing to anyone but you.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 11 ─ Live: ten lines -->
+<section class="slide">
+  <p class="eyebrow">Live · HTML</p>
+  <h2>Ten lines and a browser</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre>&lt;body&gt;
+  &lt;header&gt;&lt;h1&gt;<span class="h">SimpleBlog</span>&lt;/h1&gt;&lt;/header&gt;
+  &lt;main&gt;
+    &lt;article&gt;
+      &lt;h2&gt;<span class="h">Hello, world</span>&lt;/h2&gt;
+      &lt;p class="meta"&gt;by Ana &#183; 5 May&lt;/p&gt;
+      &lt;p&gt;The &lt;strong&gt;first&lt;/strong&gt; article.&lt;/p&gt;
+      &lt;p&gt;&lt;a href="/articles/1"&gt;Read more&lt;/a&gt;&lt;/p&gt;
+    &lt;/article&gt;
+  &lt;/main&gt;
+  &lt;footer&gt;&#169; 2026 SimpleBlog&lt;/footer&gt;
+&lt;/body&gt;</pre>
+      <ol class="list list--tight">
+        <li>We save this as a plain <code class="inline">.html</code> file and open it directly in the browser. No server, no framework, no project.</li>
+        <li>We open DevTools and select <strong>Elements</strong>: the same document, drawn as a tree.</li>
+        <li>We expand and collapse a branch. Nesting on screen is nesting in the file.</li>
+      </ol>
+    </div>
+    <div class="callout">Not one line of this is styled, and it already reads correctly: a heading is a heading, a paragraph is a paragraph. Structure first, looks second.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 12 ─ Section: CSS -->
+<section class="slide slide--dark">
+  <div class="section-no">02</div>
+  <p class="eyebrow">Block 3 · 25 min</p>
+  <h2>CSS: selectors and the box model</h2>
+  <p class="lead" style="margin-top:var(--space-4)">Given elements labelled like that — how should they look?</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 13 ─ A rule dissected -->
+<section class="slide">
+  <p class="eyebrow">CSS</p>
+  <h2>A rule, dissected</h2>
+  <div class="rule"></div>
+  <div class="content center">
+<pre><span class="h">h1</span> { <span class="k">color</span>: darkslateblue; <span class="k">font-size</span>: 2rem; }
+<span class="c">└┬┘  └─────────────────┬──────────────────┘
+ │                     └── declarations — property: value;
+ │                         one per pair, semicolon-separated
+ └── selector — which elements this applies to</span></pre>
+    <div class="cols cols-3 cols--auto" style="margin-top:var(--space-6)">
+      <div class="card"><h3>Selector</h3><p>Answers <em>which</em> elements. Everything before the brace.</p></div>
+      <div class="card"><h3>Property</h3><p>Answers <em>what</em> about them — colour, size, spacing, position.</p></div>
+      <div class="card"><h3>Value</h3><p>Answers <em>how much</em>. Units matter: <code class="inline">px</code>, <code class="inline">rem</code>, <code class="inline">%</code>.</p></div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 14 ─ Four selectors -->
+<section class="slide">
+  <p class="eyebrow">CSS</p>
+  <h2>Four selectors cover almost everything</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre><span class="h">h1</span>            { }   <span class="c">/* every &lt;h1&gt;           by element  */</span>
+<span class="h">.lead</span>         { }   <span class="c">/* class="lead"         by class    */</span>
+<span class="h">#main-title</span>   { }   <span class="c">/* id="main-title"      by id       */</span>
+<span class="h">article p</span>     { }   <span class="c">/* &lt;p&gt; inside &lt;article&gt; descendant */</span></pre>
+      <div class="stack">
+        <div class="card card--brand"><h3>Style by class</h3><p>A class can be reused on any number of elements, and one element can carry several. This is the workhorse.</p></div>
+        <div class="card"><h3>Ids sparingly</h3><p>An id must be unique on the page. Useful for linking to a position; rarely the right tool for styling.</p></div>
+      </div>
+    </div>
+    <div class="callout">An element selector sets a <em>default</em> for the whole site — every <code class="inline">&lt;h1&gt;</code>, every <code class="inline">&lt;p&gt;</code>. Reach for a class the moment you want some of them to differ.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 15 ─ The box model (DIAGRAM 1) -->
+<section class="slide">
+  <p class="eyebrow">CSS</p>
+  <h2>Every element is a box, and every box has four bands</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <svg viewBox="0 0 1000 430" style="width:auto;height:400px;align-self:center" role="img"
+         aria-label="The CSS box model: a content box of 300 by 100 pixels, surrounded by 20 pixels of padding, a 2 pixel border and 24 pixels of margin, giving 344 pixels on screen">
+      <g style="font-family:var(--font-sans-text)">
+        <!-- margin band -->
+        <rect x="40" y="20" width="620" height="340" rx="8" stroke-dasharray="6 5" stroke-width="1.5"
+              style="fill:var(--surface-subtle);stroke:var(--neutral-grey-60)"/>
+        <text x="56" y="44" font-size="16" font-weight="600" letter-spacing="1.4" style="fill:var(--text-secondary)">MARGIN</text>
+        <text x="618" y="44" text-anchor="end" font-size="16" style="font-family:var(--font-mono);fill:var(--text-secondary)">24px</text>
+
+        <!-- border band -->
+        <rect x="96" y="76" width="508" height="228" rx="6" style="fill:var(--brand-tint-10)"/>
+        <text x="112" y="99" font-size="15" font-weight="600" letter-spacing="1.4" style="fill:#ffffff">BORDER</text>
+        <text x="588" y="99" text-anchor="end" font-size="15" style="font-family:var(--font-mono);fill:#ffffff">2px</text>
+
+        <!-- padding band -->
+        <rect x="118" y="98" width="464" height="184" rx="4" style="fill:var(--brand-tint-30)"/>
+        <text x="134" y="126" font-size="16" font-weight="600" letter-spacing="1.4" style="fill:var(--brand-pressed)">PADDING</text>
+        <text x="566" y="126" text-anchor="end" font-size="16" style="font-family:var(--font-mono);fill:var(--brand-pressed)">20px</text>
+
+        <!-- content box -->
+        <rect x="158" y="146" width="384" height="88" rx="4" style="fill:var(--surface-card);stroke:var(--border-default)"/>
+        <text x="350" y="182" text-anchor="middle" font-size="20" font-weight="600" style="fill:var(--text-primary)">CONTENT</text>
+        <text x="350" y="210" text-anchor="middle" font-size="16" style="font-family:var(--font-mono);fill:var(--text-secondary)">width: 300px</text>
+
+        <!-- total-width dimension line -->
+        <line x1="96" y1="386" x2="604" y2="386" stroke-width="2" style="stroke:var(--brand-base)"/>
+        <line x1="96" y1="376" x2="96" y2="396" stroke-width="2" style="stroke:var(--brand-base)"/>
+        <line x1="604" y1="376" x2="604" y2="396" stroke-width="2" style="stroke:var(--brand-base)"/>
+        <text x="350" y="418" text-anchor="middle" font-size="17" font-weight="600" style="fill:var(--brand-pressed)">2 + 20 + 300 + 20 + 2 = 344px on screen</text>
+
+        <!-- right-hand annotations -->
+        <line x1="672" y1="40" x2="704" y2="40" stroke-width="2" style="stroke:var(--neutral-grey-60)"/>
+        <text x="716" y="46" font-size="18" style="fill:var(--text-primary)">space <tspan font-weight="600">outside</tspan>, between boxes</text>
+        <line x1="672" y1="94" x2="704" y2="94" stroke-width="2" style="stroke:var(--brand-tint-10)"/>
+        <text x="716" y="100" font-size="18" style="fill:var(--text-primary)">the visible line around the box</text>
+        <line x1="672" y1="150" x2="704" y2="150" stroke-width="2" style="stroke:var(--brand-tint-10)"/>
+        <text x="716" y="156" font-size="18" style="fill:var(--text-primary)">space <tspan font-weight="600">inside</tspan>, around the content</text>
+        <line x1="672" y1="204" x2="704" y2="204" stroke-width="2" style="stroke:var(--neutral-grey-60)"/>
+        <text x="716" y="210" font-size="18" style="fill:var(--text-primary)">the text, the image, the child boxes</text>
+        <text x="716" y="278" font-size="18" font-weight="600" style="fill:var(--brand-pressed)">Padding is inside the border.</text>
+        <text x="716" y="304" font-size="18" font-weight="600" style="fill:var(--brand-pressed)">Margin is outside it.</text>
+        <text x="716" y="336" font-size="16" style="fill:var(--text-secondary)">Margin is transparent — the page</text>
+        <text x="716" y="358" font-size="16" style="fill:var(--text-secondary)">shows through. Padding takes the</text>
+        <text x="716" y="380" font-size="16" style="fill:var(--text-secondary)">background colour of the box.</text>
+      </g>
+    </svg>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 16 ─ box-sizing -->
+<section class="slide">
+  <p class="eyebrow">CSS</p>
+  <h2>"How wide is a box that says <code class="inline">width: 300px</code>?"</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <div class="card">
+        <span class="badge badge--warning">The default</span>
+        <h3 style="margin-top:var(--space-2)">344 pixels</h3>
+        <p><code class="inline">width</code> means the width of the <strong>content band only</strong>. Padding and border are added on top of it. The number you wrote is not the number on screen.</p>
+      </div>
+      <div class="card card--brand">
+        <span class="badge">With <code class="inline">border-box</code></span>
+        <h3 style="margin-top:var(--space-2)">300 pixels</h3>
+        <p><code class="inline">width</code> means the width of the box <strong>including</strong> padding and border. The content band shrinks to fit. The number you wrote is the number on screen.</p>
+      </div>
+    </div>
+<pre>*, *::before, *::after { <span class="k">box-sizing</span>: <span class="h">border-box</span>; }</pre>
+    <div class="callout">Three lines from the top of every real stylesheet, Bootstrap's included — Session 06. We write it once and stop doing arithmetic.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 17 ─ Attaching CSS -->
+<section class="slide">
+  <p class="eyebrow">CSS</p>
+  <h2>Three ways to attach a stylesheet — use the third</h2>
+  <div class="rule"></div>
+  <div class="content">
+<pre>&lt;p style="color:red"&gt;inline&lt;/p&gt;      <span class="c">/* avoid: one element */</span>
+
+&lt;style&gt; p { color: red; } &lt;/style&gt;   <span class="c">/* in &lt;head&gt;: one page */</span>
+
+&lt;link rel="stylesheet" href="/css/site.css" /&gt;
+                                     <span class="c">/* external: do this  */</span></pre>
+    <div class="cols cols-3 cols--auto">
+      <div class="card"><h3>One file, every page</h3><p>The look of the whole site lives in one place, and one edit changes every page at once.</p></div>
+      <div class="card card--brand"><h3>It is a second request</h3><p>Session 01: that <code class="inline">&lt;link&gt;</code> makes the browser send <strong>another HTTP request</strong>. We watch it appear in the Network tab.</p></div>
+      <div class="card"><h3>Which is why it is cached</h3><p>The browser keeps the file and reuses it on the next page. An inline <code class="inline">style</code> is re-sent every time.</p></div>
+    </div>
+    <div class="callout">One HTML document, one stylesheet, two images and one script is not one request. It is <strong>five</strong>.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 18 ─ Section: templates -->
+<section class="slide slide--dark">
+  <div class="section-no">03</div>
+  <p class="eyebrow">Block 5 · 15 min</p>
+  <h2>Templates and server-side rendering</h2>
+  <p class="lead" style="margin-top:var(--space-4)">We have data in a list and the browser needs HTML. Who converts one into the other?</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 19 ─ The bad answer -->
+<section class="slide">
+  <p class="eyebrow">Templates</p>
+  <h2>The bad answer: gluing strings together</h2>
+  <div class="rule"></div>
+  <div class="content center">
+<pre>html = "&lt;h1&gt;" + article.Title + "&lt;/h1&gt;"
+     + "&lt;p&gt;"  + article.Body  + "&lt;/p&gt;"</pre>
+    <div class="cols cols-3 cols--auto" style="margin-top:var(--space-6)">
+      <div class="card"><h3>Unreadable</h3><p>The shape of the page is buried in quotation marks and plus signs. Nobody can see the document any more.</p></div>
+      <div class="card"><h3>Unmaintainable</h3><p>Every change to the markup means editing code, and every missing angle bracket is a bug you find by looking at a broken page.</p></div>
+      <div class="card"><h3>Unsafe</h3><p>If a title contains markup, that markup becomes part of the page. This is a genuine security hole — Session 09.</p></div>
+    </div>
+    <p class="lead" style="margin-top:var(--space-6);text-align:center">The good answer is older and simpler: a document with <strong>holes</strong> in it.</p>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 20 ─ Template + data → HTML (DIAGRAM 2) -->
+<section class="slide">
+  <p class="eyebrow">Templates</p>
+  <h2>A template plus data becomes HTML</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <svg viewBox="0 0 1180 380" style="width:auto;height:340px;align-self:center" role="img"
+         aria-label="A template containing two placeholders, a data object holding a title and an author, and the finished HTML in which each placeholder has been replaced by its value">
+      <g style="font-family:var(--font-sans-text)">
+        <defs>
+          <marker id="d2a" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+            <path d="M0,0 L10,4 L0,8 Z" style="fill:var(--brand-base)"/>
+          </marker>
+        </defs>
+
+        <!-- template -->
+        <text x="0" y="20" font-size="14" font-weight="600" letter-spacing="1.6" style="fill:var(--brand-pressed)">TEMPLATE &#183; ONE FILE, WRITTEN ONCE</text>
+        <rect x="0" y="36" width="380" height="150" rx="8" style="fill:var(--surface-card);stroke:var(--border-default)"/>
+        <text x="20" y="72" font-size="16" style="font-family:var(--font-mono);fill:var(--text-primary)">&lt;h1&gt;</text>
+        <rect x="66" y="54" width="132" height="26" rx="4" style="fill:var(--brand-tint-30)"/>
+        <text x="76" y="73" font-size="16" style="font-family:var(--font-mono);fill:var(--brand-pressed)">{{ title }}</text>
+        <text x="204" y="72" font-size="16" style="font-family:var(--font-mono);fill:var(--text-primary)">&lt;/h1&gt;</text>
+        <text x="20" y="118" font-size="16" style="font-family:var(--font-mono);fill:var(--text-primary)">&lt;p&gt;by</text>
+        <rect x="76" y="100" width="152" height="26" rx="4" style="fill:var(--brand-tint-30)"/>
+        <text x="86" y="119" font-size="16" style="font-family:var(--font-mono);fill:var(--brand-pressed)">{{ author }}</text>
+        <text x="234" y="118" font-size="16" style="font-family:var(--font-mono);fill:var(--text-primary)">&lt;/p&gt;</text>
+        <text x="20" y="160" font-size="15" style="fill:var(--text-secondary)">the holes are the only part that varies</text>
+
+        <!-- data -->
+        <text x="460" y="20" font-size="14" font-weight="600" letter-spacing="1.6" style="fill:var(--brand-pressed)">DATA &#183; DIFFERENT EVERY REQUEST</text>
+        <rect x="460" y="36" width="248" height="150" rx="8" style="fill:var(--brand-tint-40);stroke:var(--brand-tint-20)"/>
+        <text x="480" y="72" font-size="16" style="font-family:var(--font-mono);fill:var(--text-secondary)">title:</text>
+        <text x="480" y="96" font-size="16" font-weight="600" style="font-family:var(--font-mono);fill:var(--brand-pressed)">"Hello, world"</text>
+        <text x="480" y="134" font-size="16" style="font-family:var(--font-mono);fill:var(--text-secondary)">author:</text>
+        <text x="480" y="158" font-size="16" font-weight="600" style="font-family:var(--font-mono);fill:var(--brand-pressed)">"Ana"</text>
+
+        <!-- ties: placeholder to value -->
+        <path d="M198,67 C300,67 360,86 470,86" fill="none" stroke-width="2" stroke-dasharray="5 4" style="stroke:var(--brand-base)"/>
+        <path d="M228,113 C320,113 380,148 470,148" fill="none" stroke-width="2" stroke-dasharray="5 4" style="stroke:var(--brand-base)"/>
+
+        <!-- html -->
+        <text x="800" y="20" font-size="14" font-weight="600" letter-spacing="1.6" style="fill:var(--brand-pressed)">HTML &#183; WHAT THE BROWSER RECEIVES</text>
+        <rect x="800" y="36" width="380" height="150" rx="8" style="fill:var(--surface-card);stroke:var(--border-default)"/>
+        <text x="820" y="72" font-size="16" style="font-family:var(--font-mono);fill:var(--text-primary)">&lt;h1&gt;<tspan font-weight="600" style="fill:var(--brand-pressed)">Hello, world</tspan>&lt;/h1&gt;</text>
+        <text x="820" y="118" font-size="16" style="font-family:var(--font-mono);fill:var(--text-primary)">&lt;p&gt;by <tspan font-weight="600" style="fill:var(--brand-pressed)">Ana</tspan>&lt;/p&gt;</text>
+        <text x="820" y="160" font-size="15" style="fill:var(--text-secondary)">no holes left — nothing to fill in</text>
+
+        <!-- ties: value into output -->
+        <path d="M708,86 C760,86 760,67 790,67" fill="none" stroke-width="2" stroke-dasharray="5 4" style="stroke:var(--brand-base)"/>
+        <path d="M708,148 C760,148 760,113 790,113" fill="none" stroke-width="2" stroke-dasharray="5 4" style="stroke:var(--brand-base)"/>
+
+        <!-- engine bar -->
+        <rect x="0" y="240" width="1180" height="60" rx="8" style="fill:var(--brand-base)"/>
+        <text x="24" y="278" font-size="19" font-weight="600" style="fill:#ffffff">Template engine</text>
+        <text x="212" y="277" font-size="17" style="fill:var(--brand-tint-20)">reads the template, fills every hole from the data, hands back one finished string of HTML</text>
+        <line x1="590" y1="196" x2="590" y2="232" stroke-width="2.5" marker-end="url(#d2a)" style="stroke:var(--brand-base)"/>
+        <text x="590" y="336" text-anchor="middle" font-size="17" font-weight="600" style="fill:var(--text-primary)">&#8595;&#8195;that string becomes the response body</text>
+      </g>
+    </svg>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 21 ─ Server-side rendering -->
+<section class="slide slide--brand">
+  <p class="eyebrow">The idea of the session</p>
+  <p class="statement" style="color:var(--neutral-white)">All of this happens on the server,<br>before the response is sent.</p>
+  <div class="rule"></div>
+  <div class="content">
+    <p class="lead">The browser never sees the template, never sees a placeholder, never runs the loop. It receives finished HTML and nothing else. That is <strong style="color:#fff">server-side rendering</strong>.</p>
+    <div class="cols cols-2 cols--auto" style="margin-top:var(--space-4)">
+      <div class="card"><h3>How we prove it</h3><p>Right-click &#8594; <strong>View page source</strong>. That is what <em>arrived</em>. Search it for a placeholder: there is none.</p></div>
+      <div class="card"><h3>Not the Elements panel</h3><p>Elements shows the browser's live tree, which scripts may have changed since. For "what did the server send?", view source is the honest answer.</p></div>
+    </div>
+    <p class="body" style="margin-top:var(--space-4);color:var(--brand-tint-30)">In Session 01 we opened the Response panel and read raw HTML off a public site, and said that this was what our app would spend the rest of the course producing. This is the machinery that produces it.</p>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 22 ─ Section: Razor -->
+<section class="slide slide--dark">
+  <div class="section-no">04</div>
+  <p class="eyebrow">Block 6 · 30 min</p>
+  <h2>Razor: syntax, <code class="inline">@model</code>, control flow</h2>
+  <p class="lead" style="margin-top:var(--space-4)">The same idea, with a name and a file extension.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 23 ─ Every ecosystem has one -->
+<section class="slide">
+  <p class="eyebrow">Razor</p>
+  <h2>Every ecosystem has a template engine</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <table>
+        <thead><tr><th style="width:40%">Ecosystem</th><th>Engine</th></tr></thead>
+        <tbody>
+          <tr><th>.NET</th><td><strong>Razor</strong> — ours</td></tr>
+          <tr><th>Java</th><td>Thymeleaf, JSP</td></tr>
+          <tr><th>Python</th><td>Jinja, Django templates</td></tr>
+          <tr><th>PHP</th><td>Blade, Twig</td></tr>
+          <tr><th>Node.js</th><td>EJS, Handlebars</td></tr>
+        </tbody>
+      </table>
+      <div class="stack">
+        <div class="card card--brand">
+          <h3>The syntax differs. The idea is identical.</h3>
+          <p>Every one of them is a document with holes, plus an engine that fills them on the server. Learn the idea once and the next one costs you an afternoon.</p>
+        </div>
+        <div class="card">
+          <h3>Our file extension is <code class="inline">.cshtml</code></h3>
+          <p><strong>C# + HTML</strong> in a single file. Mostly HTML, with C# where the holes are.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 24 ─ View lookup convention -->
+<section class="slide">
+  <p class="eyebrow">Razor</p>
+  <h2>How the framework finds a view</h2>
+  <div class="rule"></div>
+  <div class="content">
+<pre>ArticlesController.Index()   -&gt;   Views/Articles/Index.cshtml
+<span class="c">└───────┬────────┘ └──┬──┘              └───┬───┘  └──┬──┘
+   controller      action                controller  action</span></pre>
+    <div class="cols cols-3 cols--auto">
+      <div class="card"><h3>Drop the word "Controller"</h3><p><code class="inline">ArticlesController</code> becomes the folder <code class="inline">Views/Articles</code>. The action name becomes the file name.</p></div>
+      <div class="card card--brand"><h3>Then <code class="inline">Views/Shared/</code></h3><p>If the file is not in the controller's own folder, the framework looks in <code class="inline">Views/Shared</code>. That fallback is what makes layouts and shared partials work.</p></div>
+      <div class="card"><h3>Convention, not configuration</h3><p>Nothing registers a view anywhere. Put the file in the right place with the right name and it is found — Session 03's error message was this rule, read aloud.</p></div>
+    </div>
+    <div class="callout">We create <code class="inline">Views/Articles/Index.cshtml</code> and reload. The error page from Session 03 disappears, and we are looking at our own HTML.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 25 ─ One symbol -->
+<section class="slide">
+  <p class="eyebrow">Razor</p>
+  <h2>One symbol to learn: <code class="inline">@</code></h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre><span class="c">@* a Razor comment — never reaches the browser *@</span>
+
+&lt;p&gt;It is <span class="k">@DateTime.Now.ToShortDateString()</span>&lt;/p&gt;
+
+&lt;p&gt;2 + 2 = <span class="k">@(2 + 2)</span>&lt;/p&gt;   <span class="c">@* brackets when unclear *@</span>
+
+<span class="k">@{</span>
+    <span class="k">var</span> greeting = <span class="h">"Hello"</span>;
+    <span class="k">var</span> count = <span class="h">3</span>;
+<span class="k">}</span>
+&lt;p&gt;<span class="k">@greeting</span> — <span class="k">@count</span> articles&lt;/p&gt;
+
+&lt;p&gt;name<span class="k">@("@")</span>example.com&lt;/p&gt;   <span class="c">@* a literal @ *@</span></pre>
+      <ul class="list list--tight">
+        <li><code class="inline">@</code> means <strong>"switch from HTML to C# here."</strong></li>
+        <li>Razor works out where the C# ends by itself. You do not close it.</li>
+        <li><code class="inline">@{ … }</code> is a block of statements; <code class="inline">@expression</code> prints one value.</li>
+        <li>Inside <code class="inline">{ }</code> you are in C#. Inside a tag you are in HTML. <code class="inline">@</code> switches back.</li>
+        <li>This feels strange for about a day, and natural afterwards.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 26 ─ Conditionals -->
+<section class="slide">
+  <p class="eyebrow">Razor</p>
+  <h2>Conditionals: markup inside a decision</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre><span class="k">@if</span> (Model.Count == <span class="h">0</span>)
+{
+    &lt;p class="text-muted"&gt;No articles yet.&lt;/p&gt;
+}
+<span class="k">else</span>
+{
+    &lt;p&gt;<span class="k">@Model.Count</span> article(s)&lt;/p&gt;
+}</pre>
+      <div class="stack">
+        <div class="card"><h3>The empty case is not an edge case</h3><p>A brand-new blog has no articles. A search returns nothing. A filter matches nothing. A page that shows a blank hole in those cases looks broken.</p></div>
+        <div class="card card--brand"><h3>We test it by emptying the list</h3><p>The only way to know the empty branch works is to run it. We comment out the seed data and reload.</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 27 ─ Loops -->
+<section class="slide">
+  <p class="eyebrow">Razor</p>
+  <h2>Loops: the workhorse of every list page</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre>&lt;ul&gt;
+<span class="k">@foreach</span> (<span class="k">var</span> a <span class="k">in</span> Model)
+{
+  &lt;li&gt;
+    &lt;a asp-action="Details" asp-route-id="<span class="k">@a.Id</span>"&gt;
+      <span class="k">@a.Title</span>&lt;/a&gt;
+    &lt;small&gt;<span class="k">@a.PublishedOn.ToString("d MMM yyyy")</span>&lt;/small&gt;
+  &lt;/li&gt;
+}
+&lt;/ul&gt;</pre>
+      <ul class="list list--tight">
+        <li>One <code class="inline">&lt;li&gt;</code> is written; a hundred are produced.</li>
+        <li>HTML and C# alternate with no ceremony and no string concatenation.</li>
+        <li><code class="inline">asp-action</code> and <code class="inline">asp-route-id</code> — Session 04's generated links, now in their natural home. No hard-coded <code class="inline">href</code>.</li>
+        <li>The browser receives a hundred <code class="inline">&lt;li&gt;</code> elements and no loop.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 28 ─ Encoding -->
+<section class="slide">
+  <p class="eyebrow">Razor · rule 1</p>
+  <h2>Razor HTML-encodes everything it prints</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre><span class="c">@* the controller supplies a title of: *@</span>
+article.Title = <span class="h">"&lt;b&gt;Breaking&lt;/b&gt;"</span>;
+
+&lt;h2&gt;<span class="k">@Model.Title</span>&lt;/h2&gt;
+
+<span class="c">Razor sends:</span>
+&lt;h2&gt;<span class="ok">&amp;lt;b&amp;gt;Breaking&amp;lt;/b&amp;gt;</span>&lt;/h2&gt;
+
+<span class="c">The reader sees the characters, not bold text:</span>
+<span class="ok">&lt;b&gt;Breaking&lt;/b&gt;</span></pre>
+      <div class="stack">
+        <div class="card card--brand"><h3>Why this is the default</h3><p>Article titles, comments and names come from people. If markup in them became part of the page, a visitor could add a script to your site. Encoding makes text stay text.</p></div>
+        <div class="card"><h3><code class="inline">@Html.Raw(…)</code> removes the protection</h3><p>It exists, it is occasionally right, and it is a decision. If you ever type it, be certain you know where the string came from. Full treatment in Session 09.</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 29 ─ @model -->
+<section class="slide">
+  <p class="eyebrow">Razor</p>
+  <h2><code class="inline">@model</code> — telling the view what it was given</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre><span class="k">@model</span> List&lt;SimpleBlog.Models.Article&gt;
+
+&lt;h1&gt;Articles&lt;/h1&gt;
+<span class="k">@foreach</span> (<span class="k">var</span> a <span class="k">in</span> Model)
+{
+    &lt;p&gt;<span class="k">@a.Title</span>&lt;/p&gt;
+}</pre>
+      <div class="stack">
+        <div class="card"><h3>Two words, one letter apart</h3><p><code class="inline">@model</code> — lowercase — <strong>declares the type</strong>, once, on the first line.</p><p><code class="inline">Model</code> — uppercase — <strong>is the object</strong> the controller passed.</p></div>
+        <div class="card card--brand"><h3>The payoff</h3><p>The editor now knows what <code class="inline">Model</code> holds: completion as you type, and a compile error rather than a broken page. We type <code class="inline">@a.Titel</code> and watch the squiggle appear.</p></div>
+      </div>
+    </div>
+    <div class="callout">Without the declaration the view has no idea what it was handed, every property access is guesswork, and typos surface as an exception in front of a user.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 30 ─ The controller line -->
+<section class="slide">
+  <p class="eyebrow">Razor · rule 2</p>
+  <h2>The controller supplies; the view displays</h2>
+  <div class="rule"></div>
+  <div class="content center">
+<pre><span class="c">// ArticlesController.cs — Session 03, finished</span>
+<span class="k">public</span> IActionResult Index() =&gt; <span class="k">View</span>(<span class="h">_articles</span>);
+                                       <span class="c">└── becomes Model</span></pre>
+    <div class="cols cols-2 cols--auto" style="margin-top:var(--space-6)">
+      <div class="card card--elevated">
+        <h3>Views must not fetch data</h3>
+        <p>No database calls, no business rules, no decisions about <em>what</em> to show — only about <em>how</em> to show it. If a view needs something, the controller supplies it.</p>
+        <p style="margin-top:var(--space-3)">This is Session 03's traffic rule, enforced one session later.</p>
+      </div>
+      <div class="card card--elevated">
+        <h3>Why the rule earns its keep</h3>
+        <p>A view that queries data cannot be tested, cannot be reused, and hides slow work inside markup. The bug then looks like a slow page rather than a bad query.</p>
+        <p style="margin-top:var(--space-3)">Keep the seam and both halves stay simple.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 31 ─ Static files -->
+<section class="slide">
+  <p class="eyebrow">Razor</p>
+  <h2>Where our stylesheet actually lives</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre><span class="c">// Program.cs — Session 02</span>
+app.<span class="k">UseStaticFiles</span>();
+
+<span class="c">on disk        wwwroot/css/site.css
+in the view    &lt;link href="~/css/site.css" /&gt;
+in the URL     /css/site.css</span></pre>
+      <ul class="list list--tight">
+        <li><code class="inline">wwwroot</code> is the only folder the server will hand out files from. Everything else — controllers, views, the project file — is invisible to the browser.</li>
+        <li><code class="inline">UseStaticFiles()</code> is the line that turns that on. Remove it and the stylesheet request comes back <strong>404</strong>.</li>
+        <li><code class="inline">~/</code> means "from the root of the application", so the link keeps working wherever the app is hosted.</li>
+      </ul>
+    </div>
+    <div class="callout">The <code class="inline">.cshtml</code> files are never served to anyone. They are read on the server, executed, and thrown away — only their output travels.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 32 ─ Section: layouts -->
+<section class="slide slide--dark">
+  <div class="section-no">05</div>
+  <p class="eyebrow">Block 8 · 20 min</p>
+  <h2>Layouts, partial views and sections</h2>
+  <p class="lead" style="margin-top:var(--space-4)">Ten pages need the same header, the same nav and the same footer. We write them once.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 33 ─ Layout composition (DIAGRAM 3) -->
+<section class="slide">
+  <p class="eyebrow">Layouts</p>
+  <h2>One frame, reused by every page</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <svg viewBox="0 0 1180 430" style="width:auto;height:396px;align-self:center" role="img"
+         aria-label="Two content pages, an article list and an article details page, each drop into the same layout, which supplies a header, navigation and footer around the hole; the result is two finished pages with identical chrome">
+      <g style="font-family:var(--font-sans-text)">
+        <defs>
+          <marker id="d3a" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+            <path d="M0,0 L10,4 L0,8 Z" style="fill:var(--brand-base)"/>
+          </marker>
+        </defs>
+
+        <text x="0" y="18" font-size="14" font-weight="600" letter-spacing="1.6" style="fill:var(--brand-pressed)">THE VIEWS</text>
+        <text x="352" y="18" font-size="14" font-weight="600" letter-spacing="1.6" style="fill:var(--brand-pressed)">THE LAYOUT</text>
+        <text x="770" y="18" font-size="14" font-weight="600" letter-spacing="1.6" style="fill:var(--brand-pressed)">WHAT THE BROWSER GETS</text>
+
+        <!-- view A -->
+        <rect x="0" y="40" width="250" height="120" rx="8" style="fill:var(--brand-tint-30);stroke:var(--brand-tint-20)"/>
+        <text x="20" y="72" font-size="17" font-weight="600" style="fill:var(--brand-pressed)">Index.cshtml</text>
+        <text x="20" y="100" font-size="15" style="fill:var(--text-secondary)">&lt;h1&gt;Articles&lt;/h1&gt;</text>
+        <text x="20" y="126" font-size="15" style="fill:var(--text-secondary)">the list of articles</text>
+        <text x="20" y="148" font-size="14" style="fill:var(--text-disabled)">no html, head or footer</text>
+
+        <!-- view B -->
+        <rect x="0" y="260" width="250" height="120" rx="8" style="fill:var(--brand-tint-30);stroke:var(--brand-tint-20)"/>
+        <text x="20" y="292" font-size="17" font-weight="600" style="fill:var(--brand-pressed)">Details.cshtml</text>
+        <text x="20" y="320" font-size="15" style="fill:var(--text-secondary)">&lt;h1&gt;One article&lt;/h1&gt;</text>
+        <text x="20" y="346" font-size="15" style="fill:var(--text-secondary)">its full body text</text>
+        <text x="20" y="368" font-size="14" style="fill:var(--text-disabled)">no html, head or footer</text>
+
+        <!-- layout -->
+        <rect x="352" y="34" width="300" height="352" rx="8" style="fill:var(--surface-card);stroke:var(--border-strong)"/>
+        <text x="372" y="60" font-size="16" font-weight="600" style="fill:var(--text-primary)">_Layout.cshtml</text>
+        <rect x="372" y="74" width="260" height="36" rx="6" style="fill:var(--brand-base)"/>
+        <text x="386" y="98" font-size="15" font-weight="600" style="fill:#ffffff">header</text>
+        <rect x="372" y="116" width="260" height="32" rx="6" style="fill:var(--brand-tint-10)"/>
+        <text x="386" y="138" font-size="15" font-weight="600" style="fill:#ffffff">nav &#183; Articles &#183; About</text>
+        <rect x="372" y="158" width="260" height="150" rx="6" stroke-dasharray="7 5" stroke-width="2"
+              style="fill:var(--surface-subtle);stroke:var(--brand-base)"/>
+        <text x="502" y="222" text-anchor="middle" font-size="17" font-weight="600" style="fill:var(--brand-pressed)">the hole</text>
+        <text x="502" y="250" text-anchor="middle" font-size="16" style="font-family:var(--font-mono);fill:var(--brand-pressed)">@RenderBody()</text>
+        <rect x="372" y="318" width="260" height="36" rx="6" style="fill:var(--brand-base)"/>
+        <text x="386" y="342" font-size="15" font-weight="600" style="fill:#ffffff">footer</text>
+        <text x="502" y="376" text-anchor="middle" font-size="14" style="fill:var(--text-secondary)">written once, for the whole site</text>
+
+        <!-- arrows in -->
+        <path d="M258,100 C300,100 310,196 342,196" fill="none" stroke-width="2.5" marker-end="url(#d3a)" style="stroke:var(--brand-base)"/>
+        <path d="M258,320 C300,320 310,262 342,262" fill="none" stroke-width="2.5" marker-end="url(#d3a)" style="stroke:var(--brand-base)"/>
+
+        <!-- arrows out -->
+        <path d="M660,196 C700,196 720,100 758,100" fill="none" stroke-width="2.5" marker-end="url(#d3a)" style="stroke:var(--brand-base)"/>
+        <path d="M660,262 C700,262 720,320 758,320" fill="none" stroke-width="2.5" marker-end="url(#d3a)" style="stroke:var(--brand-base)"/>
+
+        <!-- result A -->
+        <rect x="770" y="40" width="300" height="160" rx="8" style="fill:var(--surface-card);stroke:var(--border-default)"/>
+        <rect x="786" y="56" width="268" height="26" rx="4" style="fill:var(--brand-base)"/>
+        <rect x="786" y="88" width="268" height="20" rx="4" style="fill:var(--brand-tint-10)"/>
+        <rect x="786" y="114" width="268" height="44" rx="4" style="fill:var(--brand-tint-30)"/>
+        <text x="920" y="142" text-anchor="middle" font-size="15" font-weight="600" style="fill:var(--brand-pressed)">the list of articles</text>
+        <rect x="786" y="164" width="268" height="20" rx="4" style="fill:var(--brand-base)"/>
+        <text x="1082" y="126" font-size="15" style="fill:var(--text-secondary)">/articles</text>
+
+        <!-- result B -->
+        <rect x="770" y="230" width="300" height="160" rx="8" style="fill:var(--surface-card);stroke:var(--border-default)"/>
+        <rect x="786" y="246" width="268" height="26" rx="4" style="fill:var(--brand-base)"/>
+        <rect x="786" y="278" width="268" height="20" rx="4" style="fill:var(--brand-tint-10)"/>
+        <rect x="786" y="304" width="268" height="44" rx="4" style="fill:var(--brand-tint-30)"/>
+        <text x="920" y="332" text-anchor="middle" font-size="15" font-weight="600" style="fill:var(--brand-pressed)">its full body text</text>
+        <rect x="786" y="354" width="268" height="20" rx="4" style="fill:var(--brand-base)"/>
+        <text x="1082" y="316" font-size="15" style="fill:var(--text-secondary)">/articles/42</text>
+      </g>
+    </svg>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 34 ─ _Layout.cshtml -->
+<section class="slide">
+  <p class="eyebrow">Layouts</p>
+  <h2><code class="inline">Views/Shared/_Layout.cshtml</code></h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre>&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+  &lt;title&gt;<span class="k">@ViewData["Title"]</span> — SimpleBlog&lt;/title&gt;
+  &lt;link rel="stylesheet" href="~/css/site.css" /&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;header&gt;&lt;nav&gt;
+    &lt;a asp-controller="Articles"
+       asp-action="Index"&gt;Articles&lt;/a&gt;
+  &lt;/nav&gt;&lt;/header&gt;
+  &lt;main&gt;<span class="k">@RenderBody()</span>&lt;/main&gt;   <span class="c">@* the view lands here *@</span>
+  &lt;footer&gt;<span class="k">@DateTime.Now.Year</span> SimpleBlog&lt;/footer&gt;
+&lt;/body&gt;&lt;/html&gt;</pre>
+      <ul class="list list--tight">
+        <li>Everything that is the same on every page lives here, and only here.</li>
+        <li><code class="inline">@RenderBody()</code> is the hole. Exactly one per layout.</li>
+        <li><code class="inline">@ViewData["Title"]</code> is a second, smaller hole — each page sets its own tab title.</li>
+        <li>The footer year is computed on every request, so it is never stale.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 35 ─ The view side -->
+<section class="slide">
+  <p class="eyebrow">Layouts</p>
+  <h2>And in the view itself</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre><span class="k">@model</span> List&lt;SimpleBlog.Models.Article&gt;
+<span class="k">@{</span>
+    ViewData["Title"] = <span class="h">"Articles"</span>;
+    Layout = <span class="h">"_Layout"</span>;   <span class="c">// usually set once,
+                          // in _ViewStart.cshtml</span>
+<span class="k">}</span>
+
+&lt;h1&gt;Articles&lt;/h1&gt;
+&lt;ul&gt; … &lt;/ul&gt;</pre>
+      <div class="stack">
+        <div class="card card--brand">
+          <h3>The inversion worth saying out loud</h3>
+          <p>The view does not include the layout. <strong>The layout wraps the view.</strong></p>
+          <p style="margin-top:var(--space-3)">The same shape as Session 02: we do not call the framework, the framework calls us.</p>
+        </div>
+        <div class="card"><h3>No <code class="inline">&lt;html&gt;</code>, no <code class="inline">&lt;head&gt;</code></h3><p>A view holds only its own content. If you see <code class="inline">&lt;!DOCTYPE&gt;</code> in a view, something has gone wrong.</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 36 ─ Supporting files + sections -->
+<section class="slide">
+  <p class="eyebrow">Layouts</p>
+  <h2>Three files whose names begin with an underscore</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <table>
+      <thead><tr><th style="width:38%">File</th><th>Job</th></tr></thead>
+      <tbody>
+        <tr><th><code class="inline">Views/_ViewStart.cshtml</code></th><td>Runs before every view. Sets <code class="inline">Layout</code> once, for all of them — which is why you rarely write it in a view.</td></tr>
+        <tr><th><code class="inline">Views/_ViewImports.cshtml</code></th><td>Shared <code class="inline">@using</code> declarations and <code class="inline">@addTagHelper</code> — this is the file that makes <code class="inline">asp-action</code> and <code class="inline">&lt;partial&gt;</code> work at all.</td></tr>
+        <tr><th><code class="inline">Views/Shared/_Layout.cshtml</code></th><td>The page frame itself.</td></tr>
+      </tbody>
+    </table>
+    <div class="cols cols-2 cols--auto">
+      <div class="callout">The leading underscore is a convention, not a rule the compiler enforces. It means: <strong>this is not a page, it is a building block</strong>. No URL leads to it.</div>
+      <div class="callout"><code class="inline">_ViewImports.cshtml</code> answers a question left open in Session 04: <code class="inline">asp-controller</code> and <code class="inline">asp-action</code> are <strong>tag helpers</strong>, and this is where they are switched on.</div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 37 ─ Sections -->
+<section class="slide">
+  <p class="eyebrow">Layouts</p>
+  <h2>Sections: a second hole, for one page only</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+<pre><span class="c">@* in _Layout.cshtml, at the end of &lt;body&gt; *@</span>
+&lt;script src="~/js/site.js"&gt;&lt;/script&gt;
+<span class="k">@await RenderSectionAsync("Scripts", required: false)</span></pre>
+<pre><span class="c">@* in Details.cshtml *@</span>
+<span class="k">@section Scripts {</span>
+    &lt;script src="~/js/articles.js"&gt;&lt;/script&gt;
+<span class="k">}</span></pre>
+    </div>
+    <div class="cols cols-3 cols--auto">
+      <div class="card"><h3>Why not just put it in the view?</h3><p>Because a script belongs at the end of the body, and the view's own content lands in the middle. A section lets a page push markup into a different part of the frame.</p></div>
+      <div class="card"><h3><code class="inline">required: false</code></h3><p>Says the section is optional. Leave it out and every view that omits <code class="inline">@section Scripts</code> fails at runtime.</p></div>
+      <div class="card card--brand"><h3>A layout can hold several</h3><p>Scripts, extra stylesheets, a page-specific sidebar. Each is a named hole that a view may fill.</p></div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 38 ─ Partial views -->
+<section class="slide">
+  <p class="eyebrow">Partial views</p>
+  <h2>A partial view: stop repeating a fragment</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+<pre><span class="c">@* Views/Shared/_ArticleCard.cshtml *@</span>
+<span class="k">@model</span> SimpleBlog.Models.Article
+
+&lt;div class="article-card"&gt;
+  &lt;h2&gt;
+    &lt;a asp-action="Details"
+       asp-route-id="<span class="k">@Model.Id</span>"&gt;<span class="k">@Model.Title</span>&lt;/a&gt;
+  &lt;/h2&gt;
+  &lt;p class="meta"&gt;<span class="k">@Model.Author</span>&lt;/p&gt;
+  &lt;p&gt;<span class="k">@Model.Summary</span>&lt;/p&gt;
+&lt;/div&gt;</pre>
+<pre><span class="c">@* used from any view *@</span>
+<span class="k">@foreach</span> (<span class="k">var</span> a <span class="k">in</span> Model)
+{
+  &lt;partial name="<span class="h">_ArticleCard</span>" model="<span class="k">a</span>" /&gt;
+}</pre>
+    </div>
+    <div class="cols cols-2 cols--auto">
+      <div class="callout">The same idea as a method in Session 02 — name a piece of work once, use it in many places — applied to markup instead of code. It has its own <code class="inline">@model</code>, and it is given one article at a time.</div>
+      <div class="callout"><strong>A layout wraps a page. A partial is dropped into one.</strong> A partial is not a small page: it has no layout, no <code class="inline">&lt;html&gt;</code> and no URL of its own.</div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 39 ─ Misconceptions 1 -->
+<section class="slide">
+  <p class="eyebrow">Wrap-up</p>
+  <h2>Common misconceptions (1 of 2)</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <table>
+      <thead><tr><th style="width:44%">Misconception</th><th>Correction</th></tr></thead>
+      <tbody>
+        <tr><td>"HTML is a programming language."</td><td>It is a markup language: structure only, no logic.</td></tr>
+        <tr><td>"The browser runs the <code class="inline">@foreach</code>."</td><td>The server runs it. The browser receives finished HTML.</td></tr>
+        <tr><td>"Padding and margin are interchangeable."</td><td>Padding is inside the border; margin is outside it.</td></tr>
+        <tr><td>"Elements panel = what the server sent."</td><td>Elements is the live tree. <em>View source</em> is what arrived.</td></tr>
+        <tr><td>"<code class="inline">@model</code> and <code class="inline">Model</code> are the same word."</td><td><code class="inline">@model</code> declares the type; <code class="inline">Model</code> is the object.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 40 ─ Misconceptions 2 -->
+<section class="slide">
+  <p class="eyebrow">Wrap-up</p>
+  <h2>Common misconceptions (2 of 2)</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <table>
+      <thead><tr><th style="width:44%">Misconception</th><th>Correction</th></tr></thead>
+      <tbody>
+        <tr><td>"Views can query the database if it's convenient."</td><td>They must not. Session 03's traffic rule applies here too.</td></tr>
+        <tr><td>"The view includes the layout."</td><td>The layout wraps the view, via <code class="inline">@RenderBody()</code>.</td></tr>
+        <tr><td>"A partial view is a small page."</td><td>It is a fragment: no layout, no URL of its own.</td></tr>
+        <tr><td>"Razor output needs manual escaping."</td><td>It escapes by default. <code class="inline">@Html.Raw</code> <em>removes</em> that protection.</td></tr>
+      </tbody>
+    </table>
+    <div class="callout">Four of these nine come down to the same sentence: the server does the work, and the browser only ever sees the result.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 41 ─ Check for understanding -->
+<section class="slide">
+  <p class="eyebrow">Check for understanding</p>
+  <h2>Six questions</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <ol class="list list--tight">
+        <li><code class="inline">ArticlesController.Details()</code> calls <code class="inline">return View();</code>. Which file is rendered, and where else does the framework look if it is missing?</li>
+        <li>A <code class="inline">&lt;div&gt;</code> has <code class="inline">width: 300px; padding: 20px; border: 2px solid</code>. How wide is it on screen — with and without <code class="inline">box-sizing: border-box</code>?</li>
+        <li>What is the difference between <code class="inline">@model</code> and <code class="inline">Model</code>? What breaks if you omit the first?</li>
+      </ol>
+      <ol class="list list--tight" style="counter-reset:step 3">
+        <li>An article title is <code class="inline">&lt;b&gt;Breaking&lt;/b&gt;</code>. What does the reader see, and why?</li>
+        <li>When would you use a layout, and when a partial? One example of each, from a blog.</li>
+        <li>How many HTTP requests does a page with one stylesheet, two images and one script make?</li>
+      </ol>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 42 ─ Lab -->
+<section class="slide">
+  <p class="eyebrow">Lab · 25 min · demonstrated from the front</p>
+  <h2>We give SimpleBlog real pages</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <ol class="list list--tight">
+        <li>We create <code class="inline">Views/Articles/Index.cshtml</code>, declare <code class="inline">@model List&lt;Article&gt;</code> and return <code class="inline">View(_articles)</code>.</li>
+        <li>We list each article — title, author, date — inside an <code class="inline">&lt;article&gt;</code>, then empty the list to test <em>"No articles yet."</em></li>
+        <li>We add <code class="inline">Details.cshtml</code>, linked from the list with <code class="inline">asp-action</code> and <code class="inline">asp-route-id</code>.</li>
+        <li>We give <code class="inline">_Layout.cshtml</code> a header, nav and footer, and set <code class="inline">ViewData["Title"]</code> per page.</li>
+      </ol>
+      <ol class="list list--tight" style="counter-reset:step 4">
+        <li>We extract the card markup into <code class="inline">Views/Shared/_ArticleCard.cshtml</code> and use <code class="inline">&lt;partial&gt;</code>.</li>
+        <li>We add three rules to <code class="inline">site.css</code> — element, class, descendant — and confirm each in DevTools.</li>
+        <li>We title an article <code class="inline">&lt;script&gt;alert('hi')&lt;/script&gt;</code> and see what appears. Then <code class="inline">@Html.Raw</code>, briefly — and revert.</li>
+        <li>We <strong>view source</strong> and find the <code class="inline">&lt;li&gt;</code> the loop produced.</li>
+      </ol>
+    </div>
+    <div class="callout"><strong>By the end we will have</strong> two views sharing one layout, a list built from a partial with generated links, a handled empty case, and page source containing plain HTML and no Razor syntax anywhere.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 43 ─ Before we move on -->
+<section class="slide">
+  <p class="eyebrow">Wrap-up</p>
+  <h2>Before we move on</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-3">
+      <div class="card card--brand">
+        <span class="badge">State of the app</span>
+        <h3 style="margin-top:var(--space-2)">SimpleBlog now</h3>
+        <p>· <code class="inline">Views/Articles/Index.cshtml</code> and <code class="inline">Details.cshtml</code></p>
+        <p>· a shared <code class="inline">_Layout</code> with navigation and a footer</p>
+        <p>· an <code class="inline">_ArticleCard</code> partial</p>
+        <p>· <code class="inline">wwwroot/css/site.css</code>, served as a static file</p>
+        <p>· data still comes from the in-memory list — that changes in Session 07.</p>
+      </div>
+      <div class="card">
+        <span class="badge badge--neutral">Carried forward</span>
+        <h3 style="margin-top:var(--space-2)">Two loose ends</h3>
+        <p>Passing <em>one</em> object to a view is easy. Passing an article <em>and</em> a list of comments is not — that is a <strong>view model</strong>, Session 06.</p>
+        <p>Our CSS is three rules long. Session 06 replaces the hand-writing with Bootstrap and the <code class="inline">viewport</code> line starts to earn its place.</p>
+      </div>
+      <div class="card">
+        <span class="badge badge--neutral">Later</span>
+        <h3 style="margin-top:var(--space-2)">Where the rest lands</h3>
+        <p><strong>Session 07–08</strong> — the list becomes a database.</p>
+        <p><strong>Session 09</strong> — forms write back, and HTML encoding gets its full treatment.</p>
+        <p><strong>Session 10</strong> — what these pages look like when something goes wrong.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 44 ─ Glossary -->
+<section class="slide">
+  <p class="eyebrow">Glossary</p>
+  <h2>Речник · EN → BG</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <table>
+        <thead><tr><th style="width:36%">English</th><th>Български</th></tr></thead>
+        <tbody>
+          <tr><td>markup language</td><td>език за маркиране</td></tr>
+          <tr><td>element / tag / attribute</td><td>елемент / етикет / атрибут</td></tr>
+          <tr><td>nesting</td><td>влагане</td></tr>
+          <tr><td>semantic element</td><td>семантичен елемент</td></tr>
+          <tr><td>box model</td><td>кутиен модел</td></tr>
+          <tr><td>padding / border / margin</td><td>вътрешен отстъп / рамка / външен отстъп</td></tr>
+          <tr><td>selector / stylesheet</td><td>селектор / стилов файл</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <thead><tr><th style="width:45%">English</th><th>Български</th></tr></thead>
+        <tbody>
+          <tr><td>template / template engine</td><td>шаблон / шаблонен двигател</td></tr>
+          <tr><td>server-side rendering</td><td>рендиране от страна на сървъра</td></tr>
+          <tr><td>view</td><td>изглед</td></tr>
+          <tr><td>layout</td><td>глобален изглед / оформление</td></tr>
+          <tr><td>partial view</td><td>частичен изглед</td></tr>
+          <tr><td>section</td><td>секция</td></tr>
+          <tr><td>HTML encoding / escaping</td><td>HTML кодиране / екраниране</td></tr>
+          <tr><td>static files</td><td>статични файлове</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 45 ─ References -->
+<section class="slide">
+  <p class="eyebrow">References</p>
+  <h2>Where to read more</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <ul class="list">
+      <li><strong>MDN — HTML basics</strong><br><span class="sm muted">developer.mozilla.org/en-US/docs/Learn/Getting_started_with_the_web/HTML_basics</span></li>
+      <li><strong>MDN — CSS first steps</strong><br><span class="sm muted">developer.mozilla.org/en-US/docs/Learn/CSS/First_steps</span></li>
+      <li><strong>MDN — The box model</strong><br><span class="sm muted">developer.mozilla.org/en-US/docs/Learn/CSS/Building_blocks/The_box_model</span></li>
+      <li><strong>Razor syntax reference</strong><br><span class="sm muted">learn.microsoft.com/aspnet/core/mvc/views/razor</span></li>
+      <li><strong>Layouts</strong> · <strong>Partial views</strong><br><span class="sm muted">learn.microsoft.com/aspnet/core/mvc/views/layout · …/views/partial</span></li>
+    </ul>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 46 ─ Closing -->
+<section class="slide slide--brand">
+  <p class="eyebrow">Next session</p>
+  <h1 style="font-size:var(--fs-title-1);line-height:var(--lh-title-1)">06 · View Models and Bootstrap</h1>
+  <div class="rule"></div>
+  <p class="lead">Passing more than one thing to a view,<br>and a stylesheet we did not have to write ourselves.</p>
+  <div class="foot"><span>Questions?</span><span class="spacer"></span><span>Microsoft Web Technologies</span></div>
+</section>
+</div></div>
+<div id="hint">← → navigate · F fullscreen · P print</div>
+
+<script>
+(function(){
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var deck = document.getElementById('deck');
+  var progress = document.getElementById('progress');
+  var hint = document.getElementById('hint');
+  var total = slides.length;
+  var i = 0;
+
+  slides.forEach(function(s, n){
+    var num = s.querySelector('.num');
+    if (num) num.textContent = (n + 1) + ' / ' + total;
+  });
+
+  function show(n){
+    i = Math.max(0, Math.min(total - 1, n));
+    slides.forEach(function(s, k){ s.classList.toggle('is-active', k === i); });
+    progress.style.width = ((i + 1) / total * 100) + '%';
+    if (location.hash !== '#' + (i + 1)) history.replaceState(null, '', '#' + (i + 1));
+  }
+
+  function fit(){
+    var scale = Math.min(window.innerWidth / 1280, window.innerHeight / 720);
+    deck.style.transform = 'scale(' + scale + ')';
+  }
+
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); show(i + 1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(i - 1); }
+    else if (e.key === 'Home') { show(0); }
+    else if (e.key === 'End') { show(total - 1); }
+    else if (e.key === 'f' || e.key === 'F') {
+      if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen();
+    }
+    else if (e.key === 'p' || e.key === 'P') { window.print(); }
+  });
+
+  document.getElementById('stage').addEventListener('click', function(e){
+    show(e.clientX < window.innerWidth / 3 ? i - 1 : i + 1);
+  });
+
+  window.addEventListener('resize', fit);
+  window.addEventListener('hashchange', function(){ show((parseInt(location.hash.slice(1), 10) || 1) - 1); });
+
+  fit();
+  show((parseInt(location.hash.slice(1), 10) || 1) - 1);
+  setTimeout(function(){ hint.classList.add('is-hidden'); }, 4000);
+})();
+</script>
+</body>
+</html>

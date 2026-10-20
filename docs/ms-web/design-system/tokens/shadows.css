@@ -1,0 +1,7 @@
+:root{
+--shadow-2:0 0.6px 1.8px rgba(0,0,0,.11),0 1.2px 3.6px rgba(0,0,0,.13);
+--shadow-4:0 0.9px 2.6px rgba(0,0,0,.11),0 3.2px 7.2px rgba(0,0,0,.13);
+--shadow-8:0 1.2px 3.6px rgba(0,0,0,.11),0 6.4px 14.4px rgba(0,0,0,.13);
+--shadow-16:0 1.8px 5.4px rgba(0,0,0,.13),0 14.4px 28.8px rgba(0,0,0,.15);
+--shadow-28:0 3.6px 10.8px rgba(0,0,0,.13),0 28.8px 57.6px rgba(0,0,0,.15);
+}

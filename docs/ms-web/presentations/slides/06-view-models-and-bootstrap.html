@@ -1,0 +1,1381 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Session 06 — View Models and Bootstrap</title>
+<link rel="stylesheet" href="../../design-system/styles.css">
+<style>
+/* ── Deck-level extensions to the design system ────────────────────────────
+   Slides are authored on a fixed 1280×720 stage and scaled to the viewport,
+   so every size below is a *slide* size, not a screen size. Body copy is
+   stepped up from --fs-body (14px, UI density) to projection density. */
+:root{
+  --stage-w:1280px; --stage-h:720px;
+  --fs-slide-body:20px;  --lh-slide-body:30px;
+  --fs-slide-lead:24px;  --lh-slide-lead:34px;
+  --fs-slide-sm:16px;    --lh-slide-sm:24px;
+  --fs-slide-code:16px;  --lh-slide-code:26px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  background:var(--neutral-grey-160);
+  font-family:var(--font-sans-text);
+  color:var(--text-primary);
+  overflow:hidden;
+}
+
+/* ── Stage ─────────────────────────────────────────────────────────────── */
+#stage{position:fixed;inset:0;display:grid;place-items:center}
+#deck{width:var(--stage-w);height:var(--stage-h);position:relative;transform-origin:center center}
+.slide{
+  position:absolute;inset:0;
+  width:var(--stage-w);height:var(--stage-h);
+  background:var(--surface-page);
+  display:none;flex-direction:column;
+  padding:var(--space-16) var(--space-16) var(--space-10);
+  overflow:hidden;
+}
+.slide.is-active{display:flex}
+
+/* ── Slide chrome ──────────────────────────────────────────────────────── */
+.eyebrow{
+  margin:0 0 var(--space-3);
+  font-family:var(--font-sans-text);
+  font-size:var(--fs-body-sm);line-height:var(--lh-body-sm);
+  font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--brand-pressed);
+}
+h1,h2,h3{margin:0;font-family:var(--font-sans);color:var(--text-primary)}
+h1{font-size:var(--fs-display);line-height:var(--lh-display);font-weight:var(--fw-display);letter-spacing:-.02em}
+h2{font-size:var(--fs-title-1);line-height:var(--lh-title-1);font-weight:var(--fw-title-1);letter-spacing:-.01em}
+h3{font-size:var(--fs-title-3);line-height:var(--lh-title-3);font-weight:var(--fw-title-3)}
+.rule{width:56px;height:3px;background:var(--brand-base);border-radius:var(--radius-pill);margin:var(--space-4) 0 var(--space-6)}
+.body{margin:0;font-size:var(--fs-slide-body);line-height:var(--lh-slide-body);color:var(--text-primary)}
+.lead{margin:0;font-size:var(--fs-slide-lead);line-height:var(--lh-slide-lead);color:var(--text-secondary)}
+.muted{color:var(--text-secondary)}
+.sm{font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm)}
+strong{font-weight:600}
+.content{flex:1;min-height:0;display:flex;flex-direction:column;gap:var(--space-5)}
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.foot{
+  display:flex;align-items:center;gap:var(--space-4);
+  padding-top:var(--space-5);margin-top:auto;
+  border-top:1px solid var(--border-default);
+  font-size:var(--fs-caption);line-height:var(--lh-caption);
+  letter-spacing:.06em;text-transform:uppercase;color:var(--text-disabled);
+}
+.foot .spacer{flex:1}
+
+/* ── Brand-block slides (title + section dividers) ─────────────────────── */
+.slide--brand{background:var(--brand-base);color:var(--text-on-brand);justify-content:center}
+.slide--brand h1,.slide--brand h2{color:var(--text-on-brand)}
+.slide--brand .eyebrow{color:var(--brand-tint-20)}
+.slide--brand .lead,.slide--brand .body{color:var(--brand-tint-30)}
+.slide--brand .rule{background:var(--neutral-white)}
+.slide--brand .foot{border-top-color:rgba(255,255,255,.24);color:var(--brand-tint-20)}
+.slide--dark{background:var(--brand-shade-20)}
+.slide--dark h1,.slide--dark h2{color:var(--text-on-brand)}
+.slide--dark .eyebrow{color:var(--brand-tint-10)}
+.slide--dark .lead,.slide--dark .body{color:var(--brand-tint-30)}
+.slide--dark .foot{border-top-color:rgba(255,255,255,.18);color:var(--brand-tint-10)}
+.section-no{
+  font-family:var(--font-sans);font-size:120px;line-height:1;font-weight:600;
+  color:rgba(255,255,255,.22);letter-spacing:-.03em;margin-bottom:var(--space-4);
+}
+
+/* ── Layout helpers ────────────────────────────────────────────────────── */
+.cols{display:grid;gap:var(--space-6);flex:1;min-height:0}
+.cols-2{grid-template-columns:1fr 1fr}
+.cols-3{grid-template-columns:repeat(3,1fr)}
+.cols-2-1{grid-template-columns:1.4fr 1fr}
+.cols--auto{flex:0 0 auto;min-height:auto}
+.stack{display:flex;flex-direction:column;gap:var(--space-4);min-height:0}
+.center{justify-content:center}
+
+/* ── Card (design-system surfaces/Card, slide-scaled) ──────────────────── */
+.card{
+  background:var(--surface-card);border:1px solid var(--border-default);
+  border-radius:var(--radius-lg);padding:var(--space-5);
+  display:flex;flex-direction:column;gap:var(--space-2);
+}
+.card--elevated{border:none;box-shadow:var(--shadow-8)}
+.card--brand{background:var(--brand-tint-40);border-color:var(--brand-tint-20)}
+.card h3{font-size:var(--fs-title-3);line-height:var(--lh-title-3)}
+.card p{margin:0;font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm);color:var(--text-secondary)}
+
+/* ── Badge (design-system feedback/Badge, slide-scaled) ────────────────── */
+.badge{
+  display:inline-flex;align-items:center;align-self:flex-start;height:26px;padding:0 var(--space-3);
+  border-radius:var(--radius-pill);font-size:var(--fs-slide-sm);font-weight:600;
+  background:var(--brand-tint-40);color:var(--brand-pressed);white-space:nowrap;
+}
+.badge--neutral{background:var(--surface-subtle);color:var(--text-secondary)}
+.badge--success{background:var(--color-success-bg);color:var(--color-success)}
+.badge--warning{background:var(--color-warning-bg);color:var(--color-warning)}
+.badge--danger{background:var(--color-danger-bg);color:var(--color-danger)}
+.badge--mono{font-family:var(--font-mono);font-weight:600}
+
+/* ── Lists ─────────────────────────────────────────────────────────────── */
+ul.list,ol.list{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:var(--space-4)}
+ul.list li,ol.list li{
+  position:relative;padding-left:var(--space-8);
+  font-size:var(--fs-slide-body);line-height:var(--lh-slide-body);
+}
+ul.list li::before{
+  content:"";position:absolute;left:var(--space-2);top:11px;
+  width:8px;height:8px;border-radius:var(--radius-circular);background:var(--brand-base);
+}
+ol.list{counter-reset:step}
+ol.list li{counter-increment:step;padding-left:var(--space-10)}
+ol.list li::before{
+  content:counter(step);position:absolute;left:0;top:2px;
+  width:28px;height:28px;border-radius:var(--radius-circular);
+  background:var(--brand-tint-40);color:var(--brand-pressed);
+  font-family:var(--font-sans);font-size:var(--fs-slide-sm);font-weight:600;
+  display:grid;place-items:center;
+}
+.list--tight li{font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm)}
+.list--tight{gap:var(--space-3)}
+
+/* ── Table ─────────────────────────────────────────────────────────────── */
+table{
+  width:100%;border-collapse:collapse;
+  background:var(--surface-card);border:1px solid var(--border-default);
+  border-radius:var(--radius-lg);overflow:hidden;
+  font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm);
+}
+thead th{
+  text-align:left;background:var(--surface-subtle);color:var(--text-secondary);
+  font-weight:600;font-size:var(--fs-body-sm);letter-spacing:.06em;text-transform:uppercase;
+  padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border-default);
+}
+tbody td{padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border-default);vertical-align:top}
+tbody tr:last-child td{border-bottom:none}
+tbody th{
+  text-align:left;padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border-default);
+  font-weight:600;white-space:nowrap;
+}
+tbody tr:last-child th{border-bottom:none}
+td.center,th.center{text-align:center}
+
+/* ── Code ──────────────────────────────────────────────────────────────── */
+pre,code{font-family:var(--font-mono)}
+pre{
+  margin:0;background:var(--brand-shade-30);color:var(--brand-tint-30);
+  border-radius:var(--radius-lg);padding:var(--space-5) var(--space-6);
+  font-size:var(--fs-slide-code);line-height:var(--lh-slide-code);
+  overflow:hidden;white-space:pre;
+}
+pre .k{color:#4fc3f7;font-weight:600}
+pre .h{color:var(--neutral-white)}
+pre .c{color:var(--neutral-grey-90)}
+pre .ok{color:#6bd66b;font-weight:600}
+code.inline{
+  background:var(--surface-subtle);border:1px solid var(--border-default);
+  border-radius:var(--radius-sm);padding:1px 6px;font-size:.92em;color:var(--brand-pressed);
+}
+.slide--brand code.inline,.slide--dark code.inline{
+  background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.24);color:var(--neutral-white);
+}
+
+/* ── Callout ───────────────────────────────────────────────────────────── */
+.callout{
+  background:var(--brand-tint-40);border:1px solid var(--brand-tint-20);
+  border-radius:var(--radius-lg);padding:var(--space-4) var(--space-5);
+  font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm);color:var(--brand-shade-10);
+}
+.callout--warn{background:var(--color-warning-bg);border-color:#f0d98a;color:var(--color-warning)}
+
+/* ── Big statement ─────────────────────────────────────────────────────── */
+.statement{margin:0;font-family:var(--font-sans);font-size:var(--fs-title-1);line-height:var(--lh-title-1);font-weight:600}
+
+/* ── Progress bar ──────────────────────────────────────────────────────── */
+#progress{position:fixed;left:0;top:0;height:3px;background:var(--brand-tint-10);width:0;
+  transition:width var(--duration-normal) var(--ease-standard);z-index:10}
+
+/* ── Help hint ─────────────────────────────────────────────────────────── */
+#hint{
+  position:fixed;right:16px;bottom:14px;z-index:10;
+  font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--neutral-grey-90);font-family:var(--font-sans-text);
+  transition:opacity var(--duration-slow) var(--ease-standard);
+}
+#hint.is-hidden{opacity:0}
+
+/* ── Print / PDF export: one slide per landscape page ──────────────────── */
+@media print{
+  @page{size:1280px 720px;margin:0}
+  body{background:var(--neutral-white);overflow:visible}
+  #stage{position:static;display:block}
+  #deck{width:auto;height:auto;transform:none!important}
+  #progress,#hint{display:none}
+  .slide{position:static;display:flex!important;page-break-after:always;break-after:page}
+}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<div id="stage"><div id="deck">
+
+<!-- 1 ─ Title -->
+<section class="slide slide--brand">
+  <p class="eyebrow">Microsoft Web Technologies · Session 06</p>
+  <h1>View Models and Bootstrap</h1>
+  <div class="rule"></div>
+  <p class="lead">Shaping the data a page needs, and making the result<br>work on a phone and on a projector.</p>
+  <div class="foot"><span>Lecture 3 · Passing data to views, Bootstrap styling</span><span class="spacer"></span><span>~180 min</span></div>
+</section>
+
+<!-- 2 ─ Where we are -->
+<section class="slide">
+  <p class="eyebrow">Where we are</p>
+  <h2>The box we hand to the template has become too small</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <p class="lead">Our list page shows articles. Now it also needs a heading, a count, the current filter,
+      a list of authors to filter by — and it needs to stop looking like 1996.</p>
+    <div class="cols cols-3 cols--auto">
+      <div class="card"><h3>From Session 03</h3><p>The controller gathers the data and picks the view. Model binding turns the URL into method parameters.</p></div>
+      <div class="card"><h3>From Session 05</h3><p><code class="inline">@model</code>, <code class="inline">@foreach</code>, layouts, partials and <code class="inline">wwwroot</code> — and hand-written CSS.</p></div>
+      <div class="card card--brand"><h3>The gap</h3><p><code class="inline">@model List&lt;Article&gt;</code> carries exactly one thing. The page needs six.</p></div>
+    </div>
+    <div class="callout">Two halves in this session: <strong>how data travels from the controller to the view</strong>, and <strong>how the result is laid out on any screen</strong>.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 3 ─ Learning objectives -->
+<section class="slide">
+  <p class="eyebrow">Learning objectives</p>
+  <h2>By the end of this session you can…</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <ol class="list">
+        <li>Choose deliberately between <code class="inline">ViewData</code>, <code class="inline">ViewBag</code> and a view model, and justify the choice.</li>
+        <li>Design a view model that carries exactly what one page needs.</li>
+        <li>Explain what a CSS framework is and what responsive design means.</li>
+      </ol>
+      <ol class="list" style="counter-reset:step 3">
+        <li>Build a responsive page with the Bootstrap 5 grid.</li>
+        <li>Use Bootstrap's navbar, card, table and button components.</li>
+        <li>Produce a home page for SimpleBlog that works on a phone and on a projector.</li>
+      </ol>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 4 ─ Agenda -->
+<section class="slide">
+  <p class="eyebrow">Agenda</p>
+  <h2>Three hours, two breaks</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <table>
+        <thead><tr><th style="width:34px">#</th><th>Block</th><th class="center" style="width:64px">Min</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Recap and objectives</td><td class="center">10</td></tr>
+          <tr><td>2</td><td>Passing data to a view — three mechanisms</td><td class="center">30</td></tr>
+          <tr><td>3</td><td>View models: designing for the page</td><td class="center">25</td></tr>
+          <tr><td>4</td><td class="muted">Break</td><td class="center">10</td></tr>
+          <tr><td>5</td><td>CSS frameworks and responsive design</td><td class="center">25</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <thead><tr><th style="width:34px">#</th><th>Block</th><th class="center" style="width:64px">Min</th></tr></thead>
+        <tbody>
+          <tr><td>6</td><td>The Bootstrap grid</td><td class="center">25</td></tr>
+          <tr><td>7</td><td class="muted">Break</td><td class="center">10</td></tr>
+          <tr><td>8</td><td>Components: navbar, card, table, badge</td><td class="center">15</td></tr>
+          <tr><td>9</td><td>Walkthrough: the SimpleBlog home page</td><td class="center">25</td></tr>
+          <tr><td>10</td><td>Wrap-up and Q&amp;A</td><td class="center">5</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 5 ─ Section: passing data -->
+<section class="slide slide--dark">
+  <div class="section-no">02</div>
+  <p class="eyebrow">Block 2 · 30 min</p>
+  <h2>Passing data to a view</h2>
+  <p class="lead" style="margin-top:var(--space-4)">Three mechanisms, in increasing order of discipline.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 6 ─ What does a page actually need -->
+<section class="slide">
+  <p class="eyebrow">Passing data to a view · the idea</p>
+  <h2>What does one page actually need?</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+      <ul class="list">
+        <li>The articles themselves.</li>
+        <li>A page heading.</li>
+        <li>How many results there are.</li>
+        <li>The author currently filtered on — or "all".</li>
+        <li>The list of authors to offer as filters.</li>
+        <li>Whether the visitor may write a new article.</li>
+      </ul>
+      <div class="card card--elevated center">
+        <h3>Six things, five different types</h3>
+        <p>A list of articles carries exactly one of them.</p>
+        <p>So the real question is not "how do I send a list?" but: <strong>what is the shape of the box we hand from the handler to the template?</strong></p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 7 ─ Three answers -->
+<section class="slide">
+  <p class="eyebrow">Passing data to a view · the idea</p>
+  <h2>Every framework offers the same three answers</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <table>
+      <thead><tr><th style="width:38%">Mechanism</th><th style="width:34%">What it looks like</th><th>Checked before it runs?</th></tr></thead>
+      <tbody>
+        <tr><td>An untyped bag of key/value pairs</td><td><code class="inline">bag["title"] = "Articles"</code></td><td>no — any key is accepted</td></tr>
+        <tr><td>A dynamic object</td><td><code class="inline">bag.Title = "Articles"</code></td><td>no — any property is accepted</td></tr>
+        <tr><td><strong>A purpose-built class for this page</strong></td><td><code class="inline">new ArticleListPage { … }</code></td><td><strong>yes — the compiler checks it</strong></td></tr>
+      </tbody>
+    </table>
+    <div class="callout">The third is the professional default. The first two are convenient, and convenience is exactly what makes them dangerous.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 8 ─ Statement -->
+<section class="slide slide--brand">
+  <p class="eyebrow">The whole argument, in one sentence</p>
+  <p class="statement" style="color:var(--neutral-white)">A typo in the first two is discovered by a user.<br>
+    A typo in the third is discovered by the compiler.</p>
+  <div class="rule"></div>
+  <p class="lead">One of those costs a keystroke. The other costs a bug report, a reproduction, and an afternoon.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 9 ─ ViewData and ViewBag -->
+<section class="slide">
+  <p class="eyebrow">Passing data to a view · in .NET</p>
+  <h2>ViewData and ViewBag</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <div class="stack">
+<pre><span class="c">// ArticlesController.cs</span>
+<span class="k">public</span> IActionResult <span class="h">Index</span>()
+{
+    ViewData[<span class="h">"Title"</span>] = <span class="h">"All articles"</span>;
+    ViewBag.<span class="h">ArticleCount</span> = _articles.Count;
+    <span class="k">return</span> View(_articles);
+}</pre>
+<pre><span class="c">@* Index.cshtml *@</span>
+&lt;h1&gt;@ViewData[<span class="h">"Title"</span>]&lt;/h1&gt;
+&lt;p&gt;@ViewBag.<span class="h">ArticleCount</span> article(s)&lt;/p&gt;</pre>
+      </div>
+      <div class="stack">
+        <div class="card"><h3>String key, object value</h3><p><code class="inline">ViewData</code> is a dictionary. Everything comes back out as <code class="inline">object</code>, so casting is on us: <code class="inline">((List&lt;string&gt;)ViewData["Authors"])</code>.</p></div>
+        <div class="card"><h3>Dynamic property</h3><p><code class="inline">ViewBag</code> is <code class="inline">dynamic</code>. The property name is not resolved until the page renders.</p></div>
+        <div class="card card--brand"><h3>The same store</h3><p>They are two syntaxes over <strong>one dictionary</strong>. We set with one and read with the other, live, to prove it.</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 10 ─ The silent typo -->
+<section class="slide">
+  <p class="eyebrow">Demo · the keystroke that costs an afternoon</p>
+  <h2>One wrong letter, and the page renders happily</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <div class="stack">
+<pre><span class="c">@* what we meant *@</span>
+&lt;p&gt;@ViewBag.<span class="h">ArticleCount</span> article(s)&lt;/p&gt;
+<span class="ok">→ 12 article(s)</span>
+
+<span class="c">@* what we typed *@</span>
+&lt;p&gt;@ViewBag.<span class="h">ArticleCont</span> article(s)&lt;/p&gt;
+<span class="c">→ article(s)</span></pre>
+        <div class="callout callout--warn">No error. No warning. No red squiggle. The number is simply missing, and only a person looking at the page will notice.</div>
+      </div>
+      <div class="stack">
+        <div class="card"><h3>It compiles</h3><p>A <code class="inline">dynamic</code> property name is not checked at build time. Anything you type is a legal expression.</p></div>
+        <div class="card"><h3>It renders</h3><p>An unknown key returns <code class="inline">null</code>, and <code class="inline">null</code> renders as nothing at all.</p></div>
+        <div class="card"><h3>It ships</h3><p>Unless a test or a human catches it. That is the entire case for a typed view model, in one keystroke.</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 11 ─ Legitimate uses -->
+<section class="slide">
+  <p class="eyebrow">Passing data to a view · in .NET</p>
+  <h2>So when is ViewData still the right answer?</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <div class="card card--brand">
+        <span class="badge">Keep</span>
+        <h3 style="margin-top:var(--space-2)">Small, cross-cutting values every page has</h3>
+        <p>The page title is the canonical example. <code class="inline">_Layout.cshtml</code> reads <code class="inline">ViewData["Title"]</code>, and every view sets it. That is why the project template ships it that way.</p>
+        <p>One shared slot, one shared reader, no per-page class.</p>
+      </div>
+      <div class="card">
+        <span class="badge badge--neutral">Replace</span>
+        <h3 style="margin-top:var(--space-2)">Everything else</h3>
+        <p>Anything a specific page needs — the list, the count, the filter, the authors — belongs on a view model.</p>
+        <p>The rule we apply for the rest of the course: <strong>exactly one use of <code class="inline">ViewData</code> per project</strong>, and it is the page title.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 12 ─ Section: view models -->
+<section class="slide slide--dark">
+  <div class="section-no">03</div>
+  <p class="eyebrow">Block 3 · 25 min</p>
+  <h2>View models: designing for the page</h2>
+  <p class="lead" style="margin-top:var(--space-4)">One class, one screen, nothing spare.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 13 ─ The tray -->
+<section class="slide">
+  <p class="eyebrow">View models · the idea</p>
+  <h2>Analogy: the tray</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+      <ul class="list">
+        <li>The kitchen does not send the <strong>fridge</strong> to the table.</li>
+        <li>It does not send the <strong>recipe book</strong>, or the supplier's invoice.</li>
+        <li>It plates exactly what was ordered, on <strong>one tray</strong>.</li>
+        <li>The tray exists for one table, for one order, and then it is gone.</li>
+      </ul>
+      <div class="card card--elevated center">
+        <h3>A view model is that tray</h3>
+        <p>A small object that exists for exactly one screen.</p>
+        <p>It is not the storage shape and not the business shape. It is <em>"everything this page needs, and nothing else."</em></p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 14 ─ Diagram: shaping -->
+<section class="slide">
+  <p class="eyebrow">View models · the idea</p>
+  <h2>Several sources in, one flat object out</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <svg viewBox="0 0 1100 320" style="width:100%;height:auto" role="img"
+         aria-label="Three sources — the articles, the authors and the chosen filter — merge into one object built for one screen, carrying a heading, the articles, a count, the current filter and all authors">
+      <g style="font-family:var(--font-sans-text)">
+        <defs>
+          <marker id="vm-ar" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+            <path d="M0,0 L10,4 L0,8 Z" style="fill:var(--brand-base)"/>
+          </marker>
+        </defs>
+
+        <path d="M310,58 C400,58 430,160 520,160" fill="none" stroke-width="2" style="stroke:var(--brand-tint-10)"/>
+        <path d="M310,160 L520,160" fill="none" stroke-width="2" style="stroke:var(--brand-tint-10)"/>
+        <path d="M310,262 C400,262 430,160 520,160" fill="none" stroke-width="2" style="stroke:var(--brand-tint-10)"/>
+        <line x1="520" y1="160" x2="592" y2="160" stroke-width="2.5" marker-end="url(#vm-ar)" style="stroke:var(--brand-base)"/>
+
+        <rect x="0" y="20" width="310" height="76" rx="8" style="fill:var(--surface-card);stroke:var(--border-default)"/>
+        <text x="24" y="52" font-size="19" font-weight="600" style="fill:var(--text-primary)">The articles</text>
+        <text x="24" y="76" font-size="15" style="fill:var(--text-secondary)">filtered, newest first</text>
+
+        <rect x="0" y="122" width="310" height="76" rx="8" style="fill:var(--surface-card);stroke:var(--border-default)"/>
+        <text x="24" y="154" font-size="19" font-weight="600" style="fill:var(--text-primary)">The authors</text>
+        <text x="24" y="178" font-size="15" style="fill:var(--text-secondary)">every name that has written</text>
+
+        <rect x="0" y="224" width="310" height="76" rx="8" style="fill:var(--surface-card);stroke:var(--border-default)"/>
+        <text x="24" y="256" font-size="19" font-weight="600" style="fill:var(--text-primary)">The chosen filter</text>
+        <text x="24" y="280" font-size="15" style="fill:var(--text-secondary)">read from the address</text>
+
+        <rect x="600" y="20" width="500" height="280" rx="8" style="fill:var(--brand-base)"/>
+        <text x="624" y="56" font-size="20" font-weight="600" style="fill:#ffffff">One object, built for one screen</text>
+
+        <rect x="624" y="78" width="452" height="34" rx="6" style="fill:rgba(255,255,255,.13);stroke:rgba(255,255,255,.3)"/>
+        <text x="644" y="101" font-size="16" style="font-family:var(--font-mono);fill:#ffffff">heading</text>
+        <text x="1056" y="101" text-anchor="end" font-size="14" style="fill:var(--brand-tint-20)">"Articles by Ada"</text>
+
+        <rect x="624" y="120" width="452" height="34" rx="6" style="fill:rgba(255,255,255,.13);stroke:rgba(255,255,255,.3)"/>
+        <text x="644" y="143" font-size="16" style="font-family:var(--font-mono);fill:#ffffff">articles</text>
+        <text x="1056" y="143" text-anchor="end" font-size="14" style="fill:var(--brand-tint-20)">the list to render</text>
+
+        <rect x="624" y="162" width="452" height="34" rx="6" style="fill:rgba(255,255,255,.13);stroke:rgba(255,255,255,.3)"/>
+        <text x="644" y="185" font-size="16" style="font-family:var(--font-mono);fill:#ffffff">count</text>
+        <text x="1056" y="185" text-anchor="end" font-size="14" style="fill:var(--brand-tint-20)">computed, not stored</text>
+
+        <rect x="624" y="204" width="452" height="34" rx="6" style="fill:rgba(255,255,255,.13);stroke:rgba(255,255,255,.3)"/>
+        <text x="644" y="227" font-size="16" style="font-family:var(--font-mono);fill:#ffffff">currentFilter</text>
+        <text x="1056" y="227" text-anchor="end" font-size="14" style="fill:var(--brand-tint-20)">"Ada", or nothing</text>
+
+        <rect x="624" y="246" width="452" height="34" rx="6" style="fill:rgba(255,255,255,.13);stroke:rgba(255,255,255,.3)"/>
+        <text x="644" y="269" font-size="16" style="font-family:var(--font-mono);fill:#ffffff">allAuthors</text>
+        <text x="1056" y="269" text-anchor="end" font-size="14" style="fill:var(--brand-tint-20)">for the filter links</text>
+      </g>
+    </svg>
+    <p class="body" style="margin-top:var(--space-4);text-align:center">Nothing on the right is a copy of a storage table. Every field on the right is there because <strong>the screen shows it</strong>.</p>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 15 ─ Why it earns a file -->
+<section class="slide">
+  <p class="eyebrow">View models · the idea</p>
+  <h2>Why it is worth an extra file</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <div class="stack">
+        <div class="card"><h3>It is a contract</h3><p>The template declares what it needs; the handler must supply it. Neither side can drift without the other noticing.</p></div>
+        <div class="card"><h3>It shows only what should be shown</h3><p>A user record holds a password hash. A profile-page view model simply does not have that field, so it cannot leak — Session 09.</p></div>
+      </div>
+      <div class="stack">
+        <div class="card"><h3>It can combine sources</h3><p>Articles from one place, author names from another, the current filter from the address. One object.</p></div>
+        <div class="card"><h3>It can pre-compute</h3><p>Formatting and derived values are worked out before the template runs, instead of being tangled into the markup.</p></div>
+      </div>
+    </div>
+    <div class="callout">The cost is honest: one more small class per page. We accept it.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 16 ─ The class -->
+<section class="slide">
+  <p class="eyebrow">View models · in .NET</p>
+  <h2>Models/ViewModels/ArticleListViewModel.cs</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre><span class="k">namespace</span> SimpleBlog.Models.ViewModels;
+
+<span class="k">public class</span> <span class="h">ArticleListViewModel</span>
+{
+    <span class="k">public</span> IReadOnlyList&lt;Article&gt; Articles { get; set; }
+        = <span class="k">new</span> List&lt;Article&gt;();
+    <span class="k">public string</span> Heading { get; set; } = <span class="h">"Articles"</span>;
+    <span class="k">public string?</span> FilterAuthor { get; set; }
+    <span class="k">public</span> IReadOnlyList&lt;<span class="k">string</span>&gt; AllAuthors { get; set; }
+        = <span class="k">new</span> List&lt;<span class="k">string</span>&gt;();
+
+    <span class="k">public int</span> Count =&gt; Articles.Count;      <span class="c">// computed</span>
+    <span class="k">public bool</span> IsFiltered =&gt; FilterAuthor <span class="k">is not null</span>;
+}</pre>
+      <div class="stack">
+        <div class="card"><h3>Plain properties</h3><p>No base class, no attribute, no registration. A view model is an ordinary class.</p></div>
+        <div class="card card--brand"><h3>Computed, not stored</h3><p><code class="inline">Count</code> and <code class="inline">IsFiltered</code> are derived on read. Nobody can set them to something inconsistent.</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 17 ─ The controller -->
+<section class="slide">
+  <p class="eyebrow">View models · in .NET</p>
+  <h2>The controller fills the tray</h2>
+  <div class="rule"></div>
+  <div class="content center">
+<pre><span class="k">public</span> IActionResult <span class="h">Index</span>(<span class="k">string?</span> author)
+{
+    <span class="k">var</span> list = <span class="k">string</span>.IsNullOrWhiteSpace(author) ? _articles
+        : _articles.Where(a =&gt; a.Author == author).ToList();
+    <span class="k">return</span> View(<span class="k">new</span> <span class="h">ArticleListViewModel</span>
+    {
+        Articles = list.OrderByDescending(a =&gt; a.PublishedOn).ToList(),
+        Heading = author <span class="k">is null</span> ? <span class="h">"All articles"</span>
+                                 : <span class="h">$"Articles by {author}"</span>,
+        FilterAuthor = author,
+        AllAuthors = _allAuthors
+    });
+}</pre>
+    <p class="body" style="margin-top:var(--space-4)">The LINQ from Session 02 and the model binding from Session 03, combined:
+      <code class="inline">/articles?author=Ada</code> now filters the page.</p>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 18 ─ The view -->
+<section class="slide">
+  <p class="eyebrow">View models · in .NET</p>
+  <h2>The view declares what it expects</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <div class="stack">
+<pre><span class="k">@model</span> SimpleBlog.Models.ViewModels
+              .ArticleListViewModel
+
+&lt;h1&gt;@Model.<span class="h">Heading</span>&lt;/h1&gt;
+&lt;p class="text-muted"&gt;@Model.<span class="h">Count</span> article(s)&lt;/p&gt;
+
+@if (Model.<span class="h">IsFiltered</span>)
+{
+    &lt;a asp-action="Index"
+       class="btn btn-sm btn-outline-secondary"&gt;
+        Clear filter&lt;/a&gt;
+}</pre>
+      </div>
+      <div class="stack">
+        <div class="card card--brand"><h3>The same typo, now</h3><p><code class="inline">@Model.Cont</code> is a <strong>compile error</strong>. The page will not build, let alone ship.</p></div>
+        <div class="card"><h3>No logic beyond display</h3><p>The view asks questions and prints answers. Deciding <em>what</em> to show happened in the controller.</p></div>
+        <div class="card"><h3>Naming convention</h3><p><code class="inline">&lt;Page&gt;&lt;Purpose&gt;ViewModel</code>, in <code class="inline">Models/ViewModels/</code> — kept out of <code class="inline">Models/</code> proper. The distinction matters from Session 07 on.</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 19 ─ Section: CSS frameworks and responsive design -->
+<section class="slide slide--dark">
+  <div class="section-no">05</div>
+  <p class="eyebrow">Block 5 · 25 min</p>
+  <h2>CSS frameworks and responsive design</h2>
+  <p class="lead" style="margin-top:var(--space-4)">One page that adapts, rather than two sites that diverge.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 20 ─ How much CSS does a real site need -->
+<section class="slide">
+  <p class="eyebrow">CSS frameworks · the idea</p>
+  <h2>How much CSS does a real site actually need?</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <p class="lead">Navigation that collapses on a phone. Buttons in five states. Forms, tables, dialogs.
+      Spacing that is consistent across forty pages. All of it working in every browser.</p>
+    <div class="cols cols-3 cols--auto">
+      <div class="card"><h3>Thousands of lines</h3><p>And none of them are your blog. Every site rewrites the same stylesheet before it writes anything of its own.</p></div>
+      <div class="card"><h3>So somebody wrote it once</h3><p>A <strong>CSS framework</strong> is a pre-written stylesheet of ready-made classes and components. Bootstrap, Tailwind, Bulma, Foundation.</p></div>
+      <div class="card card--brand"><h3>The same argument as Session 02</h3><p>We did not write our own web server. We do not write our own button either. A framework is other people's solved problems.</p></div>
+    </div>
+    <div class="callout">How they work: <strong>we stop writing rules and start applying ready-made classes to our markup.</strong> Each class does one small, named thing — a padding, a margin, a border, a rounded corner.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 21 ─ The trade-off -->
+<section class="slide">
+  <p class="eyebrow">CSS frameworks · the idea</p>
+  <h2>Name the trade-off out loud</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <div class="stack">
+        <div class="card">
+          <span class="badge badge--warning">The cost</span>
+          <h3 style="margin-top:var(--space-2)">Markup gets noisier</h3>
+          <p>Six or eight class names on an element is normal. Design decisions move out of the stylesheet and into the page, where they are harder to change in one place.</p>
+        </div>
+        <div class="card">
+          <span class="badge badge--warning">The cost</span>
+          <h3 style="margin-top:var(--space-2)">Somebody else's opinions</h3>
+          <p>You inherit a spacing scale, a colour palette and a look that many other sites also have.</p>
+        </div>
+      </div>
+      <div class="stack">
+        <div class="card card--brand">
+          <span class="badge badge--success">The gain</span>
+          <h3 style="margin-top:var(--space-2)">Consistent, responsive, fast</h3>
+          <p>Forty pages that agree with each other, adapt to any screen, and were built in an afternoon rather than a fortnight.</p>
+        </div>
+        <div class="card card--brand">
+          <span class="badge badge--success">The gain</span>
+          <h3 style="margin-top:var(--space-2)">A newcomer can read it</h3>
+          <p>The names are documented and the same everywhere. For a course project — and for most business applications — that trade is clearly worth it.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 22 ─ Responsive design -->
+<section class="slide">
+  <p class="eyebrow">Responsive design · the idea</p>
+  <h2>One page that adapts, not two sites that diverge</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <p class="lead">The same page will be read on a 360&nbsp;px phone and a 2560&nbsp;px monitor.
+      A layout built from fixed pixel widths is broken on one of them. Three mechanisms make one layout serve both:</p>
+    <div class="cols cols-3">
+      <div class="card">
+        <span class="badge">1</span>
+        <h3 style="margin-top:var(--space-2)">Fluid widths</h3>
+        <p>Percentages and fractions instead of fixed pixels. A block asks for "half the space", not "480 pixels".</p>
+      </div>
+      <div class="card">
+        <span class="badge">2</span>
+        <h3 style="margin-top:var(--space-2)">The viewport meta tag</h3>
+        <p>From Session 05. Without it a phone pretends to be 980&nbsp;px wide and shrinks the whole page to fit. We delete it live and watch that happen.</p>
+        <p class="sm"><code class="inline">width=device-width, initial-scale=1</code></p>
+      </div>
+      <div class="card">
+        <span class="badge">3</span>
+        <h3 style="margin-top:var(--space-2)">Media queries</h3>
+        <p>Rules that only apply above (or below) a given width. The layout changes shape at chosen points.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 23 ─ Mobile-first -->
+<section class="slide">
+  <p class="eyebrow">Responsive design · the idea</p>
+  <h2>Mobile-first is a direction, not a slogan</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <div class="stack">
+<pre><span class="c">/* the base: what every screen gets */</span>
+<span class="h">.sidebar</span> { display: none; }
+
+<span class="c">/* added from 768px upward */</span>
+<span class="k">@media</span> (min-width: <span class="h">768px</span>) {
+    <span class="h">.sidebar</span> { display: block; width: 30%; }
+}</pre>
+        <div class="callout">Write the small-screen rules as the base, then <strong>add</strong> rules for wider screens.</div>
+      </div>
+      <div class="stack">
+        <div class="card"><h3>It is easier to add than to undo</h3><p>Starting wide means every narrow rule is a correction of a rule above it. Starting narrow means every wide rule is an addition.</p></div>
+        <div class="card"><h3>The constrained device gets the simplest stylesheet</h3><p>The phone — least screen, least power, worst connection — downloads and applies the fewest rules.</p></div>
+        <div class="card card--brand"><h3>Read it as a minimum</h3><p><code class="inline">min-width: 768px</code> means "from 768 upward", not "at 768 only". Every wider screen gets it too.</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 24 ─ Diagram: the 12-column grid -->
+<section class="slide">
+  <p class="eyebrow">Responsive design · the idea</p>
+  <h2>Almost every framework divides the page into twelve</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <svg viewBox="0 0 1208 300" style="width:100%;height:auto" role="img"
+         aria-label="Twelve equal columns with gutters, and beneath them four rows showing common splits: one block of twelve, two of six, three of four, and one of eight beside one of four">
+      <g style="font-family:var(--font-sans-text)">
+        <text x="96" y="14" font-size="13" font-weight="600" letter-spacing="1.6" style="fill:var(--brand-pressed)">TWELVE EQUAL COLUMNS, ELEVEN GUTTERS</text>
+
+        <rect x="96" y="26" width="81" height="44" rx="6" style="fill:var(--brand-tint-30)"/>
+        <rect x="189" y="26" width="81" height="44" rx="6" style="fill:var(--brand-tint-30)"/>
+        <rect x="282" y="26" width="81" height="44" rx="6" style="fill:var(--brand-tint-30)"/>
+        <rect x="375" y="26" width="81" height="44" rx="6" style="fill:var(--brand-tint-30)"/>
+        <rect x="468" y="26" width="81" height="44" rx="6" style="fill:var(--brand-tint-30)"/>
+        <rect x="561" y="26" width="81" height="44" rx="6" style="fill:var(--brand-tint-30)"/>
+        <rect x="654" y="26" width="81" height="44" rx="6" style="fill:var(--brand-tint-30)"/>
+        <rect x="747" y="26" width="81" height="44" rx="6" style="fill:var(--brand-tint-30)"/>
+        <rect x="840" y="26" width="81" height="44" rx="6" style="fill:var(--brand-tint-30)"/>
+        <rect x="933" y="26" width="81" height="44" rx="6" style="fill:var(--brand-tint-30)"/>
+        <rect x="1026" y="26" width="81" height="44" rx="6" style="fill:var(--brand-tint-30)"/>
+        <rect x="1119" y="26" width="81" height="44" rx="6" style="fill:var(--brand-tint-30)"/>
+        <text x="136" y="54" text-anchor="middle" font-size="15" style="fill:var(--brand-pressed)">1</text>
+        <text x="229" y="54" text-anchor="middle" font-size="15" style="fill:var(--brand-pressed)">2</text>
+        <text x="322" y="54" text-anchor="middle" font-size="15" style="fill:var(--brand-pressed)">3</text>
+        <text x="415" y="54" text-anchor="middle" font-size="15" style="fill:var(--brand-pressed)">4</text>
+        <text x="508" y="54" text-anchor="middle" font-size="15" style="fill:var(--brand-pressed)">5</text>
+        <text x="601" y="54" text-anchor="middle" font-size="15" style="fill:var(--brand-pressed)">6</text>
+        <text x="694" y="54" text-anchor="middle" font-size="15" style="fill:var(--brand-pressed)">7</text>
+        <text x="787" y="54" text-anchor="middle" font-size="15" style="fill:var(--brand-pressed)">8</text>
+        <text x="880" y="54" text-anchor="middle" font-size="15" style="fill:var(--brand-pressed)">9</text>
+        <text x="973" y="54" text-anchor="middle" font-size="15" style="fill:var(--brand-pressed)">10</text>
+        <text x="1066" y="54" text-anchor="middle" font-size="15" style="fill:var(--brand-pressed)">11</text>
+        <text x="1159" y="54" text-anchor="middle" font-size="15" style="fill:var(--brand-pressed)">12</text>
+
+        <text x="80" y="117" text-anchor="end" font-size="17" font-weight="600" style="fill:var(--text-secondary)">12</text>
+        <rect x="96" y="92" width="1104" height="40" rx="8" style="fill:var(--brand-base)"/>
+        <text x="648" y="117" text-anchor="middle" font-size="16" font-weight="600" style="fill:#ffffff">12</text>
+
+        <text x="80" y="169" text-anchor="end" font-size="17" font-weight="600" style="fill:var(--text-secondary)">6 + 6</text>
+        <rect x="96" y="144" width="546" height="40" rx="8" style="fill:var(--brand-base)"/>
+        <rect x="654" y="144" width="546" height="40" rx="8" style="fill:var(--brand-base)"/>
+        <text x="369" y="169" text-anchor="middle" font-size="16" font-weight="600" style="fill:#ffffff">6</text>
+        <text x="927" y="169" text-anchor="middle" font-size="16" font-weight="600" style="fill:#ffffff">6</text>
+
+        <text x="80" y="221" text-anchor="end" font-size="17" font-weight="600" style="fill:var(--text-secondary)">4 + 4 + 4</text>
+        <rect x="96" y="196" width="360" height="40" rx="8" style="fill:var(--brand-base)"/>
+        <rect x="468" y="196" width="360" height="40" rx="8" style="fill:var(--brand-base)"/>
+        <rect x="840" y="196" width="360" height="40" rx="8" style="fill:var(--brand-base)"/>
+        <text x="276" y="221" text-anchor="middle" font-size="16" font-weight="600" style="fill:#ffffff">4</text>
+        <text x="648" y="221" text-anchor="middle" font-size="16" font-weight="600" style="fill:#ffffff">4</text>
+        <text x="1020" y="221" text-anchor="middle" font-size="16" font-weight="600" style="fill:#ffffff">4</text>
+
+        <text x="80" y="273" text-anchor="end" font-size="17" font-weight="600" style="fill:var(--text-secondary)">8 + 4</text>
+        <rect x="96" y="248" width="732" height="40" rx="8" style="fill:var(--brand-base)"/>
+        <rect x="840" y="248" width="360" height="40" rx="8" style="fill:var(--brand-base)"/>
+        <text x="462" y="273" text-anchor="middle" font-size="16" font-weight="600" style="fill:#ffffff">8</text>
+        <text x="1020" y="273" text-anchor="middle" font-size="16" font-weight="600" style="fill:#ffffff">4</text>
+      </g>
+    </svg>
+    <p class="body" style="margin-top:var(--space-4);text-align:center">Twelve, because it divides by 2, 3, 4 and 6 —
+      <strong>halves, thirds and quarters all land on a column edge.</strong> We say how many columns a block occupies, at each screen size.</p>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 25 ─ Diagram: breakpoints -->
+<section class="slide">
+  <p class="eyebrow">Responsive design · the idea</p>
+  <h2>The same three blocks, three widths</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <svg viewBox="0 0 1070 330" style="width:100%;height:auto" role="img"
+         aria-label="Three device frames side by side: at 1440 pixels three blocks sit in one row, at 900 pixels two sit in a row and the third wraps below, at 375 pixels all three are stacked one per row">
+      <g style="font-family:var(--font-sans-text)">
+        <text x="260" y="16" text-anchor="middle" font-size="17" font-weight="600" style="fill:var(--text-primary)">1440 px · laptop</text>
+        <text x="727" y="16" text-anchor="middle" font-size="17" font-weight="600" style="fill:var(--text-primary)">900 px · tablet</text>
+        <text x="1002" y="16" text-anchor="middle" font-size="17" font-weight="600" style="fill:var(--text-primary)">375 px · phone</text>
+
+        <rect x="0" y="30" width="520" height="252" rx="10" style="fill:var(--surface-card);stroke:var(--border-strong)"/>
+        <circle cx="16" cy="46" r="3.5" style="fill:var(--neutral-grey-60)"/>
+        <circle cx="28" cy="46" r="3.5" style="fill:var(--neutral-grey-60)"/>
+        <circle cx="40" cy="46" r="3.5" style="fill:var(--neutral-grey-60)"/>
+        <rect x="16" y="68" width="154" height="56" rx="6" style="fill:var(--brand-tint-30);stroke:var(--brand-tint-20)"/>
+        <rect x="183" y="68" width="154" height="56" rx="6" style="fill:var(--brand-tint-30);stroke:var(--brand-tint-20)"/>
+        <rect x="350" y="68" width="154" height="56" rx="6" style="fill:var(--brand-tint-30);stroke:var(--brand-tint-20)"/>
+        <text x="93" y="103" text-anchor="middle" font-size="18" font-weight="600" style="fill:var(--brand-pressed)">A</text>
+        <text x="260" y="103" text-anchor="middle" font-size="18" font-weight="600" style="fill:var(--brand-pressed)">B</text>
+        <text x="427" y="103" text-anchor="middle" font-size="18" font-weight="600" style="fill:var(--brand-pressed)">C</text>
+
+        <rect x="565" y="30" width="325" height="252" rx="10" style="fill:var(--surface-card);stroke:var(--border-strong)"/>
+        <circle cx="581" cy="46" r="3.5" style="fill:var(--neutral-grey-60)"/>
+        <circle cx="593" cy="46" r="3.5" style="fill:var(--neutral-grey-60)"/>
+        <circle cx="605" cy="46" r="3.5" style="fill:var(--neutral-grey-60)"/>
+        <rect x="581" y="68" width="140" height="56" rx="6" style="fill:var(--brand-tint-30);stroke:var(--brand-tint-20)"/>
+        <rect x="734" y="68" width="140" height="56" rx="6" style="fill:var(--brand-tint-30);stroke:var(--brand-tint-20)"/>
+        <rect x="581" y="136" width="140" height="56" rx="6" style="fill:var(--brand-tint-30);stroke:var(--brand-tint-20)"/>
+        <text x="651" y="103" text-anchor="middle" font-size="18" font-weight="600" style="fill:var(--brand-pressed)">A</text>
+        <text x="804" y="103" text-anchor="middle" font-size="18" font-weight="600" style="fill:var(--brand-pressed)">B</text>
+        <text x="651" y="171" text-anchor="middle" font-size="18" font-weight="600" style="fill:var(--brand-pressed)">C</text>
+
+        <rect x="935" y="30" width="135" height="252" rx="10" style="fill:var(--surface-card);stroke:var(--border-strong)"/>
+        <circle cx="951" cy="46" r="3.5" style="fill:var(--neutral-grey-60)"/>
+        <circle cx="963" cy="46" r="3.5" style="fill:var(--neutral-grey-60)"/>
+        <circle cx="975" cy="46" r="3.5" style="fill:var(--neutral-grey-60)"/>
+        <rect x="951" y="68" width="103" height="56" rx="6" style="fill:var(--brand-tint-30);stroke:var(--brand-tint-20)"/>
+        <rect x="951" y="136" width="103" height="56" rx="6" style="fill:var(--brand-tint-30);stroke:var(--brand-tint-20)"/>
+        <rect x="951" y="204" width="103" height="56" rx="6" style="fill:var(--brand-tint-30);stroke:var(--brand-tint-20)"/>
+        <text x="1002" y="103" text-anchor="middle" font-size="18" font-weight="600" style="fill:var(--brand-pressed)">A</text>
+        <text x="1002" y="171" text-anchor="middle" font-size="18" font-weight="600" style="fill:var(--brand-pressed)">B</text>
+        <text x="1002" y="239" text-anchor="middle" font-size="18" font-weight="600" style="fill:var(--brand-pressed)">C</text>
+
+        <text x="0" y="308" font-size="16" style="fill:var(--text-secondary)">three per row &#8212; a third of the width each</text>
+        <text x="727" y="308" text-anchor="middle" font-size="16" style="fill:var(--text-secondary)">two per row, C wraps</text>
+        <text x="1070" y="308" text-anchor="end" font-size="16" style="fill:var(--text-secondary)">one per row, stacked</text>
+      </g>
+    </svg>
+    <p class="body" style="margin-top:var(--space-4);text-align:center">Nothing was hidden and nothing was duplicated. <strong>The same three blocks
+      changed how many columns they occupy</strong> at two chosen widths — those widths are the <strong>breakpoints</strong>.</p>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 26 ─ These slides -->
+<section class="slide">
+  <p class="eyebrow">Responsive design · the idea</p>
+  <h2>These slides are the same idea, running</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <p class="lead">This deck is not a picture of a design system. It is built on one, and it is worth looking at for a minute
+      because every idea in this block is visible in it.</p>
+    <div class="cols cols-3 cols--auto">
+      <div class="card"><h3>Named values, not literals</h3><p>No colour, space, radius or shadow on these slides is typed as a number. Each one is a named token, defined once. Change the definition and every slide changes.</p></div>
+      <div class="card"><h3>A grid, not guesswork</h3><p>This row is three equal columns; the slide before it was two. The card boxes do not know their own width — they take whatever share the grid gives them.</p></div>
+      <div class="card"><h3>Components, reused</h3><p>Every box on this slide is the same card component. The small blue pills are the same badge component. Written once, used on forty slides.</p></div>
+    </div>
+    <div class="callout">And it is fluid: the whole deck is one fixed stage scaled to whatever window it is shown in — which is why it looks identical on a laptop and on the projector.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 27 ─ Section: the Bootstrap grid -->
+<section class="slide slide--dark">
+  <div class="section-no">06</div>
+  <p class="eyebrow">Block 6 · 25 min</p>
+  <h2>The Bootstrap grid</h2>
+  <p class="lead" style="margin-top:var(--space-4)">Container, row, column — and five breakpoints.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 28 ─ Bootstrap in the project -->
+<section class="slide">
+  <p class="eyebrow">Bootstrap · in the project</p>
+  <h2>It is already there</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <p class="lead"><code class="inline">dotnet new mvc</code> ships Bootstrap 5 in <code class="inline">wwwroot/lib/bootstrap/</code>,
+      referenced from <code class="inline">_Layout.cshtml</code>. We open both files and look.</p>
+    <div class="cols cols-2-1">
+<pre><span class="c">&lt;!-- in &lt;head&gt; --&gt;</span>
+&lt;link rel="stylesheet"
+      href="~/lib/bootstrap/dist/css/<span class="h">bootstrap.min.css</span>" /&gt;
+
+<span class="c">&lt;!-- last thing before &lt;/body&gt; --&gt;</span>
+&lt;script src="~/lib/bootstrap/dist/js/<span class="h">bootstrap.bundle.min.js</span>"&gt;
+&lt;/script&gt;</pre>
+      <div class="stack">
+        <div class="card"><h3>Why the script is at the bottom</h3><p>The page renders before the JavaScript is fetched. A script in the <code class="inline">&lt;head&gt;</code> blocks the first paint.</p></div>
+        <div class="card card--brand"><h3>CSS alone is not enough</h3><p>The collapsing navbar, dropdowns and dialogs need that bundle. Copying a snippet without it is the most common "it doesn't work".</p></div>
+      </div>
+    </div>
+    <div class="callout">A CDN is the alternative: fewer files to host, but one more external dependency and no offline development. Local files are the safer default for a course.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 29 ─ container / row / col -->
+<section class="slide">
+  <p class="eyebrow">Bootstrap · the grid</p>
+  <h2>Three levels, always in this order</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <div class="stack">
+<pre>&lt;div class="<span class="k">container</span>"&gt;
+  <span class="c">&lt;!-- centred, max width, page padding --&gt;</span>
+  &lt;div class="<span class="k">row</span>"&gt;
+    <span class="c">&lt;!-- a horizontal group of columns --&gt;</span>
+    &lt;div class="<span class="h">col-12 col-md-8</span>"&gt;Main&lt;/div&gt;
+    &lt;div class="<span class="h">col-12 col-md-4</span>"&gt;Sidebar&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</pre>
+        <div class="callout callout--warn">A column outside a row is a bug. The row supplies the negative margins the columns' padding assumes — put a <code class="inline">col-*</code> straight in a container and the layout quietly breaks.</div>
+      </div>
+      <div class="stack">
+        <div class="card card--brand">
+          <h3>Read the class list aloud</h3>
+          <p><code class="inline">col-12 col-md-8</code> is an English sentence:</p>
+          <p><strong>"Full width by default; from medium screens upward, eight of twelve."</strong></p>
+        </div>
+        <div class="card">
+          <h3>8 + 4 = 12</h3>
+          <p>The two columns in the snippet are the fourth row of the grid diagram. They fill the row exactly. Go over twelve and the surplus wraps to the next line.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 30 ─ Breakpoints table -->
+<section class="slide">
+  <p class="eyebrow">Bootstrap · the grid</p>
+  <h2>Five breakpoints, all of them minimums</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <table>
+        <thead><tr><th style="width:26%">Prefix</th><th style="width:32%">Applies from</th><th>Typical device</th></tr></thead>
+        <tbody>
+          <tr><td><em>(none)</em></td><td>0 px</td><td>phone</td></tr>
+          <tr><td><code class="inline">sm</code></td><td>576 px</td><td>large phone</td></tr>
+          <tr><td><code class="inline">md</code></td><td>768 px</td><td>tablet</td></tr>
+          <tr><td><code class="inline">lg</code></td><td>992 px</td><td>laptop</td></tr>
+          <tr><td><code class="inline">xl</code></td><td>1200 px</td><td>desktop</td></tr>
+        </tbody>
+      </table>
+      <div class="stack">
+        <div class="card card--brand"><h3>"From", never "at"</h3><p><code class="inline">col-md-8</code> applies at 768 px <strong>and every width above it</strong> — unless a larger prefix overrides it. Mobile-first, exactly as in the previous block.</p></div>
+        <div class="card"><h3>Demo</h3><p>We resize the window and open the device toolbar. Watching the sidebar drop below the content at 768 px is the moment responsive design stops being abstract.</p></div>
+      </div>
+    </div>
+    <div class="callout">Spacing utilities, enough to be useful: <code class="inline">m</code>/<code class="inline">p</code> + side (<code class="inline">t b s e x y</code>) + step (<code class="inline">0</code>–<code class="inline">5</code>) — <code class="inline">mb-3</code>, <code class="inline">p-4</code>, <code class="inline">px-2</code>. Plus <code class="inline">text-center</code>, <code class="inline">text-muted</code>, <code class="inline">d-flex</code>, <code class="inline">justify-content-between</code>, <code class="inline">align-items-center</code>.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 31 ─ Utility classes before/after -->
+<section class="slide">
+  <p class="eyebrow">Bootstrap · the grid</p>
+  <h2>What a utility class replaces</h2>
+  <div class="rule"></div>
+  <div class="content center">
+<pre><span class="c">&lt;!-- what we would have written --&gt;</span>
+&lt;div style="padding:1rem; margin-bottom:1rem;
+            border:1px solid #dee2e6; border-radius:.375rem"&gt;
+
+<span class="c">&lt;!-- what we write instead --&gt;</span>
+&lt;div class="<span class="h">p-3 mb-3 border rounded</span>"&gt;</pre>
+    <p class="lead" style="margin-top:var(--space-8);text-align:center">Four names, four decisions, and the same four decisions
+      on every other page of the site.<br><strong>This is the trade we named in Part 1, in six lines.</strong></p>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 32 ─ Section: components -->
+<section class="slide slide--dark">
+  <div class="section-no">08</div>
+  <p class="eyebrow">Block 8 · 15 min</p>
+  <h2>Components</h2>
+  <p class="lead" style="margin-top:var(--space-4)">Four of them: navbar, card, table, badge. Enough to build the site, few enough to remember.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 33 ─ Navbar -->
+<section class="slide">
+  <p class="eyebrow">Components · navbar</p>
+  <h2>The plain nav becomes a navbar, in _Layout.cshtml</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre>&lt;nav class="navbar <span class="h">navbar-expand-md</span> navbar-dark bg-dark mb-4"&gt;
+  &lt;div class="container"&gt;
+    &lt;a class="navbar-brand" asp-action="Index"&gt;SimpleBlog&lt;/a&gt;
+    &lt;button class="<span class="h">navbar-toggler</span>" type="button"
+            data-bs-toggle="collapse" data-bs-target="#nav"&gt;
+      &lt;span class="navbar-toggler-icon"&gt;&lt;/span&gt;
+    &lt;/button&gt;
+    &lt;div class="collapse navbar-collapse" id="<span class="h">nav</span>"&gt;
+      &lt;ul class="navbar-nav"&gt;
+        &lt;li class="nav-item"&gt;&lt;a class="nav-link"
+            asp-action="About"&gt;About&lt;/a&gt;&lt;/li&gt;
+      &lt;/ul&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/nav&gt;</pre>
+      <div class="stack">
+        <div class="card card--brand"><h3>Demo</h3><p>We narrow the window until the links fold into a hamburger. That is <code class="inline">navbar-expand-md</code> plus the JavaScript bundle, doing their jobs together.</p></div>
+        <div class="card"><h3><code class="inline">#nav</code> ties them</h3><p>The button's <code class="inline">data-bs-target</code> must match the panel's <code class="inline">id</code>. A mismatch is a hamburger that does nothing.</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 34 ─ Card -->
+<section class="slide">
+  <p class="eyebrow">Components · card</p>
+  <h2>Session 05's partial, restyled</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre><span class="c">@* Views/Shared/_ArticleCard.cshtml *@</span>
+&lt;div class="<span class="h">card</span> mb-3 h-100"&gt;
+  &lt;div class="card-body"&gt;
+    &lt;h5 class="card-title"&gt;
+      &lt;a asp-action="Details" asp-route-id="@Model.Id"
+         class="text-decoration-none"&gt;@Model.Title&lt;/a&gt;
+    &lt;/h5&gt;
+    &lt;h6 class="card-subtitle mb-2 text-muted"&gt;
+      @Model.Author &#183; @Model.PublishedOn.ToString("d MMM yyyy")
+    &lt;/h6&gt;
+    &lt;p class="card-text"&gt;@Model.Summary&lt;/p&gt;
+    &lt;a asp-action="Details" asp-route-id="@Model.Id"
+       class="btn btn-primary btn-sm"&gt;Read more&lt;/a&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</pre>
+      <div class="stack">
+        <div class="card"><h3>The markup did not move</h3><p>Same partial, same model, same links as Session 05. Only class names were added.</p></div>
+        <div class="card card--brand"><h3><code class="inline">h-100</code> earns its place</h3><p>Full height makes every card in a row end at the same line, however long the summary is.</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 35 ─ The payoff -->
+<section class="slide">
+  <p class="eyebrow">Components · the payoff</p>
+  <h2>One column, then two, then three</h2>
+  <div class="rule"></div>
+  <div class="content center">
+<pre>&lt;div class="<span class="k">row</span>"&gt;
+@foreach (<span class="k">var</span> article <span class="k">in</span> Model.<span class="h">Articles</span>)
+{
+    &lt;div class="<span class="h">col-12 col-md-6 col-lg-4</span>"&gt;
+        &lt;partial name="_ArticleCard" model="article" /&gt;
+    &lt;/div&gt;
+}
+&lt;/div&gt;</pre>
+    <p class="lead" style="margin-top:var(--space-8);text-align:center">One column on a phone, two on a tablet, three on a laptop
+      — <strong>with no media query written by hand.</strong><br>
+      That is the breakpoint diagram from Part 1, now running in the browser.</p>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 36 ─ Table, buttons, badges -->
+<section class="slide">
+  <p class="eyebrow">Components · table, button, badge</p>
+  <h2>The remaining three, briefly</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <div class="stack">
+<pre>&lt;div class="<span class="h">table-responsive</span>"&gt;
+  &lt;table class="table table-striped table-hover
+                align-middle"&gt;
+    &lt;thead&gt;&lt;tr&gt;
+      &lt;th&gt;Title&lt;/th&gt;&lt;th&gt;Author&lt;/th&gt;&lt;th&gt;Date&lt;/th&gt;
+    &lt;/tr&gt;&lt;/thead&gt;
+    &lt;tbody&gt;...&lt;/tbody&gt;
+  &lt;/table&gt;
+&lt;/div&gt;</pre>
+        <div class="callout">The wrapper makes a wide table scroll sideways instead of breaking the page layout on a phone. We will use this table for the admin listing in Session 08.</div>
+      </div>
+      <div class="stack">
+        <div class="card">
+          <h3>Buttons</h3>
+          <p><code class="inline">btn btn-primary</code> for the main action, <code class="inline">btn btn-outline-secondary</code> for a secondary one, <code class="inline">btn btn-danger</code> for deleting.</p>
+          <p><strong>Reserve red for destructive actions.</strong> It matters in Session 09, when the delete button becomes real.</p>
+        </div>
+        <div class="card">
+          <h3>Badges</h3>
+          <p><code class="inline">badge bg-secondary</code> — a small label for a status or a count. We use one for the author name on each card.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 37 ─ Lab walkthrough -->
+<section class="slide">
+  <p class="eyebrow">Walkthrough · 25 min · from the front</p>
+  <h2>We build the SimpleBlog home page</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <ol class="list list--tight">
+        <li>We create <code class="inline">ArticleListViewModel</code> with <code class="inline">Articles</code>, <code class="inline">Heading</code>, <code class="inline">FilterAuthor</code>, <code class="inline">AllAuthors</code> and a computed <code class="inline">Count</code>.</li>
+        <li>We rewrite <code class="inline">ArticlesController.Index(string? author)</code> to build it and pass it, newest first.</li>
+        <li>We rewrite <code class="inline">Views/Articles/Index.cshtml</code> to take <code class="inline">@model ArticleListViewModel</code>.</li>
+        <li>We replace the plain nav in <code class="inline">_Layout.cshtml</code> with a navbar that collapses below <code class="inline">md</code>, and check the hamburger.</li>
+      </ol>
+      <ol class="list list--tight" style="counter-reset:step 4">
+        <li>We render the articles as cards in a grid: <code class="inline">col-12 col-md-6 col-lg-4</code>, and resize to prove all three.</li>
+        <li>We add author filter links built from <code class="inline">AllAuthors</code>, plus "Clear filter" when filtered.</li>
+        <li>We remove every remaining <code class="inline">ViewData</code> and <code class="inline">ViewBag</code> except the page title.</li>
+        <li>We check the page in the device toolbar at 375 px and at 1440 px.</li>
+      </ol>
+    </div>
+    <div class="callout"><strong>By the end we will have</strong> a list page driven entirely by a typed view model, author filtering that works from the URL and from the links, a card grid that reflows at both breakpoints, a navbar that collapses, and no <code class="inline">ViewBag</code> left except the page title.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 38 ─ Misconceptions 1 -->
+<section class="slide">
+  <p class="eyebrow">Wrap-up</p>
+  <h2>Common misconceptions — passing data</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <table>
+      <thead><tr><th style="width:44%">Misconception</th><th>Correction</th></tr></thead>
+      <tbody>
+        <tr><td>"<code class="inline">ViewData</code> and <code class="inline">ViewBag</code> are different stores."</td><td>Two syntaxes over the same dictionary. Set with one, read with the other.</td></tr>
+        <tr><td>"<code class="inline">ViewBag</code> is simpler, so it is better."</td><td>It is unchecked. A typo fails silently at runtime and renders nothing.</td></tr>
+        <tr><td>"The view model must match the database table."</td><td>It matches the <strong>page</strong>. It may combine sources, omit fields, or compute new ones.</td></tr>
+        <tr><td>"A view model is extra work for nothing."</td><td>It is the difference between a compile error and a user-visible bug.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 39 ─ Misconceptions 2 -->
+<section class="slide">
+  <p class="eyebrow">Wrap-up</p>
+  <h2>Common misconceptions — layout</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <table>
+      <thead><tr><th style="width:44%">Misconception</th><th>Correction</th></tr></thead>
+      <tbody>
+        <tr><td>"Bootstrap makes the site responsive automatically."</td><td>Only if you use the grid classes <em>and</em> keep the viewport meta tag.</td></tr>
+        <tr><td>"<code class="inline">col-md-8</code> means eight columns on medium screens only."</td><td>It means "from medium <strong>upward</strong>". Breakpoints are minimum widths.</td></tr>
+        <tr><td>"You can put columns directly in a container."</td><td>Columns must live inside a <code class="inline">row</code>.</td></tr>
+        <tr><td>"Using Bootstrap means never writing CSS."</td><td>You still write your own for anything specific to your site.</td></tr>
+        <tr><td>"Copy any Bootstrap snippet and it works."</td><td>Interactive components need <code class="inline">bootstrap.bundle.min.js</code> as well as the stylesheet.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 40 ─ Check for understanding -->
+<section class="slide">
+  <p class="eyebrow">Check for understanding</p>
+  <h2>Six questions</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <ol class="list list--tight">
+        <li><code class="inline">ViewBag.Titel = "x"</code> in the controller, <code class="inline">@ViewBag.Title</code> in the view. What does the user see, and when do we find out?</li>
+        <li>A page shows articles <em>and</em> a list of categories with counts. Which mechanism, and what would the class look like?</li>
+        <li>Read <code class="inline">class="col-12 col-md-6 col-lg-3"</code> aloud as an English sentence.</li>
+      </ol>
+      <ol class="list list--tight" style="counter-reset:step 3">
+        <li>What happens to a Bootstrap page on a phone if the viewport meta tag is missing?</li>
+        <li>Why is <code class="inline">bootstrap.bundle.min.js</code> at the bottom of the <code class="inline">&lt;body&gt;</code> and not in the <code class="inline">&lt;head&gt;</code>?</li>
+        <li>Name one thing a view model can do that passing the domain object directly cannot.</li>
+      </ol>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 41 ─ Before we move on -->
+<section class="slide">
+  <p class="eyebrow">Wrap-up</p>
+  <h2>Before we move on</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-3">
+      <div class="card card--brand">
+        <span class="badge">Where SimpleBlog is</span>
+        <h3 style="margin-top:var(--space-2)">A styled, responsive site</h3>
+        <p>Bootstrap navbar and footer in the layout, the article list as a responsive card grid driven by <code class="inline">ArticleListViewModel</code>, author filtering through the query string, and a styled details page.</p>
+        <p>The data is still the in-memory list.</p>
+      </div>
+      <div class="card">
+        <span class="badge badge--neutral">If we have time</span>
+        <h3 style="margin-top:var(--space-2)">Two extensions</h3>
+        <p>· An <code class="inline">ArticleDetailsViewModel</code> carrying the article plus its previous and next neighbours, with buttons that disappear when there is nothing to link to.</p>
+        <p>· A featured-article hero at <code class="inline">col-12</code>, put on the view model rather than fetched twice.</p>
+      </div>
+      <div class="card">
+        <span class="badge badge--warning">Worth breaking on purpose</span>
+        <h3 style="margin-top:var(--space-2)">Two failures to have seen</h3>
+        <p>· A <code class="inline">col-*</code> placed directly in a container, with no row.</p>
+        <p>· The viewport meta tag deleted, viewed at 375 px.</p>
+        <p>Both fail quietly. Recognising them later is worth two minutes now.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 42 ─ Glossary -->
+<section class="slide">
+  <p class="eyebrow">Glossary</p>
+  <h2>Речник · EN → BG</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <table>
+        <thead><tr><th style="width:45%">English</th><th>Български</th></tr></thead>
+        <tbody>
+          <tr><td>view model</td><td>модел за изгледа</td></tr>
+          <tr><td>dynamic / strongly typed</td><td>динамичен / строго типизиран</td></tr>
+          <tr><td>dictionary (key–value)</td><td>речник (ключ–стойност)</td></tr>
+          <tr><td>CSS framework</td><td>CSS рамка</td></tr>
+          <tr><td>utility class</td><td>помощен клас</td></tr>
+          <tr><td>responsive design</td><td>отзивчив дизайн</td></tr>
+          <tr><td>viewport</td><td>видима област</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <thead><tr><th style="width:45%">English</th><th>Български</th></tr></thead>
+        <tbody>
+          <tr><td>media query</td><td>медийна заявка</td></tr>
+          <tr><td>breakpoint</td><td>точка на пречупване</td></tr>
+          <tr><td>mobile-first</td><td>първо за мобилни устройства</td></tr>
+          <tr><td>grid / row / column</td><td>мрежа / ред / колона</td></tr>
+          <tr><td>container</td><td>контейнер</td></tr>
+          <tr><td>component</td><td>компонент</td></tr>
+          <tr><td>navbar / card / badge</td><td>навигационна лента / карта / етикет</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 43 ─ References -->
+<section class="slide">
+  <p class="eyebrow">References</p>
+  <h2>Where to read more</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <ul class="list">
+      <li><strong>Views and view models in ASP.NET Core MVC</strong><br><span class="sm muted">learn.microsoft.com/aspnet/core/mvc/views/overview</span></li>
+      <li><strong>Passing data to views — ViewData and ViewBag</strong><br><span class="sm muted">learn.microsoft.com/aspnet/core/mvc/views/overview#pass-data-to-views</span></li>
+      <li><strong>Bootstrap 5 — grid system</strong><br><span class="sm muted">getbootstrap.com/docs/5.3/layout/grid/</span></li>
+      <li><strong>Bootstrap 5 — components and spacing utilities</strong><br><span class="sm muted">getbootstrap.com/docs/5.3/components/ · /utilities/spacing/</span></li>
+      <li><strong>MDN — Responsive design</strong><br><span class="sm muted">developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout/Responsive_Design</span></li>
+    </ul>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 44 ─ Closing -->
+<section class="slide slide--brand">
+  <p class="eyebrow">Next session</p>
+  <h1 style="font-size:var(--fs-title-1);line-height:var(--lh-title-1)">07 · Databases and ORMs</h1>
+  <div class="rule"></div>
+  <p class="lead">The in-memory list finally goes away. Relational storage, what an ORM is,<br>and Entity Framework Core over SQLite — with <code class="inline">Article</code> as the first real table.</p>
+  <div class="foot"><span>Questions?</span><span class="spacer"></span><span>Microsoft Web Technologies</span></div>
+</section>
+</div></div>
+<div id="hint">← → navigate · F fullscreen · P print</div>
+
+<script>
+(function(){
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var deck = document.getElementById('deck');
+  var progress = document.getElementById('progress');
+  var hint = document.getElementById('hint');
+  var total = slides.length;
+  var i = 0;
+
+  slides.forEach(function(s, n){
+    var num = s.querySelector('.num');
+    if (num) num.textContent = (n + 1) + ' / ' + total;
+  });
+
+  function show(n){
+    i = Math.max(0, Math.min(total - 1, n));
+    slides.forEach(function(s, k){ s.classList.toggle('is-active', k === i); });
+    progress.style.width = ((i + 1) / total * 100) + '%';
+    if (location.hash !== '#' + (i + 1)) history.replaceState(null, '', '#' + (i + 1));
+  }
+
+  function fit(){
+    var scale = Math.min(window.innerWidth / 1280, window.innerHeight / 720);
+    deck.style.transform = 'scale(' + scale + ')';
+  }
+
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); show(i + 1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(i - 1); }
+    else if (e.key === 'Home') { show(0); }
+    else if (e.key === 'End') { show(total - 1); }
+    else if (e.key === 'f' || e.key === 'F') {
+      if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen();
+    }
+    else if (e.key === 'p' || e.key === 'P') { window.print(); }
+  });
+
+  document.getElementById('stage').addEventListener('click', function(e){
+    show(e.clientX < window.innerWidth / 3 ? i - 1 : i + 1);
+  });
+
+  window.addEventListener('resize', fit);
+  window.addEventListener('hashchange', function(){ show((parseInt(location.hash.slice(1), 10) || 1) - 1); });
+
+  fit();
+  show((parseInt(location.hash.slice(1), 10) || 1) - 1);
+  setTimeout(function(){ hint.classList.add('is-hidden'); }, 4000);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1282 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Session 03 — Handling a Request</title>
+<link rel="stylesheet" href="../../design-system/styles.css">
+<style>
+/* ── Deck-level extensions to the design system ────────────────────────────
+   Slides are authored on a fixed 1280×720 stage and scaled to the viewport,
+   so every size below is a *slide* size, not a screen size. Body copy is
+   stepped up from --fs-body (14px, UI density) to projection density. */
+:root{
+  --stage-w:1280px; --stage-h:720px;
+  --fs-slide-body:20px;  --lh-slide-body:30px;
+  --fs-slide-lead:24px;  --lh-slide-lead:34px;
+  --fs-slide-sm:16px;    --lh-slide-sm:24px;
+  --fs-slide-code:16px;  --lh-slide-code:26px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  background:var(--neutral-grey-160);
+  font-family:var(--font-sans-text);
+  color:var(--text-primary);
+  overflow:hidden;
+}
+
+/* ── Stage ─────────────────────────────────────────────────────────────── */
+#stage{position:fixed;inset:0;display:grid;place-items:center}
+#deck{width:var(--stage-w);height:var(--stage-h);position:relative;transform-origin:center center}
+.slide{
+  position:absolute;inset:0;
+  width:var(--stage-w);height:var(--stage-h);
+  background:var(--surface-page);
+  display:none;flex-direction:column;
+  padding:var(--space-16) var(--space-16) var(--space-10);
+  overflow:hidden;
+}
+.slide.is-active{display:flex}
+
+/* ── Slide chrome ──────────────────────────────────────────────────────── */
+.eyebrow{
+  margin:0 0 var(--space-3);
+  font-family:var(--font-sans-text);
+  font-size:var(--fs-body-sm);line-height:var(--lh-body-sm);
+  font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--brand-pressed);
+}
+h1,h2,h3{margin:0;font-family:var(--font-sans);color:var(--text-primary)}
+h1{font-size:var(--fs-display);line-height:var(--lh-display);font-weight:var(--fw-display);letter-spacing:-.02em}
+h2{font-size:var(--fs-title-1);line-height:var(--lh-title-1);font-weight:var(--fw-title-1);letter-spacing:-.01em}
+h3{font-size:var(--fs-title-3);line-height:var(--lh-title-3);font-weight:var(--fw-title-3)}
+.rule{width:56px;height:3px;background:var(--brand-base);border-radius:var(--radius-pill);margin:var(--space-4) 0 var(--space-6)}
+.body{margin:0;font-size:var(--fs-slide-body);line-height:var(--lh-slide-body);color:var(--text-primary)}
+.lead{margin:0;font-size:var(--fs-slide-lead);line-height:var(--lh-slide-lead);color:var(--text-secondary)}
+.muted{color:var(--text-secondary)}
+.sm{font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm)}
+strong{font-weight:600}
+.content{flex:1;min-height:0;display:flex;flex-direction:column;gap:var(--space-5)}
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.foot{
+  display:flex;align-items:center;gap:var(--space-4);
+  padding-top:var(--space-5);margin-top:auto;
+  border-top:1px solid var(--border-default);
+  font-size:var(--fs-caption);line-height:var(--lh-caption);
+  letter-spacing:.06em;text-transform:uppercase;color:var(--text-disabled);
+}
+.foot .spacer{flex:1}
+
+/* ── Brand-block slides (title + section dividers) ─────────────────────── */
+.slide--brand{background:var(--brand-base);color:var(--text-on-brand);justify-content:center}
+.slide--brand h1,.slide--brand h2{color:var(--text-on-brand)}
+.slide--brand .eyebrow{color:var(--brand-tint-20)}
+.slide--brand .lead,.slide--brand .body{color:var(--brand-tint-30)}
+.slide--brand .rule{background:var(--neutral-white)}
+.slide--brand .foot{border-top-color:rgba(255,255,255,.24);color:var(--brand-tint-20)}
+.slide--dark{background:var(--brand-shade-20)}
+.slide--dark h1,.slide--dark h2{color:var(--text-on-brand)}
+.slide--dark .eyebrow{color:var(--brand-tint-10)}
+.slide--dark .lead,.slide--dark .body{color:var(--brand-tint-30)}
+.slide--dark .foot{border-top-color:rgba(255,255,255,.18);color:var(--brand-tint-10)}
+.section-no{
+  font-family:var(--font-sans);font-size:120px;line-height:1;font-weight:600;
+  color:rgba(255,255,255,.22);letter-spacing:-.03em;margin-bottom:var(--space-4);
+}
+
+/* ── Layout helpers ────────────────────────────────────────────────────── */
+.cols{display:grid;gap:var(--space-6);flex:1;min-height:0}
+.cols-2{grid-template-columns:1fr 1fr}
+.cols-3{grid-template-columns:repeat(3,1fr)}
+.cols-2-1{grid-template-columns:1.4fr 1fr}
+.cols--auto{flex:0 0 auto;min-height:auto}
+.stack{display:flex;flex-direction:column;gap:var(--space-4);min-height:0}
+.center{justify-content:center}
+
+/* ── Card (design-system surfaces/Card, slide-scaled) ──────────────────── */
+.card{
+  background:var(--surface-card);border:1px solid var(--border-default);
+  border-radius:var(--radius-lg);padding:var(--space-5);
+  display:flex;flex-direction:column;gap:var(--space-2);
+}
+.card--elevated{border:none;box-shadow:var(--shadow-8)}
+.card--brand{background:var(--brand-tint-40);border-color:var(--brand-tint-20)}
+.card h3{font-size:var(--fs-title-3);line-height:var(--lh-title-3)}
+.card p{margin:0;font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm);color:var(--text-secondary)}
+
+/* ── Badge (design-system feedback/Badge, slide-scaled) ────────────────── */
+.badge{
+  display:inline-flex;align-items:center;align-self:flex-start;height:26px;padding:0 var(--space-3);
+  border-radius:var(--radius-pill);font-size:var(--fs-slide-sm);font-weight:600;
+  background:var(--brand-tint-40);color:var(--brand-pressed);white-space:nowrap;
+}
+.badge--neutral{background:var(--surface-subtle);color:var(--text-secondary)}
+.badge--success{background:var(--color-success-bg);color:var(--color-success)}
+.badge--warning{background:var(--color-warning-bg);color:var(--color-warning)}
+.badge--danger{background:var(--color-danger-bg);color:var(--color-danger)}
+.badge--mono{font-family:var(--font-mono);font-weight:600}
+
+/* ── Lists ─────────────────────────────────────────────────────────────── */
+ul.list,ol.list{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:var(--space-4)}
+ul.list li,ol.list li{
+  position:relative;padding-left:var(--space-8);
+  font-size:var(--fs-slide-body);line-height:var(--lh-slide-body);
+}
+ul.list li::before{
+  content:"";position:absolute;left:var(--space-2);top:11px;
+  width:8px;height:8px;border-radius:var(--radius-circular);background:var(--brand-base);
+}
+ol.list{counter-reset:step}
+ol.list li{counter-increment:step;padding-left:var(--space-10)}
+ol.list li::before{
+  content:counter(step);position:absolute;left:0;top:2px;
+  width:28px;height:28px;border-radius:var(--radius-circular);
+  background:var(--brand-tint-40);color:var(--brand-pressed);
+  font-family:var(--font-sans);font-size:var(--fs-slide-sm);font-weight:600;
+  display:grid;place-items:center;
+}
+.list--tight li{font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm)}
+.list--tight{gap:var(--space-3)}
+
+/* ── Table ─────────────────────────────────────────────────────────────── */
+table{
+  width:100%;border-collapse:collapse;
+  background:var(--surface-card);border:1px solid var(--border-default);
+  border-radius:var(--radius-lg);overflow:hidden;
+  font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm);
+}
+thead th{
+  text-align:left;background:var(--surface-subtle);color:var(--text-secondary);
+  font-weight:600;font-size:var(--fs-body-sm);letter-spacing:.06em;text-transform:uppercase;
+  padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border-default);
+}
+tbody td{padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border-default);vertical-align:top}
+tbody tr:last-child td{border-bottom:none}
+tbody th{
+  text-align:left;padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border-default);
+  font-weight:600;white-space:nowrap;
+}
+tbody tr:last-child th{border-bottom:none}
+td.center,th.center{text-align:center}
+
+/* ── Code ──────────────────────────────────────────────────────────────── */
+pre,code{font-family:var(--font-mono)}
+pre{
+  margin:0;background:var(--brand-shade-30);color:var(--brand-tint-30);
+  border-radius:var(--radius-lg);padding:var(--space-5) var(--space-6);
+  font-size:var(--fs-slide-code);line-height:var(--lh-slide-code);
+  overflow:hidden;white-space:pre;
+}
+pre .k{color:#4fc3f7;font-weight:600}
+pre .h{color:var(--neutral-white)}
+pre .c{color:var(--neutral-grey-90)}
+pre .ok{color:#6bd66b;font-weight:600}
+code.inline{
+  background:var(--surface-subtle);border:1px solid var(--border-default);
+  border-radius:var(--radius-sm);padding:1px 6px;font-size:.92em;color:var(--brand-pressed);
+}
+.slide--brand code.inline,.slide--dark code.inline{
+  background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.24);color:var(--neutral-white);
+}
+
+/* ── Callout ───────────────────────────────────────────────────────────── */
+.callout{
+  background:var(--brand-tint-40);border:1px solid var(--brand-tint-20);
+  border-radius:var(--radius-lg);padding:var(--space-4) var(--space-5);
+  font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm);color:var(--brand-shade-10);
+}
+.callout--warn{background:var(--color-warning-bg);border-color:#f0d98a;color:var(--color-warning)}
+
+/* ── Big statement ─────────────────────────────────────────────────────── */
+.statement{margin:0;font-family:var(--font-sans);font-size:var(--fs-title-1);line-height:var(--lh-title-1);font-weight:600}
+
+/* ── Progress bar ──────────────────────────────────────────────────────── */
+#progress{position:fixed;left:0;top:0;height:3px;background:var(--brand-tint-10);width:0;
+  transition:width var(--duration-normal) var(--ease-standard);z-index:10}
+
+/* ── Help hint ─────────────────────────────────────────────────────────── */
+#hint{
+  position:fixed;right:16px;bottom:14px;z-index:10;
+  font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--neutral-grey-90);font-family:var(--font-sans-text);
+  transition:opacity var(--duration-slow) var(--ease-standard);
+}
+#hint.is-hidden{opacity:0}
+
+/* ── Print / PDF export: one slide per landscape page ──────────────────── */
+@media print{
+  @page{size:1280px 720px;margin:0}
+  body{background:var(--neutral-white);overflow:visible}
+  #stage{position:static;display:block}
+  #deck{width:auto;height:auto;transform:none!important}
+  #progress,#hint{display:none}
+  .slide{position:static;display:flex!important;page-break-after:always;break-after:page}
+}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<div id="stage"><div id="deck">
+
+<!-- 1 ─ Title -->
+<section class="slide slide--brand">
+  <p class="eyebrow">Microsoft Web Technologies · Session 03</p>
+  <h1>Handling a Request</h1>
+  <div class="rule"></div>
+  <p class="lead">Separation of concerns, the MVC pattern, the lifecycle of a request,<br>and the first code of our own that a browser reaches.</p>
+  <div class="foot"><span>Lecture 2 · Controllers and actions</span><span class="spacer"></span><span>~180 min</span></div>
+</section>
+
+<!-- 2 ─ Where we are -->
+<section class="slide">
+  <p class="eyebrow">Where we are</p>
+  <h2>A request arrives for <code class="inline">/articles/42</code>. Somebody has to decide what to do about it.</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <p class="lead">In this session, that somebody gets a name.</p>
+    <div class="cols cols-3 cols--auto">
+      <div class="card">
+        <span class="badge badge--neutral">Session 01</span>
+        <h3 style="margin-top:var(--space-2)">We can read the traffic</h3>
+        <p>Requests and responses, methods, status codes, and the DevTools Network tab.</p>
+      </div>
+      <div class="card">
+        <span class="badge badge--neutral">Session 02</span>
+        <h3 style="margin-top:var(--space-2)">We have a project that runs</h3>
+        <p>C# classes, methods and <code class="inline">List&lt;T&gt;</code>; a generated MVC project started with <code class="inline">dotnet run</code> and answering in a browser.</p>
+      </div>
+      <div class="card card--brand">
+        <span class="badge">Session 03</span>
+        <h3 style="margin-top:var(--space-2)">We write the answer</h3>
+        <p>Until now the generated project answered for us. From here the code that decides is ours.</p>
+      </div>
+    </div>
+    <div class="callout">The project we generated has folders called <code class="inline">Controllers</code>, <code class="inline">Models</code> and <code class="inline">Views</code>. We have not yet said why. That is the whole first hour.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 3 ─ Learning objectives -->
+<section class="slide">
+  <p class="eyebrow">Learning objectives</p>
+  <h2>By the end of this session you can…</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <ol class="list">
+        <li>Explain separation of concerns, and say what each of the three MVC components is responsible for.</li>
+        <li>Trace the lifecycle of a request from the bytes arriving to the HTML leaving.</li>
+        <li>Write a controller with several action methods.</li>
+      </ol>
+      <ol class="list" style="counter-reset:step 3">
+        <li>Return different result types from an action, and choose the right one.</li>
+        <li>Accept parameters from the URL path and from the query string.</li>
+        <li>Return a correct 404 instead of crashing when a resource does not exist.</li>
+      </ol>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 4 ─ Agenda -->
+<section class="slide">
+  <p class="eyebrow">Agenda</p>
+  <h2>Three hours, two breaks</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <table>
+        <thead><tr><th style="width:34px">#</th><th>Block</th><th class="center" style="width:64px">Min</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Recap and objectives</td><td class="center">10</td></tr>
+          <tr><td>2</td><td>Separation of concerns; the MVC pattern</td><td class="center">30</td></tr>
+          <tr><td>3</td><td>The lifecycle of a request</td><td class="center">15</td></tr>
+          <tr><td>4</td><td class="muted">Break</td><td class="center">10</td></tr>
+          <tr><td>5</td><td>Controllers and actions in ASP.NET Core MVC</td><td class="center">25</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <thead><tr><th style="width:34px">#</th><th>Block</th><th class="center" style="width:64px">Min</th></tr></thead>
+        <tbody>
+          <tr><td>6</td><td>Returning results; getting parameters in</td><td class="center">25</td></tr>
+          <tr><td>7</td><td class="muted">Break</td><td class="center">10</td></tr>
+          <tr><td>8</td><td>Demo: <code class="inline">ArticlesController</code> end to end</td><td class="center">10</td></tr>
+          <tr><td>9</td><td>Walkthrough: we build a controller together</td><td class="center">40</td></tr>
+          <tr><td>10</td><td>Wrap-up and Q&amp;A</td><td class="center">5</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 5 ─ Section: separation of concerns -->
+<section class="slide slide--dark">
+  <div class="section-no">01</div>
+  <p class="eyebrow">Block 2 · 30 min</p>
+  <h2>Separation of concerns; the MVC pattern</h2>
+  <p class="lead" style="margin-top:var(--space-4)">Ideas only. No vendor, no language — these transfer to any stack.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 6 ─ The naive handler -->
+<section class="slide">
+  <p class="eyebrow">Separation of concerns</p>
+  <h2>One piece of code that does everything</h2>
+  <div class="rule"></div>
+  <div class="content center">
+<pre><span class="k">when a request arrives for</span> <span class="h">/articles/42</span>:
+    open the database connection
+    run <span class="h">"SELECT * FROM articles WHERE id = 42"</span>
+    write <span class="h">"&lt;html&gt;&lt;body&gt;&lt;h1&gt;"</span> + row.title + <span class="h">"&lt;/h1&gt;"</span>
+    if user is admin: write <span class="h">"&lt;a href=...&gt;Edit&lt;/a&gt;"</span>
+    write <span class="h">"&lt;/body&gt;&lt;/html&gt;"</span>
+    close the connection</pre>
+    <p class="lead" style="margin-top:var(--space-6);text-align:center">It works. It answers the request correctly.<br><strong>What is wrong with it?</strong></p>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 7 ─ What is wrong with it -->
+<section class="slide">
+  <p class="eyebrow">Separation of concerns</p>
+  <h2>Four things go wrong, and they all go wrong slowly</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <div class="cols cols-2">
+      <div class="stack">
+        <div class="card"><h3>Nobody can work alone</h3><p>The designer who wants to move a heading has to edit the code that talks to the database.</p></div>
+        <div class="card"><h3>Rules get copied</h3><p>"Is this user an administrator?" is pasted into forty pieces of code. Changing the rule means finding all forty.</p></div>
+      </div>
+      <div class="stack">
+        <div class="card"><h3>Nothing can be tested</h3><p>To check one decision you need a database and a browser. So the decision is never checked.</p></div>
+        <div class="card"><h3>Nothing can be reused</h3><p>The data fetching is welded to the page text. Another page that needs the same data starts from scratch.</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 8 ─ The principle -->
+<section class="slide slide--brand">
+  <p class="eyebrow">The principle</p>
+  <p class="statement" style="color:var(--neutral-white)">Separation of concerns:<br>each part of a program should have <em>one reason to change.</em></p>
+  <div class="rule"></div>
+  <p class="lead">A change of layout should touch layout code only. A change of rules should touch rules code only. Everything else stays where it is.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 9 ─ MVC as an answer -->
+<section class="slide">
+  <p class="eyebrow">The MVC pattern</p>
+  <h2>MVC is one very common way to apply that principle</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <table>
+      <thead><tr><th style="width:170px">Component</th><th style="width:46%">Responsibility</th><th>It must <em>not</em></th></tr></thead>
+      <tbody>
+        <tr><th>Model</th><td>The data, and the rules about that data. "An article has a title; a title is required."</td><td>Know that HTML or the web exist.</td></tr>
+        <tr><th>View</th><td>Presentation. Turns data into what the user sees.</td><td>Fetch data, or make decisions.</td></tr>
+        <tr><th>Controller</th><td>Receives the request, decides what to do, gathers the data, picks the view.</td><td>Contain layout, or the deep business rules.</td></tr>
+      </tbody>
+    </table>
+    <div class="callout">The pattern is older than the web by a decade. You will meet it again under other names in every large ecosystem — it is not the property of any one vendor.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 10 ─ Restaurant analogy -->
+<section class="slide">
+  <p class="eyebrow">The MVC pattern</p>
+  <h2>Analogy: the restaurant, continued</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <div class="cols cols-3 cols--auto">
+      <div class="card"><span class="badge badge--neutral">Controller</span><h3 style="margin-top:var(--space-2)">The waiter</h3><p>Takes your order, checks it makes sense, passes it to the kitchen, and brings back what comes out.</p></div>
+      <div class="card"><span class="badge badge--neutral">Model</span><h3 style="margin-top:var(--space-2)">The kitchen</h3><p>Where the food is actually made, by rules that have nothing to do with your table.</p></div>
+      <div class="card"><span class="badge badge--neutral">View</span><h3 style="margin-top:var(--space-2)">The plating</h3><p>Arrangement, garnish, the plate it is served on. How the result is presented to you.</p></div>
+    </div>
+    <p class="lead" style="margin-top:var(--space-8);text-align:center">The waiter does not cook. The chef does not choose the napkin colour.<br><strong>Neither of them talks to your table without the other.</strong></p>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 11 ─ DIAGRAM: the traffic rule -->
+<section class="slide">
+  <p class="eyebrow">The MVC pattern</p>
+  <h2>The traffic rule: who is allowed to talk to whom</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <svg viewBox="0 0 1120 396" style="width:auto;height:352px;align-self:center" role="img"
+         aria-label="Controller sits between model and view. The controller asks the model for data and the model gives it back; the controller hands the data to the view and chooses which view. The model and the view never talk to each other.">
+      <defs>
+        <marker id="mv-b" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+          <path d="M0,0 L10,4 L0,8 Z" style="fill:var(--brand-base)"/>
+        </marker>
+        <marker id="mv-g" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+          <path d="M0,0 L10,4 L0,8 Z" style="fill:var(--neutral-grey-90)"/>
+        </marker>
+      </defs>
+      <g style="font-family:var(--font-sans-text)">
+        <!-- incoming request / outgoing response -->
+        <line x1="560" y1="6" x2="560" y2="62" stroke-width="2.5" marker-end="url(#mv-b)" style="stroke:var(--brand-base)"/>
+        <text x="574" y="34" font-size="16" font-weight="600" style="fill:var(--brand-pressed)">request</text>
+        <line x1="970" y1="62" x2="970" y2="6" stroke-width="2.5" marker-end="url(#mv-g)" style="stroke:var(--neutral-grey-110)"/>
+        <text x="984" y="34" font-size="16" font-weight="600" style="fill:var(--text-secondary)">response</text>
+
+        <!-- boxes -->
+        <rect x="20" y="70" width="260" height="120" rx="8" style="fill:var(--surface-card);stroke:var(--border-default)"/>
+        <text x="150" y="120" text-anchor="middle" font-size="24" font-weight="600" style="fill:var(--text-primary)">Model</text>
+        <text x="150" y="148" text-anchor="middle" font-size="15" style="fill:var(--text-secondary)">the data and the rules</text>
+        <text x="150" y="168" text-anchor="middle" font-size="15" style="fill:var(--text-secondary)">about that data</text>
+
+        <rect x="430" y="70" width="260" height="120" rx="8" style="fill:var(--brand-base)"/>
+        <text x="560" y="120" text-anchor="middle" font-size="24" font-weight="600" style="fill:#ffffff">Controller</text>
+        <text x="560" y="148" text-anchor="middle" font-size="15" style="fill:var(--brand-tint-20)">receives, decides,</text>
+        <text x="560" y="168" text-anchor="middle" font-size="15" style="fill:var(--brand-tint-20)">gathers, chooses</text>
+
+        <rect x="840" y="70" width="260" height="120" rx="8" style="fill:var(--surface-card);stroke:var(--border-default)"/>
+        <text x="970" y="120" text-anchor="middle" font-size="24" font-weight="600" style="fill:var(--text-primary)">View</text>
+        <text x="970" y="148" text-anchor="middle" font-size="15" style="fill:var(--text-secondary)">turns data into what</text>
+        <text x="970" y="168" text-anchor="middle" font-size="15" style="fill:var(--text-secondary)">the user sees</text>
+
+        <!-- permitted: controller to model and back -->
+        <line x1="422" y1="108" x2="290" y2="108" stroke-width="2.5" marker-end="url(#mv-b)" style="stroke:var(--brand-base)"/>
+        <text x="356" y="98" text-anchor="middle" font-size="15" font-weight="600" style="fill:var(--brand-pressed)">asks for data</text>
+        <line x1="288" y1="152" x2="420" y2="152" stroke-width="2.5" marker-end="url(#mv-b)" style="stroke:var(--brand-base)"/>
+        <text x="356" y="176" text-anchor="middle" font-size="15" font-weight="600" style="fill:var(--brand-pressed)">gives it back</text>
+
+        <!-- permitted: controller to view -->
+        <line x1="698" y1="130" x2="832" y2="130" stroke-width="2.5" marker-end="url(#mv-b)" style="stroke:var(--brand-base)"/>
+        <text x="765" y="112" text-anchor="middle" font-size="15" font-weight="600" style="fill:var(--brand-pressed)">hands over the data</text>
+        <text x="765" y="160" text-anchor="middle" font-size="15" font-weight="600" style="fill:var(--brand-pressed)">and picks the view</text>
+
+        <!-- forbidden: model and view directly -->
+        <path d="M150,198 C150,300 970,300 970,198" fill="none" stroke-width="2.5" stroke-dasharray="8 7" style="stroke:var(--neutral-grey-90)"/>
+        <circle cx="560" cy="286" r="21" style="fill:var(--surface-page);stroke:var(--color-danger)" stroke-width="2.5"/>
+        <line x1="550" y1="276" x2="570" y2="296" stroke-width="2.5" stroke-linecap="round" style="stroke:var(--color-danger)"/>
+        <line x1="570" y1="276" x2="550" y2="296" stroke-width="2.5" stroke-linecap="round" style="stroke:var(--color-danger)"/>
+        <text x="560" y="334" text-anchor="middle" font-size="16" font-weight="600" style="fill:var(--text-primary)">never, in either direction</text>
+        <text x="560" y="356" text-anchor="middle" font-size="15" style="fill:var(--text-secondary)">the view never fetches data &#183; the model never writes HTML</text>
+
+        <!-- legend -->
+        <line x1="20" y1="380" x2="64" y2="380" stroke-width="2.5" marker-end="url(#mv-b)" style="stroke:var(--brand-base)"/>
+        <text x="76" y="385" font-size="14" style="fill:var(--text-secondary)">allowed</text>
+        <line x1="180" y1="380" x2="224" y2="380" stroke-width="2.5" stroke-dasharray="8 7" style="stroke:var(--neutral-grey-90)"/>
+        <text x="236" y="385" font-size="14" style="fill:var(--text-secondary)">forbidden by the pattern</text>
+      </g>
+    </svg>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 12 ─ The rule in one line -->
+<section class="slide slide--brand">
+  <p class="eyebrow">The one rule to remember</p>
+  <p class="statement" style="color:var(--neutral-white)">Everything passes through the controller.</p>
+  <div class="rule"></div>
+  <div class="content">
+<pre style="background:rgba(0,0,0,.22)">request &#8594; <span class="ok">controller</span> &#8594; asks <span class="h">model</span> &#8594; data back to <span class="ok">controller</span>
+        &#8594; <span class="ok">controller</span> hands data to <span class="h">view</span> &#8594; response</pre>
+    <p class="lead" style="margin-top:var(--space-6)">Views never talk to the database. Models never write HTML.
+      If you can state this rule at the end of the course, the course worked. We will point back at this slide in every session that follows.</p>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 13 ─ Benefits and cost -->
+<section class="slide">
+  <p class="eyebrow">The MVC pattern</p>
+  <h2>What it buys, and what it costs</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+      <ul class="list">
+        <li>Change the design without touching the logic — and the logic without touching the design.</li>
+        <li>Two people can work on the same feature at the same time.</li>
+        <li>Logic can be checked without a browser in the way.</li>
+        <li>Somebody new to the project knows where to look. The structure tells them.</li>
+      </ul>
+      <div class="card card--elevated center">
+        <span class="badge badge--warning">The honest cost</span>
+        <h3 style="margin-top:var(--space-3)">More files</h3>
+        <p>A "hello world" becomes three files instead of one. The pattern looks like pure overhead at file 3.</p>
+        <p style="margin-top:var(--space-2)">The payoff arrives at about file 20 — and our app passes file 20.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 14 ─ Section: lifecycle -->
+<section class="slide slide--dark">
+  <div class="section-no">02</div>
+  <p class="eyebrow">Block 3 · 15 min</p>
+  <h2>The lifecycle of a request</h2>
+  <p class="lead" style="margin-top:var(--space-4)">What happens between the bytes arriving and the HTML leaving.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 15 ─ The seam with Session 01 -->
+<section class="slide">
+  <p class="eyebrow">The lifecycle of a request</p>
+  <h2>This is the same arrow we drew in Session 01</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <div class="cols cols-2">
+      <div class="card card--elevated center">
+        <span class="badge badge--neutral">Session 01</span>
+        <h3 style="margin-top:var(--space-3)">The arrow stopped at the box marked "server"</h3>
+        <p>We drew a request leaving the browser and arriving at a server, and we deliberately left the server as a box we did not open.</p>
+      </div>
+      <div class="card card--brand center">
+        <span class="badge">Session 03</span>
+        <h3 style="margin-top:var(--space-3)">We are now inside that box</h3>
+        <p>The arrowhead that landed on the server is the same arrowhead that lands on the controller. Nothing new arrives — we have simply zoomed in far enough to see what happens next.</p>
+      </div>
+    </div>
+    <p class="lead" style="margin-top:var(--space-6);text-align:center">The response leaving on the other side is the status line, headers and body from Session 01 — <strong>and now we choose them.</strong></p>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 16 ─ DIAGRAM: the pipeline, vendor-neutral -->
+<section class="slide">
+  <p class="eyebrow">The lifecycle of a request</p>
+  <h2>Six stages, in order, every single time</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <svg viewBox="0 0 1160 320" style="width:auto;height:300px;align-self:center" role="img"
+         aria-label="A horizontal pipeline of six stages: request arrives, routing picks a handler, the handler runs, a result is built, the result is rendered, the response leaves. Routing is expanded in Session 04, building the result in Session 06, rendering in Session 05.">
+      <defs>
+        <marker id="pl-g" markerWidth="9" markerHeight="8" refX="8" refY="4" orient="auto">
+          <path d="M0,0 L9,4 L0,8 Z" style="fill:var(--neutral-grey-110)"/>
+        </marker>
+      </defs>
+      <g style="font-family:var(--font-sans-text)">
+        <rect x="0" y="40" width="170" height="126" rx="8" style="fill:var(--surface-card);stroke:var(--border-default)"/>
+        <text x="85" y="78" text-anchor="middle" font-size="18" font-weight="600" style="fill:var(--text-primary)">Request</text>
+        <text x="85" y="100" text-anchor="middle" font-size="18" font-weight="600" style="fill:var(--text-primary)">arrives</text>
+        <text x="85" y="130" text-anchor="middle" font-size="15" style="font-family:var(--font-mono);fill:var(--text-secondary)">GET /articles/42</text>
+
+        <rect x="198" y="40" width="170" height="126" rx="8" style="fill:var(--surface-card);stroke:var(--border-default)"/>
+        <text x="283" y="78" text-anchor="middle" font-size="18" font-weight="600" style="fill:var(--text-primary)">Routing</text>
+        <text x="283" y="108" text-anchor="middle" font-size="15" style="fill:var(--text-secondary)">which handler</text>
+        <text x="283" y="128" text-anchor="middle" font-size="15" style="fill:var(--text-secondary)">owns this path?</text>
+
+        <rect x="396" y="40" width="170" height="126" rx="8" style="fill:var(--brand-base)"/>
+        <text x="481" y="78" text-anchor="middle" font-size="18" font-weight="600" style="fill:#ffffff">The handler</text>
+        <text x="481" y="100" text-anchor="middle" font-size="18" font-weight="600" style="fill:#ffffff">runs</text>
+        <text x="481" y="130" text-anchor="middle" font-size="15" font-weight="600" style="fill:var(--brand-tint-20)">our code</text>
+
+        <rect x="594" y="40" width="170" height="126" rx="8" style="fill:var(--surface-card);stroke:var(--border-default)"/>
+        <text x="679" y="78" text-anchor="middle" font-size="18" font-weight="600" style="fill:var(--text-primary)">A result is</text>
+        <text x="679" y="100" text-anchor="middle" font-size="18" font-weight="600" style="fill:var(--text-primary)">built</text>
+        <text x="679" y="130" text-anchor="middle" font-size="15" style="fill:var(--text-secondary)">page, redirect, 404</text>
+
+        <rect x="792" y="40" width="170" height="126" rx="8" style="fill:var(--surface-card);stroke:var(--border-default)"/>
+        <text x="877" y="78" text-anchor="middle" font-size="18" font-weight="600" style="fill:var(--text-primary)">It is</text>
+        <text x="877" y="100" text-anchor="middle" font-size="18" font-weight="600" style="fill:var(--text-primary)">rendered</text>
+        <text x="877" y="130" text-anchor="middle" font-size="15" style="fill:var(--text-secondary)">template + data</text>
+
+        <rect x="990" y="40" width="170" height="126" rx="8" style="fill:var(--surface-card);stroke:var(--border-default)"/>
+        <text x="1075" y="78" text-anchor="middle" font-size="18" font-weight="600" style="fill:var(--text-primary)">Response</text>
+        <text x="1075" y="100" text-anchor="middle" font-size="18" font-weight="600" style="fill:var(--text-primary)">leaves</text>
+        <text x="1075" y="130" text-anchor="middle" font-size="15" style="fill:var(--text-secondary)">status, headers, body</text>
+
+        <line x1="172" y1="103" x2="194" y2="103" stroke-width="2.5" marker-end="url(#pl-g)" style="stroke:var(--neutral-grey-110)"/>
+        <line x1="370" y1="103" x2="392" y2="103" stroke-width="2.5" marker-end="url(#pl-g)" style="stroke:var(--neutral-grey-110)"/>
+        <line x1="568" y1="103" x2="590" y2="103" stroke-width="2.5" marker-end="url(#pl-g)" style="stroke:var(--neutral-grey-110)"/>
+        <line x1="766" y1="103" x2="788" y2="103" stroke-width="2.5" marker-end="url(#pl-g)" style="stroke:var(--neutral-grey-110)"/>
+        <line x1="964" y1="103" x2="986" y2="103" stroke-width="2.5" marker-end="url(#pl-g)" style="stroke:var(--neutral-grey-110)"/>
+
+        <rect x="198" y="192" width="170" height="40" rx="8" stroke-dasharray="6 5" style="fill:none;stroke:var(--border-strong)"/>
+        <text x="283" y="218" text-anchor="middle" font-size="15" font-weight="600" style="fill:var(--text-secondary)">Session 04</text>
+        <rect x="594" y="192" width="170" height="40" rx="8" stroke-dasharray="6 5" style="fill:none;stroke:var(--border-strong)"/>
+        <text x="679" y="218" text-anchor="middle" font-size="15" font-weight="600" style="fill:var(--text-secondary)">Session 06</text>
+        <rect x="792" y="192" width="170" height="40" rx="8" stroke-dasharray="6 5" style="fill:none;stroke:var(--border-strong)"/>
+        <text x="877" y="218" text-anchor="middle" font-size="15" font-weight="600" style="fill:var(--text-secondary)">Session 05</text>
+
+        <text x="0" y="278" font-size="16" font-weight="600" style="fill:var(--brand-pressed)">Stage three is ours.</text>
+        <text x="196" y="278" font-size="16" style="fill:var(--text-secondary)">Every other stage is done for us &#8212; that is what a framework is.</text>
+        <text x="0" y="306" font-size="15" style="fill:var(--text-secondary)">The dashed boxes name the session in which we open that stage up. Stage six is Session 01, already behind us.</text>
+      </g>
+    </svg>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 17 ─ Nine steps in detail -->
+<section class="slide">
+  <p class="eyebrow">The lifecycle of a request</p>
+  <h2>The same journey, at full detail</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <table>
+      <thead><tr><th style="width:34px">#</th><th style="width:28%">Step</th><th>What happens</th><th class="center" style="width:120px">Whose job</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><th>Request arrives</th><td><code class="inline">GET /articles/42</code> — bytes on a connection.</td><td class="center">framework</td></tr>
+        <tr><td>2</td><th>The pipeline</th><td>A queue of small steps every request passes through: logging, files served straight from disk, forcing HTTPS.</td><td class="center">framework</td></tr>
+        <tr><td>3</td><th>Routing</th><td>Which handler owns this path? — Session 04</td><td class="center">framework</td></tr>
+        <tr><td>4</td><th>The handler is created</th><td>A fresh instance, built for this one request.</td><td class="center">framework</td></tr>
+        <tr><td>5</td><th>Values are matched up</th><td>Pieces of the URL become the values our code is handed.</td><td class="center">framework</td></tr>
+        <tr><td>6</td><th>The handler runs</th><td><strong>Our code.</strong> Decide, fetch, choose.</td><td class="center"><span class="badge">ours</span></td></tr>
+        <tr><td>7</td><th>A result is returned</th><td>A page, a redirect, a 404, or raw data.</td><td class="center">ours</td></tr>
+        <tr><td>8</td><th>The view is rendered</th><td>Template plus data becomes HTML — Session 05</td><td class="center">framework</td></tr>
+        <tr><td>9</td><th>The response is written</th><td>Status line, headers, body — Session 01</td><td class="center">framework</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 18 ─ Two things to stress -->
+<section class="slide">
+  <p class="eyebrow">The lifecycle of a request</p>
+  <h2>Two things worth stressing before we write any code</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <div class="cols cols-2">
+      <div class="card card--elevated center">
+        <span class="badge">Step 6 is yours</span>
+        <h3 style="margin-top:var(--space-3)">The framework calls you</h3>
+        <p>This is the inversion from Session 02. You do not write the program that runs the web server; you fill in the interesting part, and something else calls it at the right moment.</p>
+      </div>
+      <div class="card card--elevated center">
+        <span class="badge badge--warning">Fresh every time</span>
+        <h3 style="margin-top:var(--space-3)">A new handler per request</h3>
+        <p>One is created for each request and thrown away when the response is written. Never store something in it and expect it to survive — the web is stateless, exactly as in Session 01.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 19 ─ Section: controllers and actions -->
+<section class="slide slide--dark">
+  <div class="section-no">03</div>
+  <p class="eyebrow">Block 5 · 25 min</p>
+  <h2>Controllers and actions in ASP.NET Core MVC</h2>
+  <p class="lead" style="margin-top:var(--space-4)">The idea has landed. Now it gets a name, a folder and a file.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 20 ─ DIAGRAM: the same pipeline, named -->
+<section class="slide">
+  <p class="eyebrow">ASP.NET Core MVC</p>
+  <h2>The same six stages, with their real names</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <svg viewBox="0 0 1160 300" style="width:auto;height:288px;align-self:center" role="img"
+         aria-label="The same six-stage pipeline labelled with ASP.NET Core names: Kestrel and the middleware pipeline, routing, the controller action, an IActionResult, the Razor view engine, and the HTTP response.">
+      <defs>
+        <marker id="pn-g" markerWidth="9" markerHeight="8" refX="8" refY="4" orient="auto">
+          <path d="M0,0 L9,4 L0,8 Z" style="fill:var(--neutral-grey-110)"/>
+        </marker>
+      </defs>
+      <g style="font-family:var(--font-sans-text)">
+        <rect x="0" y="30" width="170" height="126" rx="8" style="fill:var(--surface-card);stroke:var(--border-default)"/>
+        <text x="85" y="68" text-anchor="middle" font-size="18" font-weight="600" style="fill:var(--text-primary)">Kestrel</text>
+        <text x="85" y="98" text-anchor="middle" font-size="15" style="fill:var(--text-secondary)">the web server,</text>
+        <text x="85" y="118" text-anchor="middle" font-size="15" style="fill:var(--text-secondary)">then middleware</text>
+
+        <rect x="198" y="30" width="170" height="126" rx="8" style="fill:var(--surface-card);stroke:var(--border-default)"/>
+        <text x="283" y="68" text-anchor="middle" font-size="18" font-weight="600" style="fill:var(--text-primary)">Routing</text>
+        <text x="283" y="98" text-anchor="middle" font-size="15" style="font-family:var(--font-mono);fill:var(--text-secondary)">{controller}/</text>
+        <text x="283" y="118" text-anchor="middle" font-size="15" style="font-family:var(--font-mono);fill:var(--text-secondary)">{action}/{id?}</text>
+
+        <rect x="396" y="30" width="170" height="126" rx="8" style="fill:var(--brand-base)"/>
+        <text x="481" y="68" text-anchor="middle" font-size="18" font-weight="600" style="fill:#ffffff">Action method</text>
+        <text x="481" y="98" text-anchor="middle" font-size="15" style="font-family:var(--font-mono);fill:var(--brand-tint-20)">Details(int id)</text>
+        <text x="481" y="120" text-anchor="middle" font-size="15" font-weight="600" style="fill:var(--brand-tint-20)">our code</text>
+
+        <rect x="594" y="30" width="170" height="126" rx="8" style="fill:var(--surface-card);stroke:var(--border-default)"/>
+        <text x="679" y="68" text-anchor="middle" font-size="18" font-weight="600" style="font-family:var(--font-mono);fill:var(--text-primary)">IActionResult</text>
+        <text x="679" y="98" text-anchor="middle" font-size="15" style="fill:var(--text-secondary)">View, NotFound,</text>
+        <text x="679" y="118" text-anchor="middle" font-size="15" style="fill:var(--text-secondary)">Redirect, Content</text>
+
+        <rect x="792" y="30" width="170" height="126" rx="8" style="fill:var(--surface-card);stroke:var(--border-default)"/>
+        <text x="877" y="68" text-anchor="middle" font-size="18" font-weight="600" style="fill:var(--text-primary)">Razor view</text>
+        <text x="877" y="98" text-anchor="middle" font-size="15" style="fill:var(--text-secondary)">only when the result</text>
+        <text x="877" y="118" text-anchor="middle" font-size="15" style="fill:var(--text-secondary)">is a view</text>
+
+        <rect x="990" y="30" width="170" height="126" rx="8" style="fill:var(--surface-card);stroke:var(--border-default)"/>
+        <text x="1075" y="68" text-anchor="middle" font-size="18" font-weight="600" style="fill:var(--text-primary)">HTTP response</text>
+        <text x="1075" y="98" text-anchor="middle" font-size="15" style="fill:var(--text-secondary)">200, 302, 404 &#8212;</text>
+        <text x="1075" y="118" text-anchor="middle" font-size="15" style="fill:var(--text-secondary)">the codes we know</text>
+
+        <line x1="172" y1="93" x2="194" y2="93" stroke-width="2.5" marker-end="url(#pn-g)" style="stroke:var(--neutral-grey-110)"/>
+        <line x1="370" y1="93" x2="392" y2="93" stroke-width="2.5" marker-end="url(#pn-g)" style="stroke:var(--neutral-grey-110)"/>
+        <line x1="568" y1="93" x2="590" y2="93" stroke-width="2.5" marker-end="url(#pn-g)" style="stroke:var(--neutral-grey-110)"/>
+        <line x1="766" y1="93" x2="788" y2="93" stroke-width="2.5" marker-end="url(#pn-g)" style="stroke:var(--neutral-grey-110)"/>
+        <line x1="964" y1="93" x2="986" y2="93" stroke-width="2.5" marker-end="url(#pn-g)" style="stroke:var(--neutral-grey-110)"/>
+
+        <text x="420" y="200" text-anchor="middle" font-size="15" font-weight="600" style="fill:var(--brand-pressed)">model binding happens here</text>
+        <text x="420" y="222" text-anchor="middle" font-size="15" style="fill:var(--text-secondary)">route values and query keys</text>
+        <text x="420" y="242" text-anchor="middle" font-size="15" style="fill:var(--text-secondary)">become method parameters</text>
+
+        <text x="0" y="284" font-size="16" style="fill:var(--text-secondary)">Same shape as the previous diagram. Only the names changed &#8212; which is the point of learning the shape first.</text>
+      </g>
+    </svg>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 21 ─ What a controller looks like -->
+<section class="slide">
+  <p class="eyebrow">Controllers</p>
+  <h2>What a controller looks like</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre><span class="c">// Controllers/ArticlesController.cs</span>
+<span class="k">using</span> Microsoft.AspNetCore.Mvc;
+
+<span class="k">namespace</span> SimpleBlog.Controllers;
+
+<span class="k">public class</span> <span class="h">ArticlesController</span> : Controller
+{
+    <span class="k">public</span> IActionResult <span class="h">Index</span>()
+    {
+        <span class="k">return</span> View();
+    }
+}</pre>
+      <ul class="list list--tight">
+        <li>One file. One class. One method so far.</li>
+        <li>Every line of it is a <strong>convention</strong> — a rule the framework relies on without ever being configured.</li>
+        <li>That is the trade: follow the naming and everything is wired up for free; break it and nothing is wired at all.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 22 ─ Conventions table -->
+<section class="slide">
+  <p class="eyebrow">Controllers</p>
+  <h2>Five conventions, and what breaks without them</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <table>
+      <thead><tr><th style="width:150px">Element</th><th style="width:36%">Rule</th><th>Consequence if broken</th></tr></thead>
+      <tbody>
+        <tr><th>Location</th><td>in the <code class="inline">Controllers/</code> folder</td><td>Convention only — it works elsewhere, but do not do it.</td></tr>
+        <tr><th>Class name</th><td>ends with <code class="inline">Controller</code></td><td>Not discovered as a controller at all.</td></tr>
+        <tr><th>Base class</th><td>inherits <code class="inline">Controller</code></td><td>Loses <code class="inline">View()</code>, <code class="inline">RedirectToAction()</code>, <code class="inline">NotFound()</code>, and the rest.</td></tr>
+        <tr><th>Access</th><td>the class is <code class="inline">public</code></td><td>Not reachable.</td></tr>
+        <tr><th>Action</th><td>a <code class="inline">public</code> method</td><td>Not reachable as an action.</td></tr>
+      </tbody>
+    </table>
+    <div class="callout">This is <strong>convention over configuration</strong>: the framework reads your names instead of asking you to write a configuration file listing every page.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 23 ─ Name stripping -->
+<section class="slide">
+  <p class="eyebrow">Controllers</p>
+  <h2>The name-stripping rule</h2>
+  <div class="rule"></div>
+  <div class="content center">
+<pre><span class="k">public class</span> <span class="h">Articles</span><span class="c">Controller</span> : Controller     &#8594;   <span class="ok">/Articles</span>
+<span class="k">public class</span> <span class="h">Home</span><span class="c">Controller</span>     : Controller     &#8594;   <span class="ok">/Home</span>
+<span class="k">public class</span> <span class="h">Authors</span><span class="c">Controller</span>  : Controller     &#8594;   <span class="ok">/Authors</span></pre>
+    <p class="lead" style="margin-top:var(--space-8);text-align:center">The word <code class="inline">Controller</code> is removed from the class name to make the URL segment.<br>
+      This trips everybody up exactly once, and then never again.</p>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 24 ─ Section: results and parameters -->
+<section class="slide slide--dark">
+  <div class="section-no">04</div>
+  <p class="eyebrow">Block 6 · 25 min</p>
+  <h2>Returning results; getting parameters in</h2>
+  <p class="lead" style="margin-top:var(--space-4)">What comes out of an action, and how anything gets into one.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 25 ─ What an action is -->
+<section class="slide">
+  <p class="eyebrow">Actions</p>
+  <h2>An action is one thing the app can do</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <div class="cols cols-3 cols--auto">
+      <div class="card"><h3>A public method</h3><p>An action is simply a public method on a controller. Nothing more exotic than that.</p></div>
+      <div class="card card--brand"><h3>One capability each</h3><p>List the articles. Show one article. Filter by author. Each is one action, each is one URL.</p></div>
+      <div class="card"><h3>It returns a result</h3><p><code class="inline">IActionResult</code> is a <em>promise to produce a response</em> — it lets one method return different kinds of outcome.</p></div>
+    </div>
+    <p class="lead" style="margin-top:var(--space-8);text-align:center">One controller is not one page. It is one <strong>area of responsibility</strong>, with as many actions as that area needs.</p>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 26 ─ Result types -->
+<section class="slide">
+  <p class="eyebrow">Actions</p>
+  <h2>The results you will use most</h2>
+  <div class="rule"></div>
+  <div class="content">
+<pre><span class="k">public</span> IActionResult Index()   =&gt; <span class="h">View</span>();            <span class="c">// 200 + HTML</span>
+<span class="k">public</span> IActionResult Missing() =&gt; <span class="h">NotFound</span>();        <span class="c">// 404</span>
+<span class="k">public</span> IActionResult Denied()  =&gt; <span class="h">Forbid</span>();          <span class="c">// 403</span>
+<span class="k">public</span> IActionResult Old()     =&gt; <span class="h">RedirectToAction</span>(<span class="ok">"Index"</span>);
+<span class="k">public</span> IActionResult Raw()     =&gt; <span class="h">Content</span>(<span class="ok">"plain text"</span>);
+<span class="k">public</span> IActionResult Data()    =&gt; <span class="h">Json</span>(<span class="k">new</span> { id = 1 });</pre>
+    <div class="cols cols-2 cols--auto">
+      <div class="callout"><code class="inline">RedirectToAction</code> sends a <strong>302</strong> and the browser asks again at the new address. <code class="inline">Json</code> sends <code class="inline">application/json</code> instead of HTML.</div>
+      <div class="callout"><strong>These are the status codes from Session 01</strong> — 200, 302, 403, 404. The difference is that we are now the ones choosing them.</div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 27 ─ View overloads and the deliberate error -->
+<section class="slide">
+  <p class="eyebrow">Actions</p>
+  <h2><code class="inline">View()</code>, and an error we trigger on purpose</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre><span class="k">return</span> View();            <span class="c">// Views/Articles/Index.cshtml</span>
+<span class="k">return</span> View(<span class="ok">"Details"</span>);   <span class="c">// Views/Articles/Details.cshtml</span>
+<span class="k">return</span> View(article);     <span class="c">// same view, with data attached</span>
+
+<span class="c">// The views do not exist yet.
+// Running this produces an error that
+// lists every path it searched for them.</span></pre>
+      <div class="stack">
+        <div class="card card--brand"><h3>We show that error deliberately</h3><p>The list of searched paths teaches the folder convention better than any slide can. We read it aloud.</p></div>
+        <div class="card"><h3>So we return text for now</h3><p>Views arrive in Session 05. Until then every action returns <code class="inline">Content(...)</code>, so we can see a result immediately.</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 28 ─ Model binding from the route -->
+<section class="slide">
+  <p class="eyebrow">Getting data in</p>
+  <h2>Model binding: the framework fills your parameters</h2>
+  <div class="rule"></div>
+  <div class="content">
+<pre><span class="c">// GET /Articles/Details/42        (route value 'id')</span>
+<span class="k">public</span> IActionResult Details(<span class="k">int</span> <span class="h">id</span>)
+    =&gt; Content($<span class="ok">"Article {id}"</span>);
+
+<span class="c">// GET /Articles/Search?term=http&amp;page=2   (query string)</span>
+<span class="k">public</span> IActionResult Search(<span class="k">string</span> <span class="h">term</span>, <span class="k">int</span> <span class="h">page</span> = 1)
+    =&gt; Content($<span class="ok">"Searching '{term}', page {page}"</span>);</pre>
+    <p class="lead" style="margin-top:var(--space-5)">We never open the request ourselves and pull values out of it.
+      We declare the parameters we want, and they are there when the method starts.</p>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 29 ─ Binding rules -->
+<section class="slide">
+  <p class="eyebrow">Getting data in</p>
+  <h2>Five rules of binding</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+      <ul class="list list--tight">
+        <li><strong>The name is the contract.</strong> <code class="inline">?term=http</code> fills <code class="inline">string term</code>, and nothing else. Rename the parameter and the link stops working.</li>
+        <li><strong>Types are converted for you.</strong> <code class="inline">?page=2</code> arrives as the number 2, not the text "2".</li>
+        <li><strong>A value that cannot be converted</strong> — <code class="inline">?page=abc</code> — gives you <code class="inline">0</code> and a recorded error. Acting on that error is validation, in Session 09.</li>
+        <li><strong>A default value makes a parameter optional</strong>: <code class="inline">int page = 1</code>.</li>
+        <li><strong><code class="inline">string?</code></strong> marks a value that may legitimately be absent.</li>
+      </ul>
+      <div class="card card--elevated center">
+        <h3>Where values come from</h3>
+        <p>· the route path — <code class="inline">/Articles/Details/42</code></p>
+        <p>· the query string — <code class="inline">?author=Ada</code></p>
+        <p>· the body of a submitted form — Session 09</p>
+        <p style="margin-top:var(--space-3)">Same mechanism, three sources.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 30 ─ Optional parameter -->
+<section class="slide">
+  <p class="eyebrow">Getting data in</p>
+  <h2>A parameter that may not be there at all</h2>
+  <div class="rule"></div>
+  <div class="content center">
+<pre><span class="c">// GET /Articles/Filter?author=Ada    &#8594; "By Ada"
+// GET /Articles/Filter               &#8594; "All articles"</span>
+<span class="k">public</span> IActionResult Filter(<span class="k">string?</span> <span class="h">author</span>)
+    =&gt; Content(author <span class="k">is null</span>
+        ? <span class="ok">"All articles"</span>
+        : $<span class="ok">"By {author}"</span>);</pre>
+    <p class="lead" style="margin-top:var(--space-8);text-align:center">Both URLs reach the same action. The action decides what a missing value means —
+      <strong>that decision is ours, and it is worth making deliberately.</strong></p>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 31 ─ Section: demo -->
+<section class="slide slide--dark">
+  <div class="section-no">05</div>
+  <p class="eyebrow">Block 8 · 10 min · demo</p>
+  <h2>Demo: <code class="inline">ArticlesController</code> end to end</h2>
+  <p class="lead" style="margin-top:var(--space-4)">Built live, in order, running after every step, with DevTools open.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 32 ─ The Article class -->
+<section class="slide">
+  <p class="eyebrow">Demo</p>
+  <h2>First the model: <code class="inline">Models/Article.cs</code></h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre><span class="k">namespace</span> SimpleBlog.Models;
+
+<span class="k">public class</span> <span class="h">Article</span>
+{
+    <span class="k">public int</span> Id { <span class="k">get</span>; <span class="k">set</span>; }
+    <span class="k">public string</span> Title { <span class="k">get</span>; <span class="k">set</span>; } = <span class="ok">""</span>;
+    <span class="k">public string</span> Author { <span class="k">get</span>; <span class="k">set</span>; } = <span class="ok">""</span>;
+    <span class="k">public</span> DateTime PublishedOn { <span class="k">get</span>; <span class="k">set</span>; }
+}</pre>
+      <ul class="list list--tight">
+        <li>A plain class from Session 02 — no web, no HTML, no database anywhere in it.</li>
+        <li>That is the model doing exactly its job and nothing else.</li>
+        <li>In Session 07 this same class becomes a database table, without changing a line of it.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 33 ─ The list + Index -->
+<section class="slide">
+  <p class="eyebrow">Demo</p>
+  <h2>Then some data, and the first action</h2>
+  <div class="rule"></div>
+  <div class="content">
+<pre><span class="c">// A temporary in-memory list. Session 07 makes it a database.</span>
+<span class="k">private static readonly</span> List&lt;Article&gt; _articles = <span class="k">new</span>()
+{
+    <span class="k">new</span> Article { Id = 1, Title = <span class="ok">"How the web works"</span>, Author = <span class="ok">"Ada"</span> },
+    <span class="k">new</span> Article { Id = 2, Title = <span class="ok">"Getting started"</span>, Author = <span class="ok">"Grace"</span> },
+    <span class="k">new</span> Article { Id = 3, Title = <span class="ok">"Controllers 101"</span>, Author = <span class="ok">"Ada"</span> },
+};
+
+<span class="c">// GET /Articles</span>
+<span class="k">public</span> IActionResult <span class="h">Index</span>()
+    =&gt; Content(<span class="k">string</span>.Join(<span class="ok">"\n"</span>,
+        _articles.Select(a =&gt; $<span class="ok">"{a.Id}: {a.Title}"</span>)));</pre>
+    <div class="callout"><code class="inline">static</code> so the list survives between requests — remember that the controller itself does not. <code class="inline">Select</code> is the LINQ from Session 02, doing real work for the first time.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 34 ─ Details + 404 -->
+<section class="slide">
+  <p class="eyebrow">Demo</p>
+  <h2>One article, or an honest 404</h2>
+  <div class="rule"></div>
+  <div class="content">
+<pre><span class="c">// GET /Articles/Details/2</span>
+<span class="k">public</span> IActionResult <span class="h">Details</span>(<span class="k">int</span> id)
+{
+    <span class="k">var</span> article = _articles.FirstOrDefault(a =&gt; a.Id == id);
+    <span class="k">if</span> (article <span class="k">is null</span>)
+        <span class="k">return</span> <span class="h">NotFound</span>();
+
+    <span class="k">return</span> Content($<span class="ok">"{article.Title} &#8212; {article.Author}"</span>);
+}</pre>
+    <div class="cols cols-2 cols--auto">
+      <div class="callout">Three lines of that method exist only to answer one question: <em>what if it is not there?</em></div>
+      <div class="callout">Every action that takes an id needs those three lines. Writing them becomes automatic.</div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 35 ─ ByAuthor + About -->
+<section class="slide">
+  <p class="eyebrow">Demo</p>
+  <h2>Filtering from the query string, and a static page</h2>
+  <div class="rule"></div>
+  <div class="content">
+<pre><span class="c">// GET /Articles/ByAuthor?author=Ada</span>
+<span class="k">public</span> IActionResult <span class="h">ByAuthor</span>(<span class="k">string?</span> author)
+{
+    <span class="k">var</span> matches = <span class="k">string</span>.IsNullOrWhiteSpace(author)
+        ? _articles
+        : _articles.Where(a =&gt; a.Author == author).ToList();
+
+    <span class="k">return</span> Content($<span class="ok">"{matches.Count} article(s)"</span>);
+}
+
+<span class="c">// GET /Articles/About</span>
+<span class="k">public</span> IActionResult <span class="h">About</span>()
+    =&gt; Content(<span class="ok">"A tiny blog built during this course."</span>);</pre>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 36 ─ The teaching moment: 404 vs 500 -->
+<section class="slide">
+  <p class="eyebrow">Demo · the moment that matters</p>
+  <h2>A missing article is not a crash</h2>
+  <div class="rule"></div>
+  <div class="content">
+<pre><span class="c">// /Articles/Details/999 &#8212; version one</span>
+<span class="k">var</span> article = _articles.<span class="h">First</span>(a =&gt; a.Id == id);
+<span class="c">// nothing matches &#8594; exception &#8594;</span> <span class="k">500 Internal Server Error</span>
+
+<span class="c">// /Articles/Details/999 &#8212; version two</span>
+<span class="k">var</span> article = _articles.<span class="h">FirstOrDefault</span>(a =&gt; a.Id == id);
+<span class="k">if</span> (article <span class="k">is null</span>) <span class="k">return</span> NotFound();
+<span class="c">// nothing matches &#8594; null &#8594;</span> <span class="ok">404 Not Found</span></pre>
+    <div class="cols cols-2 cols--auto">
+      <div class="callout callout--warn"><strong>500</strong> means <em>our code broke</em>. It is a bug report shown to a stranger.</div>
+      <div class="callout"><strong>404</strong> means <em>that article does not exist</em> — a correct, deliberate answer. This is Session 01's "whose bug is it?" made concrete.</div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 37 ─ Demo checkpoints -->
+<section class="slide">
+  <p class="eyebrow">Demo</p>
+  <h2>Checkpoints we hit on screen, in order</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <table>
+      <thead><tr><th style="width:34px">#</th><th style="width:44%">State</th><th>How we reach it</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><code class="inline">Models/Article.cs</code> created</td><td>the class from two slides ago</td></tr>
+        <tr><td>2</td><td>An empty controller answering at <code class="inline">/Articles</code></td><td><code class="inline">Index</code> returning <code class="inline">Content("hi")</code></td></tr>
+        <tr><td>3</td><td>The "view was not found" error, shown on purpose</td><td>change <code class="inline">Index</code> to <code class="inline">return View();</code> and reload</td></tr>
+        <tr><td>4</td><td><code class="inline">Details(int id)</code> working for <code class="inline">/Articles/Details/2</code></td><td>binding from the route</td></tr>
+        <tr><td>5</td><td><code class="inline">/Articles/Details/999</code> returning <strong>404</strong>, not 500</td><td><code class="inline">First</code> becomes <code class="inline">FirstOrDefault</code> + <code class="inline">NotFound()</code></td></tr>
+        <tr><td>6</td><td><code class="inline">ByAuthor?author=Ada</code> reading the query string</td><td>binding from the query</td></tr>
+        <tr><td>7</td><td>Status codes read aloud in DevTools</td><td>200, 404 and 302 side by side</td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><code class="inline">dotnet watch</code> stays running throughout: we save the file, the browser reloads, we read the status code. That loop is the rest of the course.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 38 ─ Misconceptions -->
+<section class="slide">
+  <p class="eyebrow">Wrap-up</p>
+  <h2>Common misconceptions</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <table>
+      <thead><tr><th style="width:42%">Misconception</th><th>Correction</th></tr></thead>
+      <tbody>
+        <tr><td>"MVC is a Microsoft technology."</td><td>It is a 1970s user-interface pattern, used across every major web ecosystem.</td></tr>
+        <tr><td>"The model is the database."</td><td>The model is the data and its rules. It may be <em>stored</em> in a database — a separate concern.</td></tr>
+        <tr><td>"The controller draws the page."</td><td>It chooses a view and hands it data. Rendering is the view's job.</td></tr>
+        <tr><td>"The class name in the URL includes <code class="inline">Controller</code>."</td><td><code class="inline">ArticlesController</code> is reached at <code class="inline">/Articles</code>.</td></tr>
+        <tr><td>"One controller per page."</td><td>One controller per <em>area of responsibility</em>, with many actions.</td></tr>
+        <tr><td>"The controller object lives as long as the app."</td><td>A fresh instance per request, discarded afterwards.</td></tr>
+        <tr><td>"A missing record should throw."</td><td>A missing record is a 404. An exception is a 500 — a different meaning entirely.</td></tr>
+        <tr><td>"Parameters are matched by position."</td><td>They are matched <strong>by name</strong>.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 39 ─ Check for understanding -->
+<section class="slide">
+  <p class="eyebrow">Check for understanding</p>
+  <h2>Six questions</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <ol class="list list--tight">
+        <li>State the traffic rule of MVC in one sentence. Which component is allowed to talk to which?</li>
+        <li>A request for <code class="inline">/Articles/Details/7</code> arrives. List the stages between "the bytes reach the server" and "HTML is sent back". Which one is our code?</li>
+        <li><code class="inline">ArticlesController.About()</code> — what URL reaches it, with the default route?</li>
+      </ol>
+      <ol class="list list--tight" style="counter-reset:step 3">
+        <li>Two people write <code class="inline">Details(int id)</code> and <code class="inline">Details(int articleId)</code>. <code class="inline">/Articles/Details/7</code> works for one and not the other. Why?</li>
+        <li>A user requests an article that was deleted. What should the status code be, and which LINQ operator makes that easy to implement?</li>
+        <li>Why does a fresh controller instance per request make sense, given what Session 01 said about the web?</li>
+      </ol>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 40 ─ Walkthrough -->
+<section class="slide">
+  <p class="eyebrow">Walkthrough · 40 min · together</p>
+  <h2>We build a controller from an empty file</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <ol class="list list--tight">
+        <li>We create <code class="inline">Models/Article.cs</code> with <code class="inline">Id</code>, <code class="inline">Title</code>, <code class="inline">Author</code>, <code class="inline">Summary</code> and <code class="inline">PublishedOn</code>.</li>
+        <li>We create <code class="inline">Controllers/ArticlesController.cs</code> with a <code class="inline">static List&lt;Article&gt;</code> of five articles by two authors.</li>
+        <li>We add <code class="inline">Index()</code> — a numbered list of titles — and <code class="inline">Details(int id)</code> with a real <strong>404</strong> for an unknown id.</li>
+      </ol>
+      <ol class="list list--tight" style="counter-reset:step 3">
+        <li>We add <code class="inline">ByAuthor(string? author)</code> and <code class="inline">Recent(int days = 7)</code>, both with LINQ, both correct when the parameter is omitted.</li>
+        <li>We add <code class="inline">About()</code> and <code class="inline">Contact()</code> returning static text.</li>
+        <li>We visit all six actions with DevTools open and read every status code, then break <code class="inline">Details</code> back to <code class="inline">First</code> to watch the 500 — and fix it again.</li>
+      </ol>
+    </div>
+    <div class="callout"><strong>By the end we will have</strong> six actions responding at the expected URLs, a <code class="inline">Details</code> that answers 404 for an unknown id — verified in DevTools, not merely "an error page" — and two actions that behave correctly when their parameter is missing.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 41 ─ Before we move on -->
+<section class="slide">
+  <p class="eyebrow">Wrap-up</p>
+  <h2>Before we move on</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-3 cols--auto">
+      <div class="card card--brand">
+        <span class="badge">State of SimpleBlog</span>
+        <h3 style="margin-top:var(--space-2)">Where the app now stands</h3>
+        <p>· <code class="inline">Models/Article.cs</code></p>
+        <p>· <code class="inline">ArticlesController</code> with <code class="inline">Index</code>, <code class="inline">Details</code>, <code class="inline">ByAuthor</code> and <code class="inline">About</code></p>
+        <p>· backed by a static in-memory list, everything returning plain text. No views yet.</p>
+      </div>
+      <div class="card">
+        <span class="badge badge--neutral">Two quick extensions</span>
+        <h3 style="margin-top:var(--space-2)">If we have a minute</h3>
+        <p>· <code class="inline">Search(string? term)</code> matching the title case-insensitively — and we decide together what an empty term should do.</p>
+        <p>· <code class="inline">Count()</code> returning <code class="inline">Json(...)</code>, then we read its <code class="inline">Content-Type</code> in DevTools.</p>
+      </div>
+      <div class="card">
+        <span class="badge badge--neutral">One question to hold</span>
+        <h3 style="margin-top:var(--space-2)">What would change?</h3>
+        <p>If the articles came from a database instead of a list, what in this controller would have to change — and what would not?</p>
+        <p>We answer it properly in Session 07. Keep your answer.</p>
+      </div>
+    </div>
+    <div class="callout">Notice what we never wrote: no code that parses the URL, no code that reads the query string, no code that writes a status line. Those are Session 04's subject — and the reason the framework exists.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 42 ─ Glossary -->
+<section class="slide">
+  <p class="eyebrow">Glossary</p>
+  <h2>Речник · EN → BG</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <table>
+        <thead><tr><th style="width:45%">English</th><th>Български</th></tr></thead>
+        <tbody>
+          <tr><td>separation of concerns</td><td>разделяне на отговорностите</td></tr>
+          <tr><td>pattern (design)</td><td>шаблон / модел за проектиране</td></tr>
+          <tr><td>controller</td><td>контролер</td></tr>
+          <tr><td>action (method)</td><td>действие / екшън метод</td></tr>
+          <tr><td>request lifecycle</td><td>жизнен цикъл на заявката</td></tr>
+          <tr><td>middleware / pipeline</td><td>междинен слой / конвейер</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <thead><tr><th style="width:45%">English</th><th>Български</th></tr></thead>
+        <tbody>
+          <tr><td>model binding</td><td>обвързване на модела</td></tr>
+          <tr><td>convention over configuration</td><td>конвенция вместо конфигурация</td></tr>
+          <tr><td>to inherit / base class</td><td>наследяване / базов клас</td></tr>
+          <tr><td>instance (per request)</td><td>инстанция (за всяка заявка)</td></tr>
+          <tr><td>redirect</td><td>пренасочване</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 43 ─ References -->
+<section class="slide">
+  <p class="eyebrow">References</p>
+  <h2>Where to read more</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <ul class="list">
+      <li><strong>ASP.NET Core MVC overview</strong><br><span class="sm muted">learn.microsoft.com/aspnet/core/mvc/overview</span></li>
+      <li><strong>Handling requests with controllers</strong><br><span class="sm muted">learn.microsoft.com/aspnet/core/mvc/controllers/actions</span></li>
+      <li><strong>Action return types</strong><br><span class="sm muted">learn.microsoft.com/aspnet/core/web-api/action-return-types</span></li>
+      <li><strong>Model binding</strong><br><span class="sm muted">learn.microsoft.com/aspnet/core/mvc/models/model-binding</span></li>
+    </ul>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 44 ─ Closing -->
+<section class="slide slide--brand">
+  <p class="eyebrow">Next session</p>
+  <h1 style="font-size:var(--fs-title-1);line-height:var(--lh-title-1)">04 · Routing and URL Design</h1>
+  <div class="rule"></div>
+  <p class="lead">How <code class="inline">/Articles/Details/42</code> found our method in the first place —<br>the default route, route templates, and designing URLs we will not regret.</p>
+  <div class="foot"><span>Questions?</span><span class="spacer"></span><span>Microsoft Web Technologies</span></div>
+</section>
+</div></div>
+<div id="hint">← → navigate · F fullscreen · P print</div>
+
+<script>
+(function(){
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var deck = document.getElementById('deck');
+  var progress = document.getElementById('progress');
+  var hint = document.getElementById('hint');
+  var total = slides.length;
+  var i = 0;
+
+  slides.forEach(function(s, n){
+    var num = s.querySelector('.num');
+    if (num) num.textContent = (n + 1) + ' / ' + total;
+  });
+
+  function show(n){
+    i = Math.max(0, Math.min(total - 1, n));
+    slides.forEach(function(s, k){ s.classList.toggle('is-active', k === i); });
+    progress.style.width = ((i + 1) / total * 100) + '%';
+    if (location.hash !== '#' + (i + 1)) history.replaceState(null, '', '#' + (i + 1));
+  }
+
+  function fit(){
+    var scale = Math.min(window.innerWidth / 1280, window.innerHeight / 720);
+    deck.style.transform = 'scale(' + scale + ')';
+  }
+
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); show(i + 1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(i - 1); }
+    else if (e.key === 'Home') { show(0); }
+    else if (e.key === 'End') { show(total - 1); }
+    else if (e.key === 'f' || e.key === 'F') {
+      if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen();
+    }
+    else if (e.key === 'p' || e.key === 'P') { window.print(); }
+  });
+
+  document.getElementById('stage').addEventListener('click', function(e){
+    show(e.clientX < window.innerWidth / 3 ? i - 1 : i + 1);
+  });
+
+  window.addEventListener('resize', fit);
+  window.addEventListener('hashchange', function(){ show((parseInt(location.hash.slice(1), 10) || 1) - 1); });
+
+  fit();
+  show((parseInt(location.hash.slice(1), 10) || 1) - 1);
+  setTimeout(function(){ hint.classList.add('is-hidden'); }, 4000);
+})();
+</script>
+</body>
+</html>

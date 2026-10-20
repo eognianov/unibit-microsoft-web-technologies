@@ -1,0 +1,1418 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Session 02 — From Language to Framework</title>
+<link rel="stylesheet" href="../../design-system/styles.css">
+<style>
+/* ── Deck-level extensions to the design system ────────────────────────────
+   Slides are authored on a fixed 1280×720 stage and scaled to the viewport,
+   so every size below is a *slide* size, not a screen size. Body copy is
+   stepped up from --fs-body (14px, UI density) to projection density. */
+:root{
+  --stage-w:1280px; --stage-h:720px;
+  --fs-slide-body:20px;  --lh-slide-body:30px;
+  --fs-slide-lead:24px;  --lh-slide-lead:34px;
+  --fs-slide-sm:16px;    --lh-slide-sm:24px;
+  --fs-slide-code:16px;  --lh-slide-code:26px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  background:var(--neutral-grey-160);
+  font-family:var(--font-sans-text);
+  color:var(--text-primary);
+  overflow:hidden;
+}
+
+/* ── Stage ─────────────────────────────────────────────────────────────── */
+#stage{position:fixed;inset:0;display:grid;place-items:center}
+#deck{width:var(--stage-w);height:var(--stage-h);position:relative;transform-origin:center center}
+.slide{
+  position:absolute;inset:0;
+  width:var(--stage-w);height:var(--stage-h);
+  background:var(--surface-page);
+  display:none;flex-direction:column;
+  padding:var(--space-16) var(--space-16) var(--space-10);
+  overflow:hidden;
+}
+.slide.is-active{display:flex}
+
+/* ── Slide chrome ──────────────────────────────────────────────────────── */
+.eyebrow{
+  margin:0 0 var(--space-3);
+  font-family:var(--font-sans-text);
+  font-size:var(--fs-body-sm);line-height:var(--lh-body-sm);
+  font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--brand-pressed);
+}
+h1,h2,h3{margin:0;font-family:var(--font-sans);color:var(--text-primary)}
+h1{font-size:var(--fs-display);line-height:var(--lh-display);font-weight:var(--fw-display);letter-spacing:-.02em}
+h2{font-size:var(--fs-title-1);line-height:var(--lh-title-1);font-weight:var(--fw-title-1);letter-spacing:-.01em}
+h3{font-size:var(--fs-title-3);line-height:var(--lh-title-3);font-weight:var(--fw-title-3)}
+.rule{width:56px;height:3px;background:var(--brand-base);border-radius:var(--radius-pill);margin:var(--space-4) 0 var(--space-6)}
+.body{margin:0;font-size:var(--fs-slide-body);line-height:var(--lh-slide-body);color:var(--text-primary)}
+.lead{margin:0;font-size:var(--fs-slide-lead);line-height:var(--lh-slide-lead);color:var(--text-secondary)}
+.muted{color:var(--text-secondary)}
+.sm{font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm)}
+strong{font-weight:600}
+.content{flex:1;min-height:0;display:flex;flex-direction:column;gap:var(--space-5)}
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.foot{
+  display:flex;align-items:center;gap:var(--space-4);
+  padding-top:var(--space-5);margin-top:auto;
+  border-top:1px solid var(--border-default);
+  font-size:var(--fs-caption);line-height:var(--lh-caption);
+  letter-spacing:.06em;text-transform:uppercase;color:var(--text-disabled);
+}
+.foot .spacer{flex:1}
+
+/* ── Brand-block slides (title + section dividers) ─────────────────────── */
+.slide--brand{background:var(--brand-base);color:var(--text-on-brand);justify-content:center}
+.slide--brand h1,.slide--brand h2{color:var(--text-on-brand)}
+.slide--brand .eyebrow{color:var(--brand-tint-20)}
+.slide--brand .lead,.slide--brand .body{color:var(--brand-tint-30)}
+.slide--brand .rule{background:var(--neutral-white)}
+.slide--brand .foot{border-top-color:rgba(255,255,255,.24);color:var(--brand-tint-20)}
+.slide--dark{background:var(--brand-shade-20)}
+.slide--dark h1,.slide--dark h2{color:var(--text-on-brand)}
+.slide--dark .eyebrow{color:var(--brand-tint-10)}
+.slide--dark .lead,.slide--dark .body{color:var(--brand-tint-30)}
+.slide--dark .foot{border-top-color:rgba(255,255,255,.18);color:var(--brand-tint-10)}
+.section-no{
+  font-family:var(--font-sans);font-size:120px;line-height:1;font-weight:600;
+  color:rgba(255,255,255,.22);letter-spacing:-.03em;margin-bottom:var(--space-4);
+}
+
+/* ── Layout helpers ────────────────────────────────────────────────────── */
+.cols{display:grid;gap:var(--space-6);flex:1;min-height:0}
+.cols-2{grid-template-columns:1fr 1fr}
+.cols-3{grid-template-columns:repeat(3,1fr)}
+.cols-2-1{grid-template-columns:1.4fr 1fr}
+.cols--auto{flex:0 0 auto;min-height:auto}
+.stack{display:flex;flex-direction:column;gap:var(--space-4);min-height:0}
+.center{justify-content:center}
+
+/* ── Card (design-system surfaces/Card, slide-scaled) ──────────────────── */
+.card{
+  background:var(--surface-card);border:1px solid var(--border-default);
+  border-radius:var(--radius-lg);padding:var(--space-5);
+  display:flex;flex-direction:column;gap:var(--space-2);
+}
+.card--elevated{border:none;box-shadow:var(--shadow-8)}
+.card--brand{background:var(--brand-tint-40);border-color:var(--brand-tint-20)}
+.card h3{font-size:var(--fs-title-3);line-height:var(--lh-title-3)}
+.card p{margin:0;font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm);color:var(--text-secondary)}
+
+/* ── Badge (design-system feedback/Badge, slide-scaled) ────────────────── */
+.badge{
+  display:inline-flex;align-items:center;align-self:flex-start;height:26px;padding:0 var(--space-3);
+  border-radius:var(--radius-pill);font-size:var(--fs-slide-sm);font-weight:600;
+  background:var(--brand-tint-40);color:var(--brand-pressed);white-space:nowrap;
+}
+.badge--neutral{background:var(--surface-subtle);color:var(--text-secondary)}
+.badge--success{background:var(--color-success-bg);color:var(--color-success)}
+.badge--warning{background:var(--color-warning-bg);color:var(--color-warning)}
+.badge--danger{background:var(--color-danger-bg);color:var(--color-danger)}
+.badge--mono{font-family:var(--font-mono);font-weight:600}
+
+/* ── Lists ─────────────────────────────────────────────────────────────── */
+ul.list,ol.list{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:var(--space-4)}
+ul.list li,ol.list li{
+  position:relative;padding-left:var(--space-8);
+  font-size:var(--fs-slide-body);line-height:var(--lh-slide-body);
+}
+ul.list li::before{
+  content:"";position:absolute;left:var(--space-2);top:11px;
+  width:8px;height:8px;border-radius:var(--radius-circular);background:var(--brand-base);
+}
+ol.list{counter-reset:step}
+ol.list li{counter-increment:step;padding-left:var(--space-10)}
+ol.list li::before{
+  content:counter(step);position:absolute;left:0;top:2px;
+  width:28px;height:28px;border-radius:var(--radius-circular);
+  background:var(--brand-tint-40);color:var(--brand-pressed);
+  font-family:var(--font-sans);font-size:var(--fs-slide-sm);font-weight:600;
+  display:grid;place-items:center;
+}
+.list--tight li{font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm)}
+.list--tight{gap:var(--space-3)}
+
+/* ── Table ─────────────────────────────────────────────────────────────── */
+table{
+  width:100%;border-collapse:collapse;
+  background:var(--surface-card);border:1px solid var(--border-default);
+  border-radius:var(--radius-lg);overflow:hidden;
+  font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm);
+}
+thead th{
+  text-align:left;background:var(--surface-subtle);color:var(--text-secondary);
+  font-weight:600;font-size:var(--fs-body-sm);letter-spacing:.06em;text-transform:uppercase;
+  padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border-default);
+}
+tbody td{padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border-default);vertical-align:top}
+tbody tr:last-child td{border-bottom:none}
+tbody th{
+  text-align:left;padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border-default);
+  font-weight:600;white-space:nowrap;
+}
+tbody tr:last-child th{border-bottom:none}
+td.center,th.center{text-align:center}
+
+/* ── Code ──────────────────────────────────────────────────────────────── */
+pre,code{font-family:var(--font-mono)}
+pre{
+  margin:0;background:var(--brand-shade-30);color:var(--brand-tint-30);
+  border-radius:var(--radius-lg);padding:var(--space-5) var(--space-6);
+  font-size:var(--fs-slide-code);line-height:var(--lh-slide-code);
+  overflow:hidden;white-space:pre;
+}
+pre .k{color:#4fc3f7;font-weight:600}
+pre .h{color:var(--neutral-white)}
+pre .c{color:var(--neutral-grey-90)}
+pre .ok{color:#6bd66b;font-weight:600}
+code.inline{
+  background:var(--surface-subtle);border:1px solid var(--border-default);
+  border-radius:var(--radius-sm);padding:1px 6px;font-size:.92em;color:var(--brand-pressed);
+}
+.slide--brand code.inline,.slide--dark code.inline{
+  background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.24);color:var(--neutral-white);
+}
+
+/* ── Callout ───────────────────────────────────────────────────────────── */
+.callout{
+  background:var(--brand-tint-40);border:1px solid var(--brand-tint-20);
+  border-radius:var(--radius-lg);padding:var(--space-4) var(--space-5);
+  font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm);color:var(--brand-shade-10);
+}
+.callout--warn{background:var(--color-warning-bg);border-color:#f0d98a;color:var(--color-warning)}
+
+/* ── Big statement ─────────────────────────────────────────────────────── */
+.statement{margin:0;font-family:var(--font-sans);font-size:var(--fs-title-1);line-height:var(--lh-title-1);font-weight:600}
+
+/* ── Progress bar ──────────────────────────────────────────────────────── */
+#progress{position:fixed;left:0;top:0;height:3px;background:var(--brand-tint-10);width:0;
+  transition:width var(--duration-normal) var(--ease-standard);z-index:10}
+
+/* ── Help hint ─────────────────────────────────────────────────────────── */
+#hint{
+  position:fixed;right:16px;bottom:14px;z-index:10;
+  font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--neutral-grey-90);font-family:var(--font-sans-text);
+  transition:opacity var(--duration-slow) var(--ease-standard);
+}
+#hint.is-hidden{opacity:0}
+
+/* ── Print / PDF export: one slide per landscape page ──────────────────── */
+@media print{
+  @page{size:1280px 720px;margin:0}
+  body{background:var(--neutral-white);overflow:visible}
+  #stage{position:static;display:block}
+  #deck{width:auto;height:auto;transform:none!important}
+  #progress,#hint{display:none}
+  .slide{position:static;display:flex!important;page-break-after:always;break-after:page}
+}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<div id="stage"><div id="deck">
+
+<!-- 1 ─ Title -->
+<section class="slide slide--brand">
+  <p class="eyebrow">Microsoft Web Technologies · Session 02</p>
+  <h1>From Language to Framework</h1>
+  <div class="rule"></div>
+  <p class="lead">Four words people confuse, the C# we actually need,<br>and a running web application in three commands.</p>
+  <div class="foot"><span>Lecture 1 · .NET, C#, tooling, first project</span><span class="spacer"></span><span>~180 min · the densest session</span></div>
+</section>
+
+<!-- 2 ─ Framing -->
+<section class="slide">
+  <p class="eyebrow">Before we start</p>
+  <h2>Session 01 gave us the vocabulary. Now we get the tools.</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-3">
+      <div class="card">
+        <h3>What we already know</h3>
+        <p>Client and server, request and response, methods, status codes, and how one page becomes many requests.</p>
+      </div>
+      <div class="card">
+        <h3>What is missing</h3>
+        <p>Something on the server that produces the response. Writing that from scratch is the whole point of this session.</p>
+      </div>
+      <div class="card card--brand">
+        <h3>The pace</h3>
+        <p>This is the densest session of the course. Most of it is typed on screen, not read from slides. Stop us the moment a line stops making sense.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 3 ─ Learning objectives -->
+<section class="slide">
+  <p class="eyebrow">Learning objectives</p>
+  <h2>By the end of this session you can…</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <ol class="list list--tight">
+        <li>Explain what a programming language, a runtime, an SDK and a framework each are, and why frameworks exist.</li>
+        <li>Read and write basic C#: variables, types, conditionals, loops, collections, methods, classes and properties.</li>
+        <li>Handle an error with <code class="inline">try / catch / finally</code>.</li>
+      </ol>
+      <ol class="list list--tight" style="counter-reset:step 3">
+        <li>Query a collection with <code class="inline">Where</code>, <code class="inline">Select</code>, <code class="inline">OrderBy</code> and <code class="inline">FirstOrDefault</code>.</li>
+        <li>Create and run an ASP.NET Core MVC project from the command line.</li>
+        <li>Name the purpose of each top-level folder and file in the generated project.</li>
+      </ol>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 4 ─ Agenda -->
+<section class="slide">
+  <p class="eyebrow">Agenda</p>
+  <h2>Three hours, two breaks, a lot of typing</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <table>
+        <thead><tr><th style="width:34px">#</th><th>Block</th><th class="center" style="width:64px">Min</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Recap, objectives, install check</td><td class="center">10</td></tr>
+          <tr><td>2</td><td>Language, runtime, SDK, framework</td><td class="center">20</td></tr>
+          <tr><td>3</td><td>C# essentials I: values, decisions, repetition</td><td class="center">30</td></tr>
+          <tr><td>4</td><td class="muted">Break</td><td class="center">10</td></tr>
+          <tr><td>5</td><td>C# essentials II: collections, methods, classes, exceptions</td><td class="center">35</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <thead><tr><th style="width:34px">#</th><th>Block</th><th class="center" style="width:64px">Min</th></tr></thead>
+        <tbody>
+          <tr><td>6</td><td>Querying collections: four operators</td><td class="center">15</td></tr>
+          <tr><td>7</td><td class="muted">Break</td><td class="center">10</td></tr>
+          <tr><td>8</td><td>Demo: creating and running SimpleBlog</td><td class="center">15</td></tr>
+          <tr><td>9</td><td>Walkthrough: we build and explore a project</td><td class="center">30</td></tr>
+          <tr><td>10</td><td>Wrap-up and Q&amp;A</td><td class="center">5</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 5 ─ Section: recap and install check -->
+<section class="slide slide--dark">
+  <div class="section-no">01</div>
+  <p class="eyebrow">Block 1 · 10 min</p>
+  <h2>Recap and install check</h2>
+  <p class="lead" style="margin-top:var(--space-4)">Everyone with a working toolchain before the first line is typed.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 6 ─ Install check -->
+<section class="slide">
+  <p class="eyebrow">Install check</p>
+  <h2>The toolchain goes in during the break, and we verify it at the door</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre>$ <span class="k">dotnet --version</span>
+<span class="ok">10.0.100</span>
+
+$ <span class="k">dotnet --info</span>
+<span class="c">.NET SDKs installed, runtimes, OS and architecture &#8212;
+the output to paste when asking anyone for help.</span></pre>
+      <div class="stack">
+        <div class="card card--brand">
+          <h3>What must be installed</h3>
+          <p>The .NET 10 SDK, plus an editor: VS Code with the C# Dev Kit extension, or Visual Studio Community on Windows.</p>
+        </div>
+        <div class="card">
+          <h3>If it fails</h3>
+          <p>We pair machines for the coding blocks, and the C# part also runs in a browser at <code class="inline">dotnet.microsoft.com/platform/try-dotnet</code>. Nobody sits out.</p>
+        </div>
+      </div>
+    </div>
+    <div class="callout">A version number printed by <code class="inline">dotnet --version</code> is the only proof that counts. "It downloaded" is not the same as "it installed".</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 7 ─ Section: the four words -->
+<section class="slide slide--dark">
+  <div class="section-no">02</div>
+  <p class="eyebrow">Block 2 · 20 min</p>
+  <h2>Language, runtime, SDK, framework</h2>
+  <p class="lead" style="margin-top:var(--space-4)">Four words, no brand names. These ideas transfer to every stack there is.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 8 ─ The four words -->
+<section class="slide">
+  <p class="eyebrow">The four words</p>
+  <h2>Four words people confuse</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <table>
+      <thead><tr><th style="width:150px">Word</th><th style="width:46%">What it is</th><th>Analogy</th></tr></thead>
+      <tbody>
+        <tr><th>Language</th><td>The rules for writing instructions a computer can be made to follow.</td><td>A human language &#8212; grammar and vocabulary.</td></tr>
+        <tr><th>Runtime</th><td>The program that actually <em>executes</em> your instructions on a real machine.</td><td>The engine. Your code is the driver's input.</td></tr>
+        <tr><th>SDK</th><td>Software Development Kit: the tools you need to <em>build</em> software &#8212; a compiler, project templates, command-line tools. Includes a runtime.</td><td>A workshop: bench, tools, and a spare engine to test with.</td></tr>
+        <tr><th>Framework</th><td>A large body of pre-written code that solves the common problems of a <em>kind</em> of application, so you only write the parts unique to yours.</td><td>A house's foundation, plumbing and wiring. You decorate the rooms.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 9 ─ Diagram: nested containers -->
+<section class="slide">
+  <p class="eyebrow">The four words</p>
+  <h2>What contains what</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <svg viewBox="0 0 1160 400" style="width:auto;height:330px;align-self:center" role="img"
+         aria-label="Left: the kit you install to build contains a compiler, tools and templates, and a runtime. Right: at run time, your code sits on the framework, which sits on the runtime, which sits on the machine.">
+      <g style="font-family:var(--font-sans-text)">
+        <text x="0" y="18" font-size="14" font-weight="600" letter-spacing="1.6" style="fill:var(--text-secondary)">WHAT YOU INSTALL TO BUILD</text>
+        <text x="620" y="18" font-size="14" font-weight="600" letter-spacing="1.6" style="fill:var(--text-secondary)">WHAT IS RUNNING WHEN THE APP RUNS</text>
+
+        <rect x="0" y="34" width="520" height="326" rx="8" style="fill:var(--surface-card);stroke:var(--border-strong)"/>
+        <text x="24" y="74" font-size="24" font-weight="600" style="fill:var(--text-primary)">The kit</text>
+        <text x="24" y="100" font-size="15" style="fill:var(--text-secondary)">everything needed to build software</text>
+
+        <rect x="24" y="120" width="228" height="96" rx="8" style="fill:var(--surface-subtle);stroke:var(--border-default)"/>
+        <text x="138" y="158" text-anchor="middle" font-size="19" font-weight="600" style="fill:var(--text-primary)">Compiler</text>
+        <text x="138" y="184" text-anchor="middle" font-size="15" style="fill:var(--text-secondary)">turns your text into</text>
+        <text x="138" y="202" text-anchor="middle" font-size="15" style="fill:var(--text-secondary)">something runnable</text>
+
+        <rect x="24" y="232" width="228" height="96" rx="8" style="fill:var(--surface-subtle);stroke:var(--border-default)"/>
+        <text x="138" y="270" text-anchor="middle" font-size="19" font-weight="600" style="fill:var(--text-primary)">Tools</text>
+        <text x="138" y="296" text-anchor="middle" font-size="15" style="fill:var(--text-secondary)">project templates and</text>
+        <text x="138" y="314" text-anchor="middle" font-size="15" style="fill:var(--text-secondary)">commands you type</text>
+
+        <rect x="272" y="120" width="224" height="208" rx="8" style="fill:var(--brand-base)"/>
+        <text x="384" y="204" text-anchor="middle" font-size="21" font-weight="600" style="fill:#ffffff">A runtime</text>
+        <text x="384" y="234" text-anchor="middle" font-size="15" style="fill:var(--brand-tint-20)">so you can run what</text>
+        <text x="384" y="252" text-anchor="middle" font-size="15" style="fill:var(--brand-tint-20)">you just built</text>
+
+        <rect x="620" y="34" width="540" height="76" rx="8" style="fill:var(--surface-card);stroke:var(--brand-base);stroke-width:2"/>
+        <text x="644" y="70" font-size="20" font-weight="600" style="fill:var(--text-primary)">Your code</text>
+        <text x="644" y="94" font-size="15" style="fill:var(--text-secondary)">the only part that is about your application</text>
+        <text x="1136" y="70" text-anchor="end" font-size="15" font-weight="600" style="fill:var(--brand-pressed)">written in the language</text>
+
+        <rect x="620" y="122" width="540" height="76" rx="8" style="fill:var(--brand-tint-30);stroke:var(--brand-tint-20)"/>
+        <text x="644" y="158" font-size="20" font-weight="600" style="fill:var(--brand-shade-10)">Framework</text>
+        <text x="644" y="182" font-size="15" style="fill:var(--brand-shade-10)">the problems every application of this kind has, already solved</text>
+
+        <rect x="620" y="210" width="540" height="76" rx="8" style="fill:var(--brand-base)"/>
+        <text x="644" y="246" font-size="20" font-weight="600" style="fill:#ffffff">Runtime</text>
+        <text x="644" y="270" font-size="15" style="fill:var(--brand-tint-20)">executes all of the above, line by line</text>
+
+        <rect x="620" y="298" width="540" height="62" rx="8" stroke-dasharray="6 5" style="fill:var(--surface-card);stroke:var(--border-strong)"/>
+        <text x="644" y="336" font-size="18" font-weight="600" style="fill:var(--text-disabled)">The machine and its operating system</text>
+      </g>
+    </svg>
+    <p class="body" style="margin:var(--space-5) 0 0;text-align:center">The kit is what you install. The stack on the right is what exists while a request is being answered.</p>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 10 ─ Why frameworks exist -->
+<section class="slide">
+  <p class="eyebrow">The four words</p>
+  <h2>Why frameworks exist: what would we build ourselves?</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <p class="lead">After Session 01 we know what has to happen to serve one page. Here is the list, if nobody helped us.</p>
+    <div class="cols cols-2">
+      <ul class="list list--tight">
+        <li>Listen on a network port.</li>
+        <li>Read raw bytes and parse them as a request.</li>
+        <li>Work out which of our code should handle this path.</li>
+        <li>Read files from disk and produce HTML.</li>
+      </ul>
+      <ul class="list list--tight">
+        <li>Format a response and write the bytes back.</li>
+        <li>Handle a thousand people doing this at once, safely.</li>
+        <li>Do all of it without crashing &#8212; and log it when it does.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 11 ─ The statement -->
+<section class="slide slide--brand">
+  <p class="eyebrow">The point of a framework</p>
+  <p class="statement" style="color:var(--neutral-white)">None of that is your blog.<br>All of it is the same for every website ever built.</p>
+  <div class="rule"></div>
+  <p class="lead">A web framework is that list, already solved, and tested by millions of users before it reached us.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 12 ─ Diagram: inversion of control -->
+<section class="slide">
+  <p class="eyebrow">The four words</p>
+  <h2>The inversion: who calls whom</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <svg viewBox="0 0 1160 300" style="width:auto;height:262px;align-self:center" role="img"
+         aria-label="With a library, your code calls the library. With a framework, the framework calls your code — the arrow points the other way.">
+      <g style="font-family:var(--font-sans-text)">
+        <defs>
+          <marker id="a-grey" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+            <path d="M0,0 L10,4 L0,8 Z" style="fill:var(--neutral-grey-110)"/>
+          </marker>
+          <marker id="a-brand" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+            <path d="M0,0 L10,4 L0,8 Z" style="fill:var(--brand-base)"/>
+          </marker>
+        </defs>
+
+        <rect x="0" y="0" width="540" height="290" rx="8" style="fill:var(--surface-card);stroke:var(--border-default)"/>
+        <text x="28" y="46" font-size="22" font-weight="600" style="fill:var(--text-primary)">A library</text>
+        <rect x="28" y="110" width="200" height="80" rx="8" style="fill:var(--surface-subtle);stroke:var(--border-strong)"/>
+        <text x="128" y="157" text-anchor="middle" font-size="19" font-weight="600" style="fill:var(--text-primary)">Your code</text>
+        <rect x="312" y="110" width="200" height="80" rx="8" style="fill:var(--surface-subtle);stroke:var(--border-strong)"/>
+        <text x="412" y="157" text-anchor="middle" font-size="19" font-weight="600" style="fill:var(--text-primary)">Library</text>
+        <line x1="236" y1="150" x2="304" y2="150" stroke-width="2.5" marker-end="url(#a-grey)" style="stroke:var(--neutral-grey-110)"/>
+        <text x="270" y="136" text-anchor="middle" font-size="15" font-weight="600" style="fill:var(--text-secondary)">calls</text>
+        <text x="28" y="242" font-size="16" style="fill:var(--text-secondary)">You decide the order of events. You start,</text>
+        <text x="28" y="264" font-size="16" style="fill:var(--text-secondary)">you ask for help, you finish.</text>
+
+        <rect x="620" y="0" width="540" height="290" rx="8" style="fill:var(--surface-card);stroke:var(--brand-base);stroke-width:2"/>
+        <text x="648" y="46" font-size="22" font-weight="600" style="fill:var(--text-primary)">A framework</text>
+        <rect x="648" y="110" width="200" height="80" rx="8" style="fill:var(--brand-base)"/>
+        <text x="748" y="157" text-anchor="middle" font-size="19" font-weight="600" style="fill:#ffffff">Framework</text>
+        <rect x="932" y="110" width="200" height="80" rx="8" style="fill:var(--surface-card);stroke:var(--brand-base);stroke-width:2"/>
+        <text x="1032" y="157" text-anchor="middle" font-size="19" font-weight="600" style="fill:var(--text-primary)">Your code</text>
+        <line x1="856" y1="150" x2="924" y2="150" stroke-width="2.5" marker-end="url(#a-brand)" style="stroke:var(--brand-base)"/>
+        <text x="890" y="136" text-anchor="middle" font-size="15" font-weight="600" style="fill:var(--brand-pressed)">calls</text>
+        <text x="648" y="242" font-size="16" style="fill:var(--text-secondary)">It owns the loop that waits for requests. It calls</text>
+        <text x="648" y="264" font-size="16" style="fill:var(--text-secondary)">the pieces you wrote, when it needs them.</text>
+      </g>
+    </svg>
+    <p class="body" style="margin:var(--space-5) 0 0;text-align:center">So learning a framework is mostly learning <strong>where to put your code</strong> and <strong>what to name it</strong> &#8212; a theme for the whole course.</p>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 13 ─ The cost -->
+<section class="slide">
+  <p class="eyebrow">The four words</p>
+  <h2>The cost: a framework has opinions</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <div class="cols cols-2">
+      <div class="card card--elevated center">
+        <span class="badge badge--success">Follow the conventions</span>
+        <h3 style="margin-top:var(--space-3)">You write very little code</h3>
+        <p>Put the file where it is expected, give it the expected name, and things simply work. Most of what looks like magic is a naming rule you have not met yet.</p>
+      </div>
+      <div class="card card--elevated center">
+        <span class="badge badge--warning">Fight the conventions</span>
+        <h3 style="margin-top:var(--space-3)">You write a great deal of code</h3>
+        <p>Every deviation has to be configured, explained and maintained. It is possible, and occasionally right, but it is never free.</p>
+      </div>
+    </div>
+    <div class="callout" style="margin-top:var(--space-5)">In this course <strong>we follow them</strong>. Once the conventions are second nature, breaking one on purpose becomes a reasonable decision rather than an accident.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 14 ─ Now the names -->
+<section class="slide">
+  <p class="eyebrow">Now the names</p>
+  <h2>The same four words, with their real names</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <table>
+      <thead><tr><th style="width:210px">Name</th><th style="width:150px">Which word</th><th>What it is for us</th></tr></thead>
+      <tbody>
+        <tr><th>C#</th><td>the language</td><td>Statically typed, object-oriented, general purpose. What we type.</td></tr>
+        <tr><th>.NET</th><td>the platform</td><td>The runtime that executes C#, plus a large standard library. Runs on Windows, macOS and Linux. Current version: <strong>.NET 10</strong>.</td></tr>
+        <tr><th>.NET SDK</th><td>the kit</td><td>What we installed. It gives us the <code class="inline">dotnet</code> command.</td></tr>
+        <tr><th>ASP.NET Core</th><td>the framework</td><td>The web framework that runs on .NET. It owns the loop; we fill in the parts that are ours.</td></tr>
+        <tr><th>ASP.NET Core MVC</th><td>a structure</td><td>One particular way of organising a web app with ASP.NET Core &#8212; the subject of Session 03.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 15 ─ Why this language -->
+<section class="slide">
+  <p class="eyebrow">Now the names</p>
+  <h2>Why C# for the web?</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <ul class="list list--tight">
+        <li><strong>Statically typed</strong> &#8212; the compiler catches whole classes of mistake before the program ever runs.</li>
+        <li><strong>Mature tooling</strong> &#8212; one command-line tool does everything, on any operating system.</li>
+        <li><strong>First-class database support</strong> &#8212; Sessions 07 and 08.</li>
+        <li><strong>It is what industry in this region hires for.</strong></li>
+      </ul>
+      <div class="stack">
+        <div class="card card--brand">
+          <h3>Said honestly</h3>
+          <p>The <em>concepts</em> in this course are the same in Java, Python, PHP and JavaScript. You are not learning one company's product &#8212; you are learning web development, in one dialect.</p>
+        </div>
+        <div class="card">
+          <h3>C# is not .NET</h3>
+          <p>C# is the language; .NET is the platform that runs it. Other languages run on .NET too.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 16 ─ Section: C# essentials I -->
+<section class="slide slide--dark">
+  <div class="section-no">03</div>
+  <p class="eyebrow">Block 3 · 30 min · live coding</p>
+  <h2>C# essentials I</h2>
+  <p class="lead" style="margin-top:var(--space-4)">Values, decisions, repetition. Every slide here is a shape; the rest is typed on screen.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 17 ─ Scratch project -->
+<section class="slide">
+  <p class="eyebrow">C# essentials I</p>
+  <h2>A scratch project to type into</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre>$ <span class="k">dotnet new console</span> -n <span class="h">CsBasics</span> -f net10.0
+$ <span class="k">cd</span> CsBasics
+$ <span class="k">dotnet run</span>
+
+<span class="ok">Hello, World!</span></pre>
+      <div class="stack">
+        <div class="card">
+          <h3>Three lines is the whole file</h3>
+          <p>Modern C# lets us write statements at the top of a file with no ceremony around them. The ceremony exists, and we meet it when we need it.</p>
+        </div>
+        <div class="card card--brand">
+          <h3>This project is a sketchpad</h3>
+          <p>Everything in the next two blocks is typed here and thrown away. The real project comes after the second break.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 18 ─ Values and types -->
+<section class="slide">
+  <p class="eyebrow">C# essentials I</p>
+  <h2>Variables and types</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre><span class="k">string</span> title = <span class="h">"Hello, world"</span>;
+<span class="k">int</span> views = <span class="h">42</span>;
+<span class="k">double</span> rating = <span class="h">4.5</span>;
+<span class="k">bool</span> isPublished = <span class="h">true</span>;
+<span class="k">DateTime</span> publishedOn = <span class="k">new</span> DateTime(2026, 3, 1);
+
+<span class="k">var</span> author = <span class="h">"Ada"</span>;   <span class="c">// inferred: string</span></pre>
+      <ul class="list list--tight">
+        <li>A <strong>variable</strong> is a named box.</li>
+        <li>A <strong>type</strong> says what may go in the box.</li>
+        <li><code class="inline">var</code> is not "no type" &#8212; it is "you work it out". The box still has exactly one type.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 19 ─ Static typing and interpolation -->
+<section class="slide">
+  <p class="eyebrow">C# essentials I</p>
+  <h2>The compiler is a friend, not a critic</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <div class="stack">
+<pre>views = <span class="h">"many"</span>;
+<span class="c">// error CS0029: cannot convert
+// type 'string' to 'int'</span></pre>
+        <div class="card">
+          <h3>Statically typed</h3>
+          <p>That line never runs, because it never compiles. The red squiggle is a mistake caught before it could hurt anyone.</p>
+        </div>
+      </div>
+      <div class="stack">
+<pre>Console.WriteLine(
+    $<span class="h">"{title} by {author}"</span>);</pre>
+        <div class="card card--brand">
+          <h3>String interpolation</h3>
+          <p>A <code class="inline">$</code> in front of the text, and <code class="inline">{ }</code> around anything to be dropped into it. We use this constantly for the rest of the course.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 20 ─ Decisions -->
+<section class="slide">
+  <p class="eyebrow">C# essentials I</p>
+  <h2>Decisions</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre><span class="k">if</span> (views &gt; 1000)
+    Console.WriteLine(<span class="h">"Popular"</span>);
+<span class="k">else if</span> (views &gt; 100)
+    Console.WriteLine(<span class="h">"Doing fine"</span>);
+<span class="k">else</span>
+    Console.WriteLine(<span class="h">"Needs promotion"</span>);
+
+<span class="k">string</span> label = views &gt; 1000 ? <span class="h">"hot"</span> : <span class="h">"normal"</span>;</pre>
+      <ul class="list list--tight">
+        <li>Conditions are read top to bottom; the first one that is true wins.</li>
+        <li><code class="inline">?&nbsp;:</code> is the same decision written as one expression: <em>condition, then value, else value</em>.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 21 ─ switch -->
+<section class="slide">
+  <p class="eyebrow">C# essentials I</p>
+  <h2>Many branches on one value: <code class="inline">switch</code></h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre><span class="k">switch</span> (status)
+{
+    <span class="k">case</span> <span class="h">"draft"</span>:
+        Console.WriteLine(<span class="h">"Not visible"</span>); <span class="k">break</span>;
+    <span class="k">case</span> <span class="h">"published"</span>:
+        Console.WriteLine(<span class="h">"Live"</span>);        <span class="k">break</span>;
+    <span class="k">default</span>:
+        Console.WriteLine(<span class="h">"Unknown"</span>);     <span class="k">break</span>;
+}</pre>
+      <ul class="list list--tight">
+        <li>One value, compared against several fixed possibilities.</li>
+        <li><code class="inline">default</code> is the "none of the above" branch. Always write one.</li>
+        <li>Everything here could be written with <code class="inline">if</code>. It is shorter and easier to read this way.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 22 ─ Repetition -->
+<section class="slide">
+  <p class="eyebrow">C# essentials I</p>
+  <h2>Repetition</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre><span class="k">for</span> (<span class="k">int</span> i = 0; i &lt; 5; i++)
+    Console.WriteLine($<span class="h">"Article {i}"</span>);
+
+<span class="k">int</span> n = 0;
+<span class="k">while</span> (n &lt; 3) { Console.WriteLine(n); n++; }
+
+<span class="k">foreach</span> (<span class="k">var</span> word <span class="k">in</span> words)
+    Console.WriteLine(word);</pre>
+      <div class="stack">
+        <div class="card">
+          <h3>Three shapes</h3>
+          <p><code class="inline">for</code> &#8212; a counted number of times. <code class="inline">while</code> &#8212; as long as something stays true. <code class="inline">foreach</code> &#8212; once for every item in a collection.</p>
+        </div>
+        <div class="card card--brand">
+          <h3>Learn <code class="inline">foreach</code> properly</h3>
+          <p>It is the one we use in every page template from Session 05 onwards. Read it as "for each word in words".</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 23 ─ Section: C# essentials II -->
+<section class="slide slide--dark">
+  <div class="section-no">04</div>
+  <p class="eyebrow">Block 5 · 35 min · live coding</p>
+  <h2>C# essentials II</h2>
+  <p class="lead" style="margin-top:var(--space-4)">Collections, methods, classes and exceptions &#8212; the four ideas the rest of the course rests on.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 24 ─ Three collections -->
+<section class="slide">
+  <p class="eyebrow">C# essentials II</p>
+  <h2>Three collections, three questions</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <div class="cols cols-3 cols--auto">
+      <div class="card">
+        <span class="badge badge--mono">string[]</span>
+        <h3 style="margin-top:var(--space-2)">Array</h3>
+        <p>A fixed row of boxes, numbered from 0. The number of boxes never changes.</p>
+      </div>
+      <div class="card">
+        <span class="badge badge--mono">List&lt;string&gt;</span>
+        <h3 style="margin-top:var(--space-2)">List</h3>
+        <p>A row of boxes that grows and shrinks as you add and remove things.</p>
+      </div>
+      <div class="card">
+        <span class="badge badge--mono">Dictionary&lt;string,int&gt;</span>
+        <h3 style="margin-top:var(--space-2)">Dictionary</h3>
+        <p>A lookup table: give me the value filed under this key.</p>
+      </div>
+    </div>
+    <div class="callout" style="margin-top:var(--space-6)">Those angle brackets say <em>what kind of thing is inside</em>. <code class="inline">List&lt;string&gt;</code> is a list <strong>of strings</strong>; <code class="inline">Dictionary&lt;string,int&gt;</code> files whole numbers under text keys.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 25 ─ Collections in code -->
+<section class="slide">
+  <p class="eyebrow">C# essentials II</p>
+  <h2>The same three, in code</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+<pre><span class="k">string</span>[] tags = { <span class="h">"web"</span>, <span class="h">"mvc"</span> };
+tags[0] = <span class="h">"csharp"</span>;
+
+List&lt;<span class="k">string</span>&gt; titles = <span class="k">new</span>();
+titles.Add(<span class="h">"First post"</span>);
+titles.Add(<span class="h">"Second post"</span>);
+titles.Remove(<span class="h">"First post"</span>);
+Console.WriteLine(titles.Count);</pre>
+<pre>Dictionary&lt;<span class="k">string</span>, <span class="k">int</span>&gt; views = <span class="k">new</span>()
+{
+    [<span class="h">"First post"</span>]  = 120,
+    [<span class="h">"Second post"</span>] = 45
+};
+
+Console.WriteLine(views[<span class="h">"First post"</span>]);</pre>
+    </div>
+    <div class="callout">Counting from <strong>zero</strong> is not a quirk to memorise and resent &#8212; every collection in every language on this course does it. <code class="inline">tags[0]</code> is the first tag.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 26 ─ Methods -->
+<section class="slide">
+  <p class="eyebrow">C# essentials II</p>
+  <h2>Methods: name a thing once, use it everywhere</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre><span class="k">string</span> Shorten(<span class="k">string</span> text, <span class="k">int</span> maxLength)
+{
+    <span class="k">if</span> (text.Length &lt;= maxLength) <span class="k">return</span> text;
+    <span class="k">return</span> text.Substring(0, maxLength) + <span class="h">"..."</span>;
+}
+
+Console.WriteLine(Shorten(<span class="h">"A long title"</span>, 6));</pre>
+      <ul class="list list--tight">
+        <li>A named, reusable block: <strong>inputs</strong> (parameters) in, <strong>one output</strong> (the return value) out.</li>
+        <li>The type in front of the name is the type of what comes back. <code class="inline">void</code> means "nothing comes back".</li>
+        <li>Written once means fixed once.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 27 ─ Classes -->
+<section class="slide">
+  <p class="eyebrow">C# essentials II</p>
+  <h2>Classes, objects and properties</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+      <div class="stack">
+<pre><span class="k">class</span> <span class="h">Article</span>
+{
+    <span class="k">public int</span> Id { <span class="k">get; set;</span> }
+    <span class="k">public string</span> Title { <span class="k">get; set;</span> } = <span class="h">""</span>;
+    <span class="k">public string</span> Author { <span class="k">get; set;</span> } = <span class="h">""</span>;
+    <span class="k">public</span> DateTime PublishedOn { <span class="k">get; set;</span> }
+
+    <span class="k">public bool</span> IsRecent()
+        =&gt; PublishedOn &gt; DateTime.Now.AddDays(-7);
+}</pre>
+<pre><span class="k">var</span> a = <span class="k">new</span> Article { Id = 1, Title = <span class="h">"Hello"</span> };</pre>
+      </div>
+      <ul class="list list--tight">
+        <li>A <strong>class</strong> is a blueprint. An <strong>object</strong> is one thing built from it.</li>
+        <li>A <strong>property</strong> is a named piece of data on that thing. <code class="inline">{ get; set; }</code> means readable and writable.</li>
+        <li><code class="inline">Article</code> is the form; each filled-in form is an object.</li>
+        <li>This exact class becomes a database table in Session 08.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 28 ─ Exceptions -->
+<section class="slide">
+  <p class="eyebrow">C# essentials II</p>
+  <h2>When something goes wrong: <code class="inline">try / catch / finally</code></h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre><span class="k">try</span>
+{
+    <span class="k">var</span> text = File.ReadAllText(<span class="h">"missing.txt"</span>);
+    Console.WriteLine(text);
+}
+<span class="k">catch</span> (FileNotFoundException ex)
+{
+    Console.WriteLine($<span class="h">"No such file: {ex.Message}"</span>);
+}
+<span class="k">finally</span>
+{
+    Console.WriteLine(<span class="h">"This always runs."</span>);
+}</pre>
+      <ul class="list list--tight">
+        <li>Some failures cannot be prevented: the file is gone, the network is down, the user typed nonsense.</li>
+        <li>An <strong>exception</strong> is the language saying "I cannot continue here."</li>
+        <li><code class="inline">finally</code> runs either way &#8212; success or failure.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 29 ─ Exceptions: the connection to 500 -->
+<section class="slide">
+  <p class="eyebrow">C# essentials II</p>
+  <h2>An uncaught exception has a status code</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <div class="cols cols-2">
+      <div class="card card--elevated center">
+        <span class="badge badge--danger badge--mono">500</span>
+        <h3 style="margin-top:var(--space-3)">This is where the 500 came from</h3>
+        <p>Unhandled, an exception stops the program. In a web application the framework catches it at the very edge and answers with <strong>500 Internal Server Error</strong> &#8212; the code we met in Session 01. Whose bug? Ours.</p>
+      </div>
+      <div class="card card--elevated center">
+        <h3>Do not catch what you cannot handle</h3>
+        <p>An empty <code class="inline">catch { }</code> hides a bug; it does not fix one. Catch an exception only when you have something sensible to do about it &#8212; show a message, use a default, try again.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 30 ─ Section: querying collections -->
+<section class="slide slide--dark">
+  <div class="section-no">05</div>
+  <p class="eyebrow">Block 6 · 15 min · live coding</p>
+  <h2>Querying collections</h2>
+  <p class="lead" style="margin-top:var(--space-4)">Four operators that answer almost every question you will ever ask a list.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 31 ─ The problem -->
+<section class="slide">
+  <p class="eyebrow">Querying collections</p>
+  <h2>"Given 500 articles: this year's, newest first, titles only."</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre><span class="c">// with loops, roughly:</span>
+<span class="k">var</span> chosen = <span class="k">new</span> List&lt;Article&gt;();
+<span class="k">foreach</span> (<span class="k">var</span> a <span class="k">in</span> articles)
+{
+    <span class="k">if</span> (a.PublishedOn.Year == 2026)
+        chosen.Add(a);
+}
+chosen.Sort(<span class="c">/* by date, descending */</span>);
+
+<span class="k">var</span> titles = <span class="k">new</span> List&lt;<span class="k">string</span>&gt;();
+<span class="k">foreach</span> (<span class="k">var</span> a <span class="k">in</span> chosen)
+    titles.Add(a.Title);</pre>
+      <ul class="list list--tight">
+        <li>Twelve lines, three of which are the actual question.</li>
+        <li>Every list we ever filter needs the same twelve lines again.</li>
+        <li>LINQ is the same work, written as the question instead of the procedure.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 32 ─ Where and Select -->
+<section class="slide">
+  <p class="eyebrow">Querying collections</p>
+  <h2><code class="inline">Where</code> and <code class="inline">Select</code></h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre><span class="c">// which ones match? &#8212; same count or fewer</span>
+<span class="k">var</span> recent = articles
+    .<span class="h">Where</span>(a =&gt; a.PublishedOn.Year == 2026);
+
+<span class="c">// what do I want from each one? &#8212; same count</span>
+<span class="k">var</span> titles = articles
+    .<span class="h">Select</span>(a =&gt; a.Title);</pre>
+      <div class="stack">
+        <div class="card card--brand">
+          <h3>Read the arrow as "goes to"</h3>
+          <p><code class="inline">a =&gt; a.Title</code>: for each article <code class="inline">a</code>, go to its <code class="inline">Title</code>. It is a tiny method with no name &#8212; a <strong>lambda</strong>.</p>
+        </div>
+        <div class="card">
+          <h3>Filter, then transform</h3>
+          <p><code class="inline">Where</code> changes how many. <code class="inline">Select</code> changes what each one is.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 33 ─ OrderBy and FirstOrDefault -->
+<section class="slide">
+  <p class="eyebrow">Querying collections</p>
+  <h2><code class="inline">OrderBy</code> and <code class="inline">FirstOrDefault</code></h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre><span class="c">// in what order?</span>
+<span class="k">var</span> ordered = articles
+    .<span class="h">OrderBy</span>(a =&gt; a.PublishedOn);
+
+<span class="k">var</span> newest = articles
+    .<span class="h">OrderByDescending</span>(a =&gt; a.PublishedOn);
+
+<span class="c">// give me one, or null if there is none</span>
+<span class="k">var</span> first = articles
+    .<span class="h">FirstOrDefault</span>(a =&gt; a.Author == <span class="h">"Ada"</span>);</pre>
+      <div class="stack">
+        <div class="card">
+          <h3><code class="inline">First</code> throws</h3>
+          <p>When nothing matches, <code class="inline">First</code> raises an exception &#8212; and an uncaught one is a 500.</p>
+        </div>
+        <div class="card card--brand">
+          <h3><code class="inline">FirstOrDefault</code> returns nothing</h3>
+          <p>It hands back <code class="inline">null</code>, which we check. "Not found" is a <strong>404</strong>, not a crash &#8212; exactly the decision we make in Session 03.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 34 ─ The pipeline -->
+<section class="slide">
+  <p class="eyebrow">Querying collections</p>
+  <h2>Chained, they read like the sentence we started with</h2>
+  <div class="rule"></div>
+  <div class="content center">
+<pre><span class="k">var</span> result = articles
+    .<span class="h">Where</span>(a =&gt; a.PublishedOn.Year == 2026)   <span class="c">// this year's</span>
+    .<span class="h">OrderByDescending</span>(a =&gt; a.PublishedOn)     <span class="c">// newest first</span>
+    .<span class="h">Select</span>(a =&gt; a.Title)                     <span class="c">// titles only</span>
+    .<span class="h">ToList</span>();</pre>
+    <div class="cols cols-2 cols--auto" style="margin-top:var(--space-6)">
+      <div class="callout">Twelve lines became five, and the five say what we want rather than how to get it.</div>
+      <div class="callout">These same four operators run against a <strong>database</strong> in Session 08, unchanged. That is the payoff for learning them now.</div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 35 ─ Section: first project -->
+<section class="slide slide--dark">
+  <div class="section-no">06</div>
+  <p class="eyebrow">Block 8 · 15 min · demo</p>
+  <h2>The first MVC project</h2>
+  <p class="lead" style="margin-top:var(--space-4)">A website in three commands, with no code written &#8212; the framework from Block 2, doing its job.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 36 ─ Creating SimpleBlog -->
+<section class="slide">
+  <p class="eyebrow">Demo</p>
+  <h2>Creating and running SimpleBlog</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre>$ <span class="k">dotnet new mvc</span> -n <span class="h">SimpleBlog</span> -f net10.0
+$ <span class="k">cd</span> SimpleBlog
+$ <span class="k">dotnet run</span>
+
+<span class="ok">Now listening on: http://localhost:5142</span>
+<span class="c">Hosting environment: Development
+Content root path: /work/SimpleBlog</span></pre>
+      <ul class="list list--tight">
+        <li>We read the output aloud: the listening address, the environment, the content root.</li>
+        <li>We open that address in a browser and get a complete, styled website.</li>
+        <li>We wrote none of it. Everything we listed in Block 2 is already handled.</li>
+      </ul>
+    </div>
+    <div class="callout"><code class="inline">-f net10.0</code> pins the version we all agreed on, so every machine in the room produces the same project.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 37 ─ In the browser, and watch -->
+<section class="slide">
+  <p class="eyebrow">Demo</p>
+  <h2>Back to DevTools, and then hot reload</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <div class="stack">
+        <ol class="list list--tight">
+          <li>We open DevTools on the running site &#8212; Session 01 muscle memory.</li>
+          <li>We find the document request: its <strong>200</strong>, its <code class="inline">Content-Type: text/html</code>.</li>
+          <li>We read the HTML in the <strong>Response</strong> panel.</li>
+        </ol>
+        <div class="callout">That HTML did not exist as a file anywhere. Our program produced it, for this one request.</div>
+      </div>
+      <div class="stack">
+<pre>$ <span class="k">dotnet watch</span>
+
+<span class="c">watch : Started
+watch : File changed: Views/Home/Index.cshtml
+watch : Hot reload succeeded.</span></pre>
+        <div class="card card--brand">
+          <h3>Leave this running</h3>
+          <p>It rebuilds and reloads the browser every time we save. We use it for the rest of the course; it removes the stop-start-refresh cycle entirely.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 38 ─ Diagram: project structure -->
+<section class="slide">
+  <p class="eyebrow">What is in the box</p>
+  <h2>The generated project, folder by folder</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <svg viewBox="0 0 1160 428" style="width:auto;height:400px;align-self:center" role="img"
+         aria-label="A tree of the generated SimpleBlog project: Program.cs, Controllers, Views, Models, wwwroot, appsettings.json, the project file, and the build output folders, each with its role and the session that covers it.">
+      <g style="font-family:var(--font-sans-text)">
+        <text x="4" y="24" font-size="20" font-weight="600" style="font-family:var(--font-mono);fill:var(--text-primary)">SimpleBlog/</text>
+        <line x1="16" y1="38" x2="16" y2="400" stroke-width="1.5" style="stroke:var(--border-strong)"/>
+
+        <line x1="16" y1="66" x2="40" y2="66" stroke-width="1.5" style="stroke:var(--border-strong)"/>
+        <text x="52" y="72" font-size="18" font-weight="600" style="font-family:var(--font-mono);fill:var(--brand-pressed)">Program.cs</text>
+        <text x="320" y="72" font-size="16" style="fill:var(--text-secondary)">Builds the app, registers services, defines the pipeline, runs it.</text>
+        <rect x="990" y="52" width="164" height="28" rx="14" style="fill:var(--brand-tint-40)"/>
+        <text x="1072" y="71" text-anchor="middle" font-size="15" font-weight="600" style="fill:var(--brand-pressed)">03 · 04 · 07</text>
+
+        <line x1="16" y1="114" x2="40" y2="114" stroke-width="1.5" style="stroke:var(--border-strong)"/>
+        <text x="52" y="120" font-size="18" font-weight="600" style="font-family:var(--font-mono);fill:var(--brand-pressed)">Controllers/</text>
+        <text x="320" y="120" font-size="16" style="fill:var(--text-secondary)">The classes that handle requests.</text>
+        <rect x="990" y="100" width="164" height="28" rx="14" style="fill:var(--brand-tint-40)"/>
+        <text x="1072" y="119" text-anchor="middle" font-size="15" font-weight="600" style="fill:var(--brand-pressed)">03</text>
+
+        <line x1="16" y1="162" x2="40" y2="162" stroke-width="1.5" style="stroke:var(--border-strong)"/>
+        <text x="52" y="168" font-size="18" font-weight="600" style="font-family:var(--font-mono);fill:var(--brand-pressed)">Views/</text>
+        <text x="320" y="168" font-size="16" style="fill:var(--text-secondary)">The HTML templates.</text>
+        <rect x="990" y="148" width="164" height="28" rx="14" style="fill:var(--brand-tint-40)"/>
+        <text x="1072" y="167" text-anchor="middle" font-size="15" font-weight="600" style="fill:var(--brand-pressed)">05</text>
+
+        <line x1="16" y1="210" x2="40" y2="210" stroke-width="1.5" style="stroke:var(--border-strong)"/>
+        <text x="52" y="216" font-size="18" font-weight="600" style="font-family:var(--font-mono);fill:var(--brand-pressed)">Models/</text>
+        <text x="320" y="216" font-size="16" style="fill:var(--text-secondary)">The data shapes &#8212; classes like the Article we just wrote.</text>
+        <rect x="990" y="196" width="164" height="28" rx="14" style="fill:var(--brand-tint-40)"/>
+        <text x="1072" y="215" text-anchor="middle" font-size="15" font-weight="600" style="fill:var(--brand-pressed)">06 · 07</text>
+
+        <line x1="16" y1="258" x2="40" y2="258" stroke-width="1.5" style="stroke:var(--border-strong)"/>
+        <text x="52" y="264" font-size="18" font-weight="600" style="font-family:var(--font-mono);fill:var(--brand-pressed)">wwwroot/</text>
+        <text x="320" y="264" font-size="16" style="fill:var(--text-secondary)">Static files served exactly as they are: CSS, JS, images.</text>
+        <rect x="990" y="244" width="164" height="28" rx="14" style="fill:var(--brand-tint-40)"/>
+        <text x="1072" y="263" text-anchor="middle" font-size="15" font-weight="600" style="fill:var(--brand-pressed)">05 · 06</text>
+
+        <line x1="16" y1="306" x2="40" y2="306" stroke-width="1.5" style="stroke:var(--border-strong)"/>
+        <text x="52" y="312" font-size="18" font-weight="600" style="font-family:var(--font-mono);fill:var(--brand-pressed)">appsettings.json</text>
+        <text x="320" y="312" font-size="16" style="fill:var(--text-secondary)">Configuration: settings and connection strings.</text>
+        <rect x="990" y="292" width="164" height="28" rx="14" style="fill:var(--brand-tint-40)"/>
+        <text x="1072" y="311" text-anchor="middle" font-size="15" font-weight="600" style="fill:var(--brand-pressed)">07</text>
+
+        <line x1="16" y1="354" x2="40" y2="354" stroke-width="1.5" style="stroke:var(--border-strong)"/>
+        <text x="52" y="360" font-size="18" font-weight="600" style="font-family:var(--font-mono);fill:var(--text-secondary)">SimpleBlog.csproj</text>
+        <text x="320" y="360" font-size="16" style="fill:var(--text-secondary)">The project file: target framework and package references.</text>
+
+        <line x1="16" y1="400" x2="40" y2="400" stroke-width="1.5" style="stroke:var(--border-strong)"/>
+        <text x="52" y="406" font-size="18" font-weight="600" style="font-family:var(--font-mono);fill:var(--text-disabled)">obj/  bin/</text>
+        <text x="320" y="406" font-size="16" style="fill:var(--text-disabled)">Build output. Never edit it, never commit it.</text>
+      </g>
+    </svg>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 39 ─ Program.cs -->
+<section class="slide">
+  <p class="eyebrow">What is in the box</p>
+  <h2>Reading <code class="inline">Program.cs</code> as prose</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre><span class="k">var</span> builder = WebApplication.CreateBuilder(args);
+builder.Services.AddControllersWithViews();
+                        <span class="c">// "I am an MVC app"</span>
+<span class="k">var</span> app = builder.Build();
+
+app.UseStaticFiles();   <span class="c">// "serve wwwroot as-is"</span>
+app.UseRouting();       <span class="c">// "who handles this URL?"</span>
+
+app.<span class="h">MapControllerRoute</span>(  <span class="c">// "here is the URL shape"</span>
+    name: <span class="h">"default"</span>,
+    pattern: <span class="h">"{controller=Home}/{action=Index}/{id?}"</span>);
+
+app.Run();              <span class="c">// "start listening"</span></pre>
+      <div class="stack">
+        <div class="card card--brand">
+          <h3>Nobody understands every line yet</h3>
+          <p>What matters now: this file is where the application is assembled. We return to each line as we need it.</p>
+        </div>
+        <div class="card">
+          <h3>One string, one session</h3>
+          <p>Session 04 is entirely about that <code class="inline">pattern</code> string.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 40 ─ Misconceptions -->
+<section class="slide">
+  <p class="eyebrow">Wrap-up</p>
+  <h2>Common misconceptions</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <table>
+      <thead><tr><th style="width:42%">Misconception</th><th>Correction</th></tr></thead>
+      <tbody>
+        <tr><td>"C# and .NET are the same thing."</td><td>C# is the language; .NET is the platform that runs it. Other languages run on .NET too.</td></tr>
+        <tr><td>"I need Visual Studio, or Windows."</td><td>The SDK and the <code class="inline">dotnet</code> command are the whole toolchain. Any editor, any operating system.</td></tr>
+        <tr><td>"<code class="inline">var</code> means the variable has no type."</td><td>It has exactly one type; the compiler works it out.</td></tr>
+        <tr><td>"A compiler error means I broke something badly."</td><td>It means the compiler caught a mistake <em>before</em> it could hurt. That is the feature.</td></tr>
+        <tr><td>"A class and an object are the same."</td><td>Class = blueprint. Object = one thing built from it.</td></tr>
+        <tr><td>"A list and an array are interchangeable."</td><td>Arrays are fixed-length; a <code class="inline">List&lt;T&gt;</code> grows and shrinks.</td></tr>
+        <tr><td>"<code class="inline">catch</code> fixes the error."</td><td>It gives you a chance to respond. An empty <code class="inline">catch</code> hides bugs.</td></tr>
+        <tr><td>"LINQ is a database thing."</td><td>It queries <em>any</em> collection. It also happens to work on databases &#8212; Session 08.</td></tr>
+        <tr><td>"The template's pages are files in <code class="inline">wwwroot</code>."</td><td>They are produced by code and templates. Only CSS, JS and images live in <code class="inline">wwwroot</code>.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 41 ─ Check for understanding -->
+<section class="slide">
+  <p class="eyebrow">Check for understanding</p>
+  <h2>Six questions</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <ol class="list list--tight">
+        <li>What is the difference between the SDK and the runtime? Which one do you need to <em>build</em> an app, and which to <em>run</em> one?</li>
+        <li>"With a framework, the framework calls your code." What does that mean in practice for how you write a web app?</li>
+        <li>Which collection for: five fixed menu items; a growing list of article titles; looking up a view count by article title?</li>
+      </ol>
+      <ol class="list list--tight" style="counter-reset:step 3">
+        <li>What does <code class="inline">articles.Where(a =&gt; a.Author == "Ada").Select(a =&gt; a.Title)</code> produce &#8212; how many items, and of what type?</li>
+        <li><code class="inline">First</code> versus <code class="inline">FirstOrDefault</code>: which throws when nothing matches, and why does the choice matter for a website?</li>
+        <li>Name the folder for each: a stylesheet; a class that handles a request; an HTML template; the database connection string.</li>
+      </ol>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 42 ─ Walkthrough -->
+<section class="slide">
+  <p class="eyebrow">Walkthrough · 30 min · together</p>
+  <h2>We build it on screen, step by step</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <div class="stack">
+        <p class="body"><strong>Part A &#8212; in the scratch project</strong></p>
+        <ol class="list list--tight">
+          <li>We fill a <code class="inline">List&lt;Article&gt;</code> with five articles.</li>
+          <li>We print every title and author with a <code class="inline">foreach</code>.</li>
+          <li>We write <code class="inline">string Summarize(Article a)</code> returning <code class="inline">"Title &#8212; Author (yyyy-MM-dd)"</code>.</li>
+          <li>With LINQ: one author's articles; all titles by date descending; the first article before a given date &#8212; handling "none found" without a crash.</li>
+        </ol>
+      </div>
+      <div class="stack">
+        <p class="body"><strong>Part B &#8212; the MVC project</strong></p>
+        <ol class="list list--tight" style="counter-reset:step 4">
+          <li>We create SimpleBlog and run it.</li>
+          <li>With DevTools open, we record the status code and <code class="inline">Content-Type</code> of the document.</li>
+          <li>We change the heading in <code class="inline">Views/Home/Index.cshtml</code>, save with <code class="inline">dotnet watch</code> running, and watch the browser update.</li>
+        </ol>
+      </div>
+    </div>
+    <div class="callout"><strong>By the end we will have</strong> a running MVC project showing our own heading, a scratch project whose LINQ queries survive the "none found" case, and one sentence each for <code class="inline">Program.cs</code>, <code class="inline">Controllers/</code>, <code class="inline">Views/</code>, <code class="inline">wwwroot/</code> and <code class="inline">appsettings.json</code>.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 43 ─ Before we move on -->
+<section class="slide">
+  <p class="eyebrow">Wrap-up</p>
+  <h2>Before we move on</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-3">
+      <div class="card card--brand">
+        <span class="badge">State of SimpleBlog</span>
+        <h3 style="margin-top:var(--space-2)">The untouched template, running</h3>
+        <p>No controllers of our own, no data, no database. Session 03 changes the first of those.</p>
+      </div>
+      <div class="card">
+        <span class="badge badge--neutral">Together, if time allows</span>
+        <h3 style="margin-top:var(--space-2)">Break it on purpose</h3>
+        <p>We use an undeclared variable, assign text to an <code class="inline">int</code>, and read a list past its end &#8212; then say which two the compiler caught and which one waited until the program ran.</p>
+      </div>
+      <div class="card">
+        <span class="badge badge--neutral">Together, if time allows</span>
+        <h3 style="margin-top:var(--space-2)">Two small extensions</h3>
+        <p>Truncate long titles in <code class="inline">Summarize</code> by reusing <code class="inline">Shorten</code>; then find the three most-viewed titles from a <code class="inline">Dictionary&lt;string, int&gt;</code> with LINQ.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 44 ─ Glossary -->
+<section class="slide">
+  <p class="eyebrow">Glossary</p>
+  <h2>Речник · EN → BG</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <table>
+        <thead><tr><th style="width:45%">English</th><th>Български</th></tr></thead>
+        <tbody>
+          <tr><td>language / runtime</td><td>език / среда за изпълнение</td></tr>
+          <tr><td>SDK (software development kit)</td><td>комплект за разработка</td></tr>
+          <tr><td>framework</td><td>рамка / фреймуърк</td></tr>
+          <tr><td>compiler / compile-time error</td><td>компилатор / грешка при компилация</td></tr>
+          <tr><td>runtime error</td><td>грешка по време на изпълнение</td></tr>
+          <tr><td>variable / type</td><td>променлива / тип</td></tr>
+          <tr><td>statically typed</td><td>статично типизиран</td></tr>
+          <tr><td>collection</td><td>колекция</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <thead><tr><th style="width:45%">English</th><th>Български</th></tr></thead>
+        <tbody>
+          <tr><td>method / parameter / return value</td><td>метод / параметър / връщана стойност</td></tr>
+          <tr><td>class / object / instance</td><td>клас / обект / инстанция</td></tr>
+          <tr><td>property</td><td>свойство</td></tr>
+          <tr><td>exception / to throw / to catch</td><td>изключение / хвърляне / прихващане</td></tr>
+          <tr><td>query (LINQ)</td><td>заявка</td></tr>
+          <tr><td>lambda expression</td><td>ламбда израз</td></tr>
+          <tr><td>template (project)</td><td>шаблон</td></tr>
+          <tr><td>hot reload</td><td>горещо презареждане</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 45 ─ References -->
+<section class="slide">
+  <p class="eyebrow">References</p>
+  <h2>Where to read more</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <ul class="list">
+      <li><strong>.NET download and install</strong><br><span class="sm muted">dotnet.microsoft.com/download</span></li>
+      <li><strong>A tour of the C# language</strong><br><span class="sm muted">learn.microsoft.com/dotnet/csharp/tour-of-csharp/</span></li>
+      <li><strong><code class="inline">dotnet new</code> &#8212; CLI reference</strong><br><span class="sm muted">learn.microsoft.com/dotnet/core/tools/dotnet-new</span></li>
+      <li><strong>LINQ basics</strong><br><span class="sm muted">learn.microsoft.com/dotnet/csharp/linq/</span></li>
+      <li><strong>ASP.NET Core fundamentals and project structure</strong><br><span class="sm muted">learn.microsoft.com/aspnet/core/fundamentals/</span></li>
+    </ul>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 46 ─ Closing -->
+<section class="slide slide--brand">
+  <p class="eyebrow">Next session</p>
+  <h1 style="font-size:var(--fs-title-1);line-height:var(--lh-title-1)">03 · Handling a Request</h1>
+  <div class="rule"></div>
+  <p class="lead">The MVC structure, controllers and actions: where our code goes,<br>and how the framework finds it. SimpleBlog gets its first controller of our own.</p>
+  <div class="foot"><span>Questions?</span><span class="spacer"></span><span>Microsoft Web Technologies</span></div>
+</section>
+
+</div></div>
+<div id="hint">← → navigate · F fullscreen · P print</div>
+
+<script>
+(function(){
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var deck = document.getElementById('deck');
+  var progress = document.getElementById('progress');
+  var hint = document.getElementById('hint');
+  var total = slides.length;
+  var i = 0;
+
+  slides.forEach(function(s, n){
+    var num = s.querySelector('.num');
+    if (num) num.textContent = (n + 1) + ' / ' + total;
+  });
+
+  function show(n){
+    i = Math.max(0, Math.min(total - 1, n));
+    slides.forEach(function(s, k){ s.classList.toggle('is-active', k === i); });
+    progress.style.width = ((i + 1) / total * 100) + '%';
+    if (location.hash !== '#' + (i + 1)) history.replaceState(null, '', '#' + (i + 1));
+  }
+
+  function fit(){
+    var scale = Math.min(window.innerWidth / 1280, window.innerHeight / 720);
+    deck.style.transform = 'scale(' + scale + ')';
+  }
+
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); show(i + 1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(i - 1); }
+    else if (e.key === 'Home') { show(0); }
+    else if (e.key === 'End') { show(total - 1); }
+    else if (e.key === 'f' || e.key === 'F') {
+      if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen();
+    }
+    else if (e.key === 'p' || e.key === 'P') { window.print(); }
+  });
+
+  document.getElementById('stage').addEventListener('click', function(e){
+    show(e.clientX < window.innerWidth / 3 ? i - 1 : i + 1);
+  });
+
+  window.addEventListener('resize', fit);
+  window.addEventListener('hashchange', function(){ show((parseInt(location.hash.slice(1), 10) || 1) - 1); });
+
+  fit();
+  show((parseInt(location.hash.slice(1), 10) || 1) - 1);
+  setTimeout(function(){ hint.classList.add('is-hidden'); }, 4000);
+})();
+</script>
+</body>
+</html>

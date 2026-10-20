@@ -1,0 +1,13 @@
+:root{
+--font-sans:'Segoe UI Variable Display','Segoe UI',-apple-system,BlinkMacSystemFont,'Roboto','Helvetica Neue',Arial,sans-serif;
+--font-sans-text:'Segoe UI Variable Text','Segoe UI',-apple-system,BlinkMacSystemFont,'Roboto','Helvetica Neue',Arial,sans-serif;
+--font-mono:'Cascadia Code','Consolas',monospace;
+--fs-display:68px;--lh-display:84px;--fw-display:600;/* @kind other */
+--fs-title-1:40px;--lh-title-1:52px;--fw-title-1:600;/* @kind other */
+--fs-title-2:28px;--lh-title-2:36px;--fw-title-2:600;/* @kind other */
+--fs-title-3:20px;--lh-title-3:26px;--fw-title-3:600;/* @kind other */
+--fs-body-lg:18px;--lh-body-lg:24px;--fw-body-lg:400;/* @kind other */
+--fs-body:14px;--lh-body:20px;--fw-body:400;/* @kind other */
+--fs-body-sm:12px;--lh-body-sm:16px;--fw-body-sm:400;/* @kind other */
+--fs-caption:11px;--lh-caption:14px;--fw-caption:400;/* @kind other */
+}

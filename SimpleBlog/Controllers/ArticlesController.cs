@@ -1,10 +1,23 @@
 using Microsoft.AspNetCore.Mvc;
+using SimpleBlog.Data;
 using SimpleBlog.Models;
 
 namespace SimpleBlog.Controllers;
 
 public class ArticlesController : Controller
 {
+    private static readonly string[] AllowedImageExtensions = [".jpg", ".jpeg", ".png", ".gif", ".webp"];
+    private const long MaxImageSize = 5 * 1024 * 1024;
+
+    private readonly IWebHostEnvironment _environment;
+    private readonly ApplicationDbContext _context;
+
+    public ArticlesController(IWebHostEnvironment environment, ApplicationDbContext context)
+    {
+        _environment = environment;
+        _context = context;
+    }
+
     private static readonly List<Article> _articles = new List<Article>
 {
     new()
@@ -170,22 +183,49 @@ public class ArticlesController : Controller
 };
     public IActionResult Index()
     {
-        return View(_articles);
+        var articles = _context.Articles.ToList();
+        return View(articles);
     }
     
     [HttpGet]
     public IActionResult Create()
     {
+       ViewData["Categories"] = new List<string> { "България", "Студенти", "Левски/ЦСКА", "Унибит", "Mac vs PC", "Технологии" };
         return View();
     }
     
     [HttpPost]
-    public IActionResult Create(Article article)
+    public async Task<IActionResult> Create(Article article, IFormFile? image)
     {
+        if (image is { Length: > 0 })
+        {
+            var extension = Path.GetExtension(image.FileName).ToLowerInvariant();
+            if (!AllowedImageExtensions.Contains(extension))
+            {
+                ModelState.AddModelError(string.Empty, "Позволени са само JPG, PNG, GIF и WEBP изображения.");
+            }
+            else if (image.Length > MaxImageSize)
+            {
+                ModelState.AddModelError(string.Empty, "Изображението трябва да е до 5 MB.");
+            }
+            else if (ModelState.IsValid)
+            {
+                var uploadsDir = Path.Combine(_environment.WebRootPath, "uploads");
+                Directory.CreateDirectory(uploadsDir);
+
+                var fileName = $"{Guid.NewGuid()}{extension}";
+                await using var stream = System.IO.File.Create(Path.Combine(uploadsDir, fileName));
+                await image.CopyToAsync(stream);
+
+                article.ImagePath = $"/uploads/{fileName}";
+            }
+        }
+
         if (ModelState.IsValid)
         {
             article.Id = Guid.NewGuid();
-            _articles.Add(article);
+            _context.Articles.Add(article);
+            await _context.SaveChangesAsync();
             return RedirectToAction("Index");
         }
         return View(article);
@@ -193,12 +233,14 @@ public class ArticlesController : Controller
 
     public IActionResult Details(Guid id)
     {
-        Article? _article = _articles.FirstOrDefault(a => a.Id == id);
-        if (_article == null)
+        Article? article = _context.Articles.FirstOrDefault(a => a.Id == id);
+        if (article == null)
         {
             return NotFound();
         }
-        return View(_article);
+        ViewData["Title"] = $"Details for + {article.Title}";
+        ViewBag.ArticleCount = 60;
+        return View(article);
             
     }
     

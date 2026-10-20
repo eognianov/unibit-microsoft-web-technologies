@@ -25,12 +25,59 @@
             <div class="card border-0 shadow-sm rounded-4">
                 <div class="card-body p-4 p-md-5">
 
-                    <form asp-action="Create" method="post">
+                    <form asp-action="Create" method="post" enctype="multipart/form-data">
 
                         <div asp-validation-summary="ModelOnly"
                              class="alert alert-danger"
                              role="alert"></div>
+                        <!-- Category -->
+                        <div class="mb-4">
+                            <div class="row g-3 align-items-end">
+                                <div class="col-12 col-sm">
+                                    <label for="category"
+                                           class="form-label fw-semibold">
+                                        Категория
+                                    </label>
 
+                                    <select id="category"
+                                            name="Category"
+                                            class="form-select">
+                                        <option value="">Избери категория...</option>
+                                        @foreach (var category in ViewData["Categories"] as List<string> ?? new List<string>())
+                                        {
+                                            <option value="@category">@category</option>
+                                        }
+                                    </select>
+                                </div>
+
+                                <!-- Satire toggle -->
+                                <div class="col-12 col-sm-auto">
+                                    <input asp-for="IsSatire" class="btn-check" autocomplete="off" />
+                                    <label asp-for="IsSatire" class="btn btn-outline-warning w-100">
+                                        <i class="bi bi-emoji-laughing me-1"></i>
+                                        Пародия
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-text">
+                                Пародия означава изцяло измислена новина.
+                            </div>
+
+                            <!-- Generate news -->
+                            <button type="button"
+                                    id="generateNews"
+                                    class="btn btn-outline-primary mt-3"
+                                    disabled>
+                                <span id="newsSpinner"
+                                      class="spinner-border spinner-border-sm me-2 d-none"
+                                      aria-hidden="true"></span>
+                                <i class="bi bi-magic me-1"></i>
+                                Генерирай новина
+                            </button>
+
+                            <div id="newsError" class="text-danger small mt-1 d-none"></div>
+                        </div>
                         <!-- Title -->
                         <div class="mb-4">
                             <label asp-for="Title"
@@ -43,6 +90,21 @@
                                    placeholder="Въведи заглавие на статията..." />
 
                             <span asp-validation-for="Title"
+                                  class="text-danger small"></span>
+                        </div>
+
+                        <!-- Subtitle -->
+                        <div class="mb-4">
+                            <label asp-for="Subtitle"
+                                   class="form-label fw-semibold">
+                                Подзаглавие
+                            </label>
+
+                            <input asp-for="Subtitle"
+                                   class="form-control"
+                                   placeholder="Въведи подзаглавие..." />
+
+                            <span asp-validation-for="Subtitle"
                                   class="text-danger small"></span>
                         </div>
 
@@ -81,6 +143,43 @@
                             </div>
                         </div>
 
+                        <!-- Image -->
+                        <div class="mb-4">
+                            <label for="image"
+                                   class="form-label fw-semibold">
+                                Изображение
+                            </label>
+
+                            <div class="input-group">
+                                <input type="file"
+                                       id="image"
+                                       name="image"
+                                       class="form-control"
+                                       accept=".jpg,.jpeg,.png,.gif,.webp" />
+
+                                <button type="button"
+                                        id="generateImage"
+                                        class="btn btn-outline-primary"
+                                        disabled>
+                                    <span id="generateSpinner"
+                                          class="spinner-border spinner-border-sm me-2 d-none"
+                                          aria-hidden="true"></span>
+                                    <i class="bi bi-stars me-1"></i>
+                                    Генерирай
+                                </button>
+                            </div>
+
+                            <div class="form-text">
+                                По избор. JPG, PNG, GIF или WEBP до 5 MB.
+                            </div>
+
+                            <div id="generateError" class="text-danger small mt-1 d-none"></div>
+
+                            <img id="imagePreview"
+                                 class="img-fluid rounded-3 mt-3 d-none"
+                                 alt="Преглед на изображението" />
+                        </div>
+
                         <hr class="my-4" />
 
                         <!-- Actions -->
@@ -114,4 +213,119 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        (function () {
+            const category = document.getElementById('category');
+            const title = document.getElementById('Title');
+            const subtitle = document.getElementById('Subtitle');
+            const body = document.getElementById('Body');
+            const isSatire = document.getElementById('IsSatire');
+            const fileInput = document.getElementById('image');
+            const button = document.getElementById('generateImage');
+            const spinner = document.getElementById('generateSpinner');
+            const errorBox = document.getElementById('generateError');
+            const preview = document.getElementById('imagePreview');
+            const newsButton = document.getElementById('generateNews');
+            const newsSpinner = document.getElementById('newsSpinner');
+            const newsError = document.getElementById('newsError');
+            let previewUrl = null;
+
+            function canGenerate() {
+                return [category, title, subtitle, body].every(el => el.value.trim() !== '');
+            }
+
+            function updateButton() {
+                button.disabled = !canGenerate();
+                newsButton.disabled = category.value === '';
+            }
+
+            function showPreview(file) {
+                if (previewUrl) URL.revokeObjectURL(previewUrl);
+                if (!file) {
+                    previewUrl = null;
+                    preview.classList.add('d-none');
+                    preview.removeAttribute('src');
+                    return;
+                }
+                previewUrl = URL.createObjectURL(file);
+                preview.src = previewUrl;
+                preview.classList.remove('d-none');
+            }
+
+            [category, title, subtitle, body].forEach(el => {
+                el.addEventListener('input', updateButton);
+                el.addEventListener('change', updateButton);
+            });
+
+            fileInput.addEventListener('change', () => showPreview(fileInput.files[0]));
+
+            button.addEventListener('click', async () => {
+                errorBox.classList.add('d-none');
+                button.disabled = true;
+                spinner.classList.remove('d-none');
+
+                try {
+                    const response = await fetch('/api/generator/image', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            title: title.value.trim(),
+                            subtitle: subtitle.value.trim(),
+                            category: category.value,
+                            content: body.value.trim(),
+                            isSatire: isSatire.checked
+                        })
+                    });
+
+                    if (!response.ok) throw new Error('HTTP ' + response.status);
+
+                    const blob = await response.blob();
+                    const file = new File([blob], 'generated.png', { type: blob.type || 'image/png' });
+
+                    const transfer = new DataTransfer();
+                    transfer.items.add(file);
+                    fileInput.files = transfer.files;
+
+                    showPreview(file);
+                } catch (e) {
+                    errorBox.textContent = 'Неуспешно генериране на изображение. Опитай отново.';
+                    errorBox.classList.remove('d-none');
+                } finally {
+                    spinner.classList.add('d-none');
+                    updateButton();
+                }
+            });
+
+            newsButton.addEventListener('click', async () => {
+                newsError.classList.add('d-none');
+                newsButton.disabled = true;
+                newsSpinner.classList.remove('d-none');
+
+                try {
+                    const response = await fetch('/api/generator/news', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ category: category.value })
+                    });
+
+                    if (!response.ok) throw new Error('HTTP ' + response.status);
+
+                    const news = await response.json();
+                    title.value = news.title ?? '';
+                    subtitle.value = news.subtitle ?? '';
+                    body.value = news.content ?? '';
+                    isSatire.checked = !!news.isSatire;
+                } catch (e) {
+                    newsError.textContent = 'Неуспешно генериране на новина. Опитай отново.';
+                    newsError.classList.remove('d-none');
+                } finally {
+                    newsSpinner.classList.add('d-none');
+                    updateButton();
+                }
+            });
+
+            updateButton();
+        })();
+    </script>
 }

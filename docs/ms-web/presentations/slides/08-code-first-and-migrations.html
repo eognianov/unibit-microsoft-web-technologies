@@ -1,0 +1,1311 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Session 08 — Code-First and Migrations</title>
+<link rel="stylesheet" href="../../design-system/styles.css">
+<style>
+/* ── Deck-level extensions to the design system ────────────────────────────
+   Slides are authored on a fixed 1280×720 stage and scaled to the viewport,
+   so every size below is a *slide* size, not a screen size. Body copy is
+   stepped up from --fs-body (14px, UI density) to projection density. */
+:root{
+  --stage-w:1280px; --stage-h:720px;
+  --fs-slide-body:20px;  --lh-slide-body:30px;
+  --fs-slide-lead:24px;  --lh-slide-lead:34px;
+  --fs-slide-sm:16px;    --lh-slide-sm:24px;
+  --fs-slide-code:16px;  --lh-slide-code:26px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  background:var(--neutral-grey-160);
+  font-family:var(--font-sans-text);
+  color:var(--text-primary);
+  overflow:hidden;
+}
+
+/* ── Stage ─────────────────────────────────────────────────────────────── */
+#stage{position:fixed;inset:0;display:grid;place-items:center}
+#deck{width:var(--stage-w);height:var(--stage-h);position:relative;transform-origin:center center}
+.slide{
+  position:absolute;inset:0;
+  width:var(--stage-w);height:var(--stage-h);
+  background:var(--surface-page);
+  display:none;flex-direction:column;
+  padding:var(--space-16) var(--space-16) var(--space-10);
+  overflow:hidden;
+}
+.slide.is-active{display:flex}
+
+/* ── Slide chrome ──────────────────────────────────────────────────────── */
+.eyebrow{
+  margin:0 0 var(--space-3);
+  font-family:var(--font-sans-text);
+  font-size:var(--fs-body-sm);line-height:var(--lh-body-sm);
+  font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--brand-pressed);
+}
+h1,h2,h3{margin:0;font-family:var(--font-sans);color:var(--text-primary)}
+h1{font-size:var(--fs-display);line-height:var(--lh-display);font-weight:var(--fw-display);letter-spacing:-.02em}
+h2{font-size:var(--fs-title-1);line-height:var(--lh-title-1);font-weight:var(--fw-title-1);letter-spacing:-.01em}
+h3{font-size:var(--fs-title-3);line-height:var(--lh-title-3);font-weight:var(--fw-title-3)}
+.rule{width:56px;height:3px;background:var(--brand-base);border-radius:var(--radius-pill);margin:var(--space-4) 0 var(--space-6)}
+.body{margin:0;font-size:var(--fs-slide-body);line-height:var(--lh-slide-body);color:var(--text-primary)}
+.lead{margin:0;font-size:var(--fs-slide-lead);line-height:var(--lh-slide-lead);color:var(--text-secondary)}
+.muted{color:var(--text-secondary)}
+.sm{font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm)}
+strong{font-weight:600}
+.content{flex:1;min-height:0;display:flex;flex-direction:column;gap:var(--space-5)}
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.foot{
+  display:flex;align-items:center;gap:var(--space-4);
+  padding-top:var(--space-5);margin-top:auto;
+  border-top:1px solid var(--border-default);
+  font-size:var(--fs-caption);line-height:var(--lh-caption);
+  letter-spacing:.06em;text-transform:uppercase;color:var(--text-disabled);
+}
+.foot .spacer{flex:1}
+
+/* ── Brand-block slides (title + section dividers) ─────────────────────── */
+.slide--brand{background:var(--brand-base);color:var(--text-on-brand);justify-content:center}
+.slide--brand h1,.slide--brand h2{color:var(--text-on-brand)}
+.slide--brand .eyebrow{color:var(--brand-tint-20)}
+.slide--brand .lead,.slide--brand .body{color:var(--brand-tint-30)}
+.slide--brand .rule{background:var(--neutral-white)}
+.slide--brand .foot{border-top-color:rgba(255,255,255,.24);color:var(--brand-tint-20)}
+.slide--dark{background:var(--brand-shade-20)}
+.slide--dark h1,.slide--dark h2{color:var(--text-on-brand)}
+.slide--dark .eyebrow{color:var(--brand-tint-10)}
+.slide--dark .lead,.slide--dark .body{color:var(--brand-tint-30)}
+.slide--dark .foot{border-top-color:rgba(255,255,255,.18);color:var(--brand-tint-10)}
+.section-no{
+  font-family:var(--font-sans);font-size:120px;line-height:1;font-weight:600;
+  color:rgba(255,255,255,.22);letter-spacing:-.03em;margin-bottom:var(--space-4);
+}
+
+/* ── Layout helpers ────────────────────────────────────────────────────── */
+.cols{display:grid;gap:var(--space-6);flex:1;min-height:0}
+.cols-2{grid-template-columns:1fr 1fr}
+.cols-3{grid-template-columns:repeat(3,1fr)}
+.cols-2-1{grid-template-columns:1.4fr 1fr}
+.cols--auto{flex:0 0 auto;min-height:auto}
+.stack{display:flex;flex-direction:column;gap:var(--space-4);min-height:0}
+.center{justify-content:center}
+
+/* ── Card (design-system surfaces/Card, slide-scaled) ──────────────────── */
+.card{
+  background:var(--surface-card);border:1px solid var(--border-default);
+  border-radius:var(--radius-lg);padding:var(--space-5);
+  display:flex;flex-direction:column;gap:var(--space-2);
+}
+.card--elevated{border:none;box-shadow:var(--shadow-8)}
+.card--brand{background:var(--brand-tint-40);border-color:var(--brand-tint-20)}
+.card h3{font-size:var(--fs-title-3);line-height:var(--lh-title-3)}
+.card p{margin:0;font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm);color:var(--text-secondary)}
+
+/* ── Badge (design-system feedback/Badge, slide-scaled) ────────────────── */
+.badge{
+  display:inline-flex;align-items:center;align-self:flex-start;height:26px;padding:0 var(--space-3);
+  border-radius:var(--radius-pill);font-size:var(--fs-slide-sm);font-weight:600;
+  background:var(--brand-tint-40);color:var(--brand-pressed);white-space:nowrap;
+}
+.badge--neutral{background:var(--surface-subtle);color:var(--text-secondary)}
+.badge--success{background:var(--color-success-bg);color:var(--color-success)}
+.badge--warning{background:var(--color-warning-bg);color:var(--color-warning)}
+.badge--danger{background:var(--color-danger-bg);color:var(--color-danger)}
+.badge--mono{font-family:var(--font-mono);font-weight:600}
+
+/* ── Lists ─────────────────────────────────────────────────────────────── */
+ul.list,ol.list{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:var(--space-4)}
+ul.list li,ol.list li{
+  position:relative;padding-left:var(--space-8);
+  font-size:var(--fs-slide-body);line-height:var(--lh-slide-body);
+}
+ul.list li::before{
+  content:"";position:absolute;left:var(--space-2);top:11px;
+  width:8px;height:8px;border-radius:var(--radius-circular);background:var(--brand-base);
+}
+ol.list{counter-reset:step}
+ol.list li{counter-increment:step;padding-left:var(--space-10)}
+ol.list li::before{
+  content:counter(step);position:absolute;left:0;top:2px;
+  width:28px;height:28px;border-radius:var(--radius-circular);
+  background:var(--brand-tint-40);color:var(--brand-pressed);
+  font-family:var(--font-sans);font-size:var(--fs-slide-sm);font-weight:600;
+  display:grid;place-items:center;
+}
+.list--tight li{font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm)}
+.list--tight{gap:var(--space-3)}
+
+/* ── Table ─────────────────────────────────────────────────────────────── */
+table{
+  width:100%;border-collapse:collapse;
+  background:var(--surface-card);border:1px solid var(--border-default);
+  border-radius:var(--radius-lg);overflow:hidden;
+  font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm);
+}
+thead th{
+  text-align:left;background:var(--surface-subtle);color:var(--text-secondary);
+  font-weight:600;font-size:var(--fs-body-sm);letter-spacing:.06em;text-transform:uppercase;
+  padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border-default);
+}
+tbody td{padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border-default);vertical-align:top}
+tbody tr:last-child td{border-bottom:none}
+tbody th{
+  text-align:left;padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border-default);
+  font-weight:600;white-space:nowrap;
+}
+tbody tr:last-child th{border-bottom:none}
+td.center,th.center{text-align:center}
+
+/* ── Code ──────────────────────────────────────────────────────────────── */
+pre,code{font-family:var(--font-mono)}
+pre{
+  margin:0;background:var(--brand-shade-30);color:var(--brand-tint-30);
+  border-radius:var(--radius-lg);padding:var(--space-5) var(--space-6);
+  font-size:var(--fs-slide-code);line-height:var(--lh-slide-code);
+  overflow:hidden;white-space:pre;
+}
+pre .k{color:#4fc3f7;font-weight:600}
+pre .h{color:var(--neutral-white)}
+pre .c{color:var(--neutral-grey-90)}
+pre .ok{color:#6bd66b;font-weight:600}
+code.inline{
+  background:var(--surface-subtle);border:1px solid var(--border-default);
+  border-radius:var(--radius-sm);padding:1px 6px;font-size:.92em;color:var(--brand-pressed);
+}
+.slide--brand code.inline,.slide--dark code.inline{
+  background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.24);color:var(--neutral-white);
+}
+
+/* ── Callout ───────────────────────────────────────────────────────────── */
+.callout{
+  background:var(--brand-tint-40);border:1px solid var(--brand-tint-20);
+  border-radius:var(--radius-lg);padding:var(--space-4) var(--space-5);
+  font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm);color:var(--brand-shade-10);
+}
+.callout--warn{background:var(--color-warning-bg);border-color:#f0d98a;color:var(--color-warning)}
+
+/* ── Big statement ─────────────────────────────────────────────────────── */
+.statement{margin:0;font-family:var(--font-sans);font-size:var(--fs-title-1);line-height:var(--lh-title-1);font-weight:600}
+
+/* ── Progress bar ──────────────────────────────────────────────────────── */
+#progress{position:fixed;left:0;top:0;height:3px;background:var(--brand-tint-10);width:0;
+  transition:width var(--duration-normal) var(--ease-standard);z-index:10}
+
+/* ── Help hint ─────────────────────────────────────────────────────────── */
+#hint{
+  position:fixed;right:16px;bottom:14px;z-index:10;
+  font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--neutral-grey-90);font-family:var(--font-sans-text);
+  transition:opacity var(--duration-slow) var(--ease-standard);
+}
+#hint.is-hidden{opacity:0}
+
+/* ── Print / PDF export: one slide per landscape page ──────────────────── */
+@media print{
+  @page{size:1280px 720px;margin:0}
+  body{background:var(--neutral-white);overflow:visible}
+  #stage{position:static;display:block}
+  #deck{width:auto;height:auto;transform:none!important}
+  #progress,#hint{display:none}
+  .slide{position:static;display:flex!important;page-break-after:always;break-after:page}
+}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<div id="stage"><div id="deck">
+
+<!-- 1 ─ Title -->
+<section class="slide slide--brand">
+  <p class="eyebrow">Microsoft Web Technologies · Session 08</p>
+  <h1>Code-First and Migrations</h1>
+  <div class="rule"></div>
+  <p class="lead">The schema comes from the classes. Every change is recorded,<br>ordered and replayable — on every machine.</p>
+  <div class="foot"><span>Lecture 4 · Code-first, annotations, migrations, seeding</span><span class="spacer"></span><span>~180 min · demo-heavy</span></div>
+</section>
+
+<!-- 2 ─ Where we left off -->
+<section class="slide">
+  <p class="eyebrow">Where we left off</p>
+  <h2>Session 07 ended on a deliberate failure</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <p class="lead">We built everything the application needs to talk to a database — and then the application asked for a table that nobody had ever created.</p>
+    <div class="cols cols-3 cols--auto">
+      <div class="card"><h3>What we already have</h3><p>An <code class="inline">Article</code> class, a context, a connection string, and dependency injection wiring it all together.</p></div>
+      <div class="card"><h3>What is missing</h3><p>The database file has no <code class="inline">Articles</code> table. Nothing has ever told it what one looks like.</p></div>
+      <div class="card card--brand"><h3>What we do about it</h3><p>We create it from the classes we already wrote — without hand-writing SQL, and in a way our teammates get too.</p></div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 3 ─ Learning objectives -->
+<section class="slide">
+  <p class="eyebrow">Learning objectives</p>
+  <h2>By the end of this session you can…</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <ol class="list">
+        <li>Explain the code-first approach and how a schema can be derived from classes.</li>
+        <li>Constrain a model with data annotations and predict the resulting columns.</li>
+        <li>Create, apply, inspect and roll back a migration.</li>
+      </ol>
+      <ol class="list" start="4" style="counter-reset:step 3">
+        <li>Seed a database with initial data.</li>
+        <li>Query the database with LINQ and read the SQL that was generated.</li>
+        <li>Display a list of records from the database in a Bootstrap-styled view.</li>
+      </ol>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 4 ─ Agenda -->
+<section class="slide">
+  <p class="eyebrow">Agenda</p>
+  <h2>Three hours, two breaks</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <table>
+        <thead><tr><th style="width:34px">#</th><th>Block</th><th class="center" style="width:64px">Min</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Recap and the missing table</td><td class="center">10</td></tr>
+          <tr><td>2</td><td>Schema-first vs. code-first; the schema-change problem</td><td class="center">25</td></tr>
+          <tr><td>3</td><td>Describing constraints on the model</td><td class="center">20</td></tr>
+          <tr><td>4</td><td class="muted">Break</td><td class="center">10</td></tr>
+          <tr><td>5</td><td>Migrations: create, inspect, apply, roll back</td><td class="center">35</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <thead><tr><th style="width:34px">#</th><th>Block</th><th class="center" style="width:64px">Min</th></tr></thead>
+        <tbody>
+          <tr><td>6</td><td>Seeding initial data</td><td class="center">15</td></tr>
+          <tr><td>7</td><td class="muted">Break</td><td class="center">10</td></tr>
+          <tr><td>8</td><td>Querying: LINQ in, SQL out</td><td class="center">20</td></tr>
+          <tr><td>9</td><td>Walkthrough: our database, our article list</td><td class="center">30</td></tr>
+          <tr><td>10</td><td>Wrap-up and Q&amp;A</td><td class="center">5</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 5 ─ Section: recap -->
+<section class="slide slide--dark">
+  <div class="section-no">01</div>
+  <p class="eyebrow">Block 1 · 10 min</p>
+  <h2>Recap and the missing table</h2>
+  <p class="lead" style="margin-top:var(--space-4)">The error we chose to end on, and what it is really telling us.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 6 ─ The error -->
+<section class="slide">
+  <p class="eyebrow">Recap and the missing table</p>
+  <h2>The application is ready. The database is not.</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre><span class="c">SqliteException: SQLite Error 1:</span>
+<span class="c">  </span><span class="h">'no such table: Articles'</span>
+   at Microsoft.Data.Sqlite.SqliteDataReader...
+   at SimpleBlog.Controllers.ArticlesController.Index()
+</pre>
+      <ul class="list list--tight">
+        <li>The <strong>class</strong> exists — we wrote it.</li>
+        <li>The <strong>context</strong> exists — it exposes <code class="inline">DbSet&lt;Article&gt;</code>.</li>
+        <li>The <strong>connection</strong> works — that is why we get a database error and not a connection error.</li>
+        <li>The <strong>table</strong> has never been created.</li>
+      </ul>
+    </div>
+    <div class="callout">Two ways forward. We could open the database and write <code class="inline">CREATE TABLE</code> by hand — and repeat that on every machine, forever. Or we could make the classes produce the schema. That is the whole session.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 7 ─ Statement -->
+<section class="slide slide--brand">
+  <p class="eyebrow">The premise of this session</p>
+  <p class="statement" style="color:var(--neutral-white)">The classes we edit every day<br>are the description of the database.</p>
+  <div class="rule"></div>
+  <p class="lead">Everything that follows is machinery for keeping a real database, with real rows in it, in step with those classes — as they keep changing.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 8 ─ Section: the idea -->
+<section class="slide slide--dark">
+  <div class="section-no">02</div>
+  <p class="eyebrow">Block 2 · 25 min · the idea, vendor-neutral</p>
+  <h2>Two directions, and the problem neither of them solves</h2>
+  <p class="lead" style="margin-top:var(--space-4)">Nothing in this block belongs to one language or one tool.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 9 ─ Two directions -->
+<section class="slide">
+  <p class="eyebrow">Two directions</p>
+  <h2>Who writes the schema, and who generates it?</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <table>
+      <thead><tr><th style="width:210px">Approach</th><th style="width:230px">We write</th><th style="width:230px">The tool generates</th><th>Suits</th></tr></thead>
+      <tbody>
+        <tr><th>Database-first</th><td>the schema</td><td>the classes</td><td>an existing database we inherited, or one a separate team owns</td></tr>
+        <tr><th>Code-first</th><td>the classes</td><td>the schema</td><td>new applications, where the classes are what we touch every day</td></tr>
+      </tbody>
+    </table>
+    <div class="cols cols-2 cols--auto">
+      <div class="card"><h3>Neither is "correct"</h3><p>They answer different situations. Plenty of serious systems use each one.</p></div>
+      <div class="card card--brand"><h3>This course uses code-first</h3><p>We are building something new, and it makes the classes the single source of truth — one place to look, one place to change.</p></div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 10 ─ Works exactly once -->
+<section class="slide">
+  <p class="eyebrow">The real problem</p>
+  <h2>"Generate the database from the classes" works exactly once</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <div class="stack">
+        <div class="card"><h3>Week 1</h3><p>The article has a title and a body. We create the database.</p></div>
+        <div class="card"><h3>Week 2</h3><p>We add a summary.</p></div>
+        <div class="card"><h3>Week 3</h3><p>We rename the author field and make the title required.</p></div>
+      </div>
+      <ol class="list list--tight">
+        <li>The database already holds 500 rows. Can we delete it and recreate it? <span class="muted">No — that is people's data.</span></li>
+        <li>A colleague pulled our code. How does <em>their</em> database learn about the summary?</li>
+        <li>The live server still has the old schema. How does it get updated, at deploy time, safely?</li>
+        <li>The change was wrong. How do we go back?</li>
+      </ol>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 11 ─ The answer in the abstract -->
+<section class="slide slide--brand">
+  <p class="eyebrow">The answer, in the abstract</p>
+  <p class="statement" style="color:var(--neutral-white)">Record every schema change as an ordered,<br>versioned, repeatable script — stored next to<br>the code that needs it.</p>
+  <div class="rule"></div>
+  <p class="lead">Each one knows how to move the schema <strong style="color:#fff">forward</strong>, and how to move it <strong style="color:#fff">back</strong>. One such recorded change is called a <strong style="color:#fff">migration</strong>.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 12 ─ DIAGRAM: the migration timeline -->
+<section class="slide">
+  <p class="eyebrow">The migration timeline</p>
+  <h2>One order for everyone; each machine applies what it is missing</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <svg viewBox="0 0 1180 420" style="width:auto;height:346px;align-self:center" role="img"
+         aria-label="Four migrations in a fixed order along a track. Below it three lanes — our laptop, a colleague's laptop and the live server — sit at different points on the same track, and each catches up by applying the migrations it is missing, in order.">
+      <g style="font-family:var(--font-sans-text)">
+        <defs>
+          <marker id="m8a" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+            <path d="M0,0 L10,4 L0,8 Z" style="fill:var(--brand-base)"/>
+          </marker>
+          <marker id="m8g" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+            <path d="M0,0 L10,4 L0,8 Z" style="fill:var(--neutral-grey-110)"/>
+          </marker>
+        </defs>
+
+        <text x="150" y="46" text-anchor="end" font-size="13" font-weight="600" letter-spacing="1.6" style="fill:var(--text-disabled)">THE</text>
+        <text x="150" y="66" text-anchor="end" font-size="13" font-weight="600" letter-spacing="1.6" style="fill:var(--text-disabled)">TRACK</text>
+
+        <rect x="165" y="16" width="190" height="70" rx="8" style="fill:var(--brand-base)"/>
+        <text x="260" y="46" text-anchor="middle" font-size="18" font-weight="600" style="fill:#ffffff">Initial</text>
+        <text x="260" y="70" text-anchor="middle" font-size="14" style="font-family:var(--font-mono);fill:var(--brand-tint-20)">001</text>
+
+        <rect x="405" y="16" width="190" height="70" rx="8" style="fill:var(--brand-base)"/>
+        <text x="500" y="46" text-anchor="middle" font-size="18" font-weight="600" style="fill:#ffffff">AddSummary</text>
+        <text x="500" y="70" text-anchor="middle" font-size="14" style="font-family:var(--font-mono);fill:var(--brand-tint-20)">002</text>
+
+        <rect x="645" y="16" width="190" height="70" rx="8" style="fill:var(--brand-base)"/>
+        <text x="740" y="46" text-anchor="middle" font-size="18" font-weight="600" style="fill:#ffffff">RequireTitle</text>
+        <text x="740" y="70" text-anchor="middle" font-size="14" style="font-family:var(--font-mono);fill:var(--brand-tint-20)">003</text>
+
+        <rect x="885" y="16" width="190" height="70" rx="8" style="fill:var(--brand-base)"/>
+        <text x="980" y="46" text-anchor="middle" font-size="18" font-weight="600" style="fill:#ffffff">AddTags</text>
+        <text x="980" y="70" text-anchor="middle" font-size="14" style="font-family:var(--font-mono);fill:var(--brand-tint-20)">004</text>
+
+        <line x1="358" y1="51" x2="398" y2="51" stroke-width="2.5" marker-end="url(#m8a)" style="stroke:var(--brand-base)"/>
+        <line x1="598" y1="51" x2="638" y2="51" stroke-width="2.5" marker-end="url(#m8a)" style="stroke:var(--brand-base)"/>
+        <line x1="838" y1="51" x2="878" y2="51" stroke-width="2.5" marker-end="url(#m8a)" style="stroke:var(--brand-base)"/>
+
+        <line x1="260" y1="94" x2="260" y2="392" stroke-width="1.5" stroke-dasharray="3 6" style="stroke:var(--neutral-grey-60)"/>
+        <line x1="500" y1="94" x2="500" y2="392" stroke-width="1.5" stroke-dasharray="3 6" style="stroke:var(--neutral-grey-60)"/>
+        <line x1="740" y1="94" x2="740" y2="392" stroke-width="1.5" stroke-dasharray="3 6" style="stroke:var(--neutral-grey-60)"/>
+        <line x1="980" y1="94" x2="980" y2="392" stroke-width="1.5" stroke-dasharray="3 6" style="stroke:var(--neutral-grey-60)"/>
+
+        <text x="150" y="176" text-anchor="end" font-size="17" font-weight="600" style="fill:var(--text-primary)">our laptop</text>
+        <line x1="165" y1="170" x2="980" y2="170" stroke-width="3" style="stroke:var(--brand-base)"/>
+        <circle cx="980" cy="170" r="10" style="fill:var(--brand-base)"/>
+        <text x="1005" y="176" font-size="15" font-weight="600" style="fill:var(--color-success)">up to date</text>
+
+        <text x="150" y="256" text-anchor="end" font-size="17" font-weight="600" style="fill:var(--text-primary)">a colleague's</text>
+        <text x="150" y="278" text-anchor="end" font-size="17" font-weight="600" style="fill:var(--text-primary)">laptop</text>
+        <line x1="165" y1="260" x2="500" y2="260" stroke-width="3" style="stroke:var(--brand-base)"/>
+        <line x1="500" y1="260" x2="980" y2="260" stroke-width="3" stroke-dasharray="6 5" style="stroke:var(--neutral-grey-60)"/>
+        <circle cx="500" cy="260" r="10" style="fill:var(--surface-card);stroke:var(--brand-base);stroke-width:3"/>
+        <line x1="516" y1="236" x2="964" y2="236" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#m8a)" style="stroke:var(--brand-base)"/>
+        <text x="740" y="226" text-anchor="middle" font-size="15" font-weight="600" style="fill:var(--brand-pressed)">apply the ones we are missing, in order</text>
+        <text x="1005" y="266" font-size="15" style="fill:var(--text-secondary)">2 behind</text>
+
+        <text x="150" y="356" text-anchor="end" font-size="17" font-weight="600" style="fill:var(--text-primary)">the live server</text>
+        <line x1="165" y1="350" x2="260" y2="350" stroke-width="3" style="stroke:var(--brand-base)"/>
+        <line x1="260" y1="350" x2="980" y2="350" stroke-width="3" stroke-dasharray="6 5" style="stroke:var(--neutral-grey-60)"/>
+        <circle cx="260" cy="350" r="10" style="fill:var(--surface-card);stroke:var(--brand-base);stroke-width:3"/>
+        <line x1="276" y1="326" x2="964" y2="326" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#m8a)" style="stroke:var(--brand-base)"/>
+        <text x="620" y="316" text-anchor="middle" font-size="15" font-weight="600" style="fill:var(--brand-pressed)">apply the ones we are missing, in order</text>
+        <text x="1005" y="356" font-size="15" style="fill:var(--text-secondary)">3 behind</text>
+      </g>
+    </svg>
+    <p class="body" style="margin-top:var(--space-4);text-align:center">Same track, same order, three different positions. Catching up is never a decision — it is replaying what is missing.</p>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 13 ─ The database remembers -->
+<section class="slide">
+  <p class="eyebrow">Why replaying is safe</p>
+  <h2>The database keeps its own list of what it has applied</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <p class="lead">Alongside our tables, the tool keeps a small bookkeeping table: one row per migration that this particular database has already run.</p>
+    <div class="cols cols-3 cols--auto">
+      <div class="card card--brand"><h3>Running it twice is safe</h3><p>The second run compares the list with the files on disk, finds nothing missing, and does nothing at all.</p></div>
+      <div class="card"><h3>Every environment is self-describing</h3><p>We never have to remember which server is at which version. We ask it.</p></div>
+      <div class="card"><h3>Not a new idea</h3><p>The same mechanism, under the same name, exists in Rails, Django, Flyway, Liquibase and Alembic. The vocabulary transfers.</p></div>
+    </div>
+    <div class="callout">This is why "apply migrations" can be a step in an automated deployment. It is safe to run on a database that is already up to date.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 14 ─ Two rules -->
+<section class="slide">
+  <p class="eyebrow">Two rules</p>
+  <h2>These two prevent nearly all migration pain</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <div class="cols cols-2">
+      <div class="card card--elevated center">
+        <span class="badge badge--warning">Rule 1</span>
+        <h3 style="margin-top:var(--space-3)">A migration that has been shared or deployed is history</h3>
+        <p>Never edit it. Someone else's database has already applied that exact file; changing it now means two databases with the same version number and different shapes. Add a new migration instead.</p>
+      </div>
+      <div class="card card--elevated center">
+        <span class="badge badge--warning">Rule 2</span>
+        <h3 style="margin-top:var(--space-3)">Read the generated migration before applying it</h3>
+        <p>The tool compares two states and <em>guesses</em> what happened between them. A rename is easily guessed as "drop one column, add another" — which silently destroys every value in it.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 15 ─ Section: describing the rules -->
+<section class="slide slide--dark">
+  <div class="section-no">03</div>
+  <p class="eyebrow">Block 3 · 20 min</p>
+  <h2>Describing the rules on the model</h2>
+  <p class="lead" style="margin-top:var(--space-4)">Property names alone do not make a schema.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 16 ─ More than names -->
+<section class="slide">
+  <p class="eyebrow">Describing the rules on the model</p>
+  <h2>The schema needs answers the class does not give</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <p class="lead">Which columns may be empty? How long may a title be? Is that a date or a moment in time? Which column identifies a row?</p>
+    <div class="cols cols-2 cols--auto">
+      <div class="card"><h3>Convention</h3><p>The tool assumes sensible defaults. A property called <code class="inline">Id</code> is the identifier — nobody has to say so. Conventions keep the common case silent.</p></div>
+      <div class="card card--brand"><h3>Explicit declaration</h3><p>We annotate the exceptions: this one is required, that one is at most 200 characters, this one is a date. Every tool of this kind offers both.</p></div>
+    </div>
+    <div class="callout">These declarations pay <strong>twice</strong>. They shape the database, and — in Session 09 — they check what people type into forms. One statement, two jobs, which is exactly why the model is the right place to put it.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 17 ─ Bridge to the tools -->
+<section class="slide">
+  <p class="eyebrow">In practice · from here on, the names are concrete</p>
+  <h2>The same four ideas, with their .NET names</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <table>
+      <thead><tr><th style="width:46%">The idea</th><th>What it is called in EF Core</th></tr></thead>
+      <tbody>
+        <tr><td>an explicit declaration on a property</td><td>a <strong>data annotation</strong> — <code class="inline">[Required]</code>, <code class="inline">[MaxLength(200)]</code></td></tr>
+        <tr><td>one recorded, ordered schema change</td><td>a <strong>migration</strong> — a C# file in <code class="inline">Migrations/</code></td></tr>
+        <tr><td>the database's list of what it has applied</td><td>the <code class="inline">__EFMigrationsHistory</code> table</td></tr>
+        <tr><td>"apply what this database is missing"</td><td><code class="inline">dotnet ef database update</code></td></tr>
+      </tbody>
+    </table>
+    <div class="callout">The tooling is a separate program from the application. We install it once, globally: <code class="inline">dotnet tool install --global dotnet-ef</code>, then check it with <code class="inline">dotnet ef --version</code>.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 18 ─ Data annotations -->
+<section class="slide">
+  <p class="eyebrow">Data annotations</p>
+  <h2>We say the rules on the class itself</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+<pre><span class="k">using</span> System.ComponentModel.DataAnnotations;
+
+<span class="k">public class</span> <span class="h">Article</span>
+{
+    <span class="k">public int</span> Id { get; set; }   <span class="c">// key</span>
+
+    <span class="k">[Required]</span>
+    <span class="k">[MaxLength(200)]</span>
+    <span class="k">[Display(Name = "Article title")]</span>
+    <span class="k">public string</span> Title { get; set; } = "";
+
+    <span class="k">[Required]</span>
+    <span class="k">[MaxLength(100)]</span>
+    <span class="k">public string</span> Author { get; set; } = "";</pre>
+<pre>    <span class="k">[MaxLength(500)]</span>
+    <span class="k">public string?</span> Summary { get; set; }
+
+    <span class="k">[Required]</span>
+    <span class="k">[DataType(DataType.MultilineText)]</span>
+    <span class="k">public string</span> Body { get; set; } = "";
+
+    <span class="k">[DataType(DataType.Date)]</span>
+    <span class="k">[Display(Name = "Published on")]</span>
+    <span class="k">public DateTime</span> PublishedOn { get; set; }
+}</pre>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 19 ─ What each annotation does -->
+<section class="slide">
+  <p class="eyebrow">Data annotations</p>
+  <h2>Some change the database. Some change nothing in it at all.</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <table>
+      <thead><tr><th style="width:250px">Annotation</th><th style="width:330px">Effect on the database</th><th>Effect elsewhere</th></tr></thead>
+      <tbody>
+        <tr><th><span class="badge badge--mono">[Key]</span></th><td>primary key</td><td>redundant when the property is already called <code class="inline">Id</code></td></tr>
+        <tr><th><span class="badge badge--mono">[Required]</span></th><td><code class="inline">NOT NULL</code></td><td>validation, and client-side rules — Session 09</td></tr>
+        <tr><th><span class="badge badge--mono">[MaxLength(n)]</span></th><td>a bounded text column instead of an unlimited one</td><td>validation — Session 09</td></tr>
+        <tr><th><span class="badge badge--mono">[DataType(…)]</span></th><td>mostly none</td><td>which input control is rendered, and how values are formatted — Session 09</td></tr>
+        <tr><th><span class="badge badge--mono">[Display(…)]</span></th><td>none</td><td>the label shown in views and forms — Session 09</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 20 ─ Two precise points -->
+<section class="slide">
+  <p class="eyebrow">Data annotations</p>
+  <h2>Three things to be precise about</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <div class="cols cols-3">
+      <div class="card"><h3><code class="inline">string?</code> versus <code class="inline">string</code></h3><p>With nullable reference types on — the default in modern .NET — a plain <code class="inline">string</code> is already treated as required. <code class="inline">[Required]</code> makes the intent explicit and drives the message the user sees.</p></div>
+      <div class="card"><h3><code class="inline">[MaxLength]</code> is not decoration</h3><p>Without it every text column is unbounded: slow to index, impossible to validate, and a free invitation to paste a novel into a title field.</p></div>
+      <div class="card"><h3>The Fluent API exists</h3><p>Anything annotations cannot express — composite keys, relationships, indexes — is configured in code in <code class="inline">OnModelCreating</code>. We name it so it is not a surprise; we do not use it here.</p></div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 21 ─ Section: migrations -->
+<section class="slide slide--dark">
+  <div class="section-no">04</div>
+  <p class="eyebrow">Block 5 · 35 min · demo</p>
+  <h2>Migrations: create, inspect, apply, roll back</h2>
+  <p class="lead" style="margin-top:var(--space-4)">Four commands, and one habit that matters more than all of them.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 22 ─ migrations add -->
+<section class="slide">
+  <p class="eyebrow">Creating the first migration</p>
+  <h2>One command — and then we stop and read</h2>
+  <div class="rule"></div>
+  <div class="content center">
+<pre><span class="k">dotnet ef</span> migrations add <span class="h">InitialCreate</span></pre>
+    <div class="cols cols-3 cols--auto" style="margin-top:var(--space-6)">
+      <div class="card"><h3>Nothing has happened yet</h3><p>No database was touched. The tool compared our classes to its record of the previous state and wrote a file describing the difference.</p></div>
+      <div class="card card--brand"><h3>The name is documentation</h3><p><code class="inline">InitialCreate</code>, <code class="inline">AddTagsToArticle</code>, <code class="inline">RequireArticleTitle</code>. Someone will read this list in a year — probably us.</p></div>
+      <div class="card"><h3>Reading it is the point</h3><p>This is the most valuable five minutes of the session. We open the file and walk it line by line against the annotations we wrote.</p></div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 23 ─ DIAGRAM: code-first round trip -->
+<section class="slide">
+  <p class="eyebrow">The code-first round trip</p>
+  <h2>The class is the source. The table is the output.</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <svg viewBox="0 0 1180 250" style="width:auto;height:236px;align-self:center" role="img"
+         aria-label="Four stages left to right: the Article class we write, the migration file the tooling generates, the SQL it sends, and the resulting Articles table in the database.">
+      <g style="font-family:var(--font-sans-text)">
+        <defs>
+          <marker id="m8b" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+            <path d="M0,0 L10,4 L0,8 Z" style="fill:var(--brand-base)"/>
+          </marker>
+        </defs>
+
+        <text x="125" y="14" text-anchor="middle" font-size="13" font-weight="600" letter-spacing="1.6" style="fill:var(--brand-pressed)">WE WRITE THIS</text>
+        <text x="435" y="14" text-anchor="middle" font-size="13" font-weight="600" letter-spacing="1.6" style="fill:var(--text-disabled)">THE TOOLING WRITES THIS</text>
+        <text x="745" y="14" text-anchor="middle" font-size="13" font-weight="600" letter-spacing="1.6" style="fill:var(--text-disabled)">IT SENDS THIS</text>
+        <text x="1055" y="14" text-anchor="middle" font-size="13" font-weight="600" letter-spacing="1.6" style="fill:var(--brand-pressed)">THE DATABASE GETS THIS</text>
+
+        <rect x="0" y="30" width="250" height="150" rx="8" style="fill:var(--brand-tint-40);stroke:var(--brand-tint-20)"/>
+        <text x="20" y="60" font-size="15" font-weight="600" style="font-family:var(--font-mono);fill:var(--brand-pressed)">Article.cs</text>
+        <text x="20" y="94" font-size="15" style="font-family:var(--font-mono);fill:var(--text-primary)">class Article</text>
+        <text x="20" y="122" font-size="15" style="font-family:var(--font-mono);fill:var(--text-primary)">[MaxLength(200)]</text>
+        <text x="20" y="150" font-size="15" style="font-family:var(--font-mono);fill:var(--text-primary)">string Title</text>
+
+        <rect x="310" y="30" width="250" height="150" rx="8" style="fill:var(--surface-card);stroke:var(--border-default)"/>
+        <text x="330" y="60" font-size="15" font-weight="600" style="font-family:var(--font-mono);fill:var(--text-secondary)">…_InitialCreate.cs</text>
+        <text x="330" y="94" font-size="15" style="font-family:var(--font-mono);fill:var(--text-primary)">CreateTable(</text>
+        <text x="330" y="122" font-size="15" style="font-family:var(--font-mono);fill:var(--text-primary)">  "Articles",</text>
+        <text x="330" y="150" font-size="15" style="font-family:var(--font-mono);fill:var(--text-primary)">  maxLength: 200</text>
+
+        <rect x="620" y="30" width="250" height="150" rx="8" style="fill:var(--brand-shade-30)"/>
+        <text x="640" y="60" font-size="15" font-weight="600" style="font-family:var(--font-mono);fill:var(--neutral-grey-90)">SQL</text>
+        <text x="640" y="94" font-size="15" style="font-family:var(--font-mono);fill:#ffffff">CREATE TABLE</text>
+        <text x="640" y="122" font-size="15" style="font-family:var(--font-mono);fill:#ffffff">  "Articles" (</text>
+        <text x="640" y="150" font-size="15" style="font-family:var(--font-mono);fill:#ffffff">  "Title" TEXT…</text>
+
+        <rect x="930" y="30" width="250" height="150" rx="8" style="fill:var(--brand-base)"/>
+        <text x="950" y="60" font-size="15" font-weight="600" style="font-family:var(--font-mono);fill:var(--brand-tint-20)">Articles</text>
+        <rect x="950" y="74" width="210" height="28" rx="4" style="fill:#ffffff"/>
+        <text x="962" y="93" font-size="14" style="font-family:var(--font-mono);fill:var(--brand-pressed)">Id  Title  Author</text>
+        <rect x="950" y="108" width="210" height="24" rx="4" style="fill:rgba(255,255,255,.28)"/>
+        <rect x="950" y="138" width="210" height="24" rx="4" style="fill:rgba(255,255,255,.28)"/>
+
+        <line x1="258" y1="105" x2="302" y2="105" stroke-width="2.5" marker-end="url(#m8b)" style="stroke:var(--brand-base)"/>
+        <line x1="568" y1="105" x2="612" y2="105" stroke-width="2.5" marker-end="url(#m8b)" style="stroke:var(--brand-base)"/>
+        <line x1="878" y1="105" x2="922" y2="105" stroke-width="2.5" marker-end="url(#m8b)" style="stroke:var(--brand-base)"/>
+
+        <text x="280" y="212" text-anchor="middle" font-size="15" font-weight="600" style="font-family:var(--font-mono);fill:var(--brand-pressed)">migrations add</text>
+        <text x="590" y="212" text-anchor="middle" font-size="15" font-weight="600" style="font-family:var(--font-mono);fill:var(--brand-pressed)">database update</text>
+        <text x="900" y="212" text-anchor="middle" font-size="15" font-weight="600" style="font-family:var(--font-mono);fill:var(--brand-pressed)">applied once</text>
+        <text x="590" y="240" text-anchor="middle" font-size="15" style="fill:var(--text-secondary)">Only the first box is edited by hand. Everything to its right is derived.</text>
+      </g>
+    </svg>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 24 ─ The generated Up -->
+<section class="slide">
+  <p class="eyebrow">Reading the generated migration</p>
+  <h2>Every annotation we wrote has a visible consequence</h2>
+  <div class="rule"></div>
+  <div class="content">
+<pre><span class="k">protected override void</span> <span class="h">Up</span>(MigrationBuilder b)
+{
+    b.CreateTable(
+        name: <span class="h">"Articles"</span>,
+        columns: table =&gt; <span class="k">new</span>
+        {
+            Id      = table.Column&lt;<span class="k">int</span>&gt;(nullable: <span class="k">false</span>),
+            Title   = table.Column&lt;<span class="k">string</span>&gt;(maxLength: <span class="h">200</span>, nullable: <span class="k">false</span>),
+            Summary = table.Column&lt;<span class="k">string</span>&gt;(maxLength: <span class="h">500</span>, nullable: <span class="k">true</span>)
+        },
+        constraints: table =&gt; table.PrimaryKey(<span class="h">"PK_Articles"</span>, x =&gt; x.Id));
+}</pre>
+    <p class="sm muted"><code class="inline">[MaxLength(200)]</code> → <code class="inline">maxLength: 200</code> · <code class="inline">[Required]</code> → <code class="inline">nullable: false</code> · <code class="inline">string?</code> → <code class="inline">nullable: true</code> · <code class="inline">Id</code> → primary key, and an autoincrement annotation, by convention.</p>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 25 ─ Down and the folder -->
+<section class="slide">
+  <p class="eyebrow">Reading the generated migration</p>
+  <h2>Down goes back; three files make it possible</h2>
+  <div class="rule"></div>
+  <div class="content">
+<pre><span class="k">protected override void</span> <span class="h">Down</span>(MigrationBuilder b)
+{
+    b.DropTable(name: <span class="h">"Articles"</span>);
+}</pre>
+    <div class="cols cols-3 cols--auto">
+      <div class="card"><h3>The migration</h3><p><code class="inline">20260304…_InitialCreate.cs</code> — the timestamped pair of <code class="inline">Up</code> and <code class="inline">Down</code>. The timestamp is what puts migrations in order.</p></div>
+      <div class="card"><h3>The designer file</h3><p><code class="inline">….Designer.cs</code> — the model as it looked immediately after this migration.</p></div>
+      <div class="card card--brand"><h3>The snapshot</h3><p><code class="inline">ApplicationDbContextModelSnapshot.cs</code> — the current state, which the next <code class="inline">migrations add</code> diffs against. Never edit it by hand.</p></div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 26 ─ migrations script -->
+<section class="slide">
+  <p class="eyebrow">Seeing the SQL without touching the database</p>
+  <h2>The ORM was never hiding anything from us</h2>
+  <div class="rule"></div>
+  <div class="content">
+<pre><span class="k">dotnet ef</span> migrations script</pre>
+<pre><span class="k">CREATE TABLE</span> <span class="h">"Articles"</span> (
+    "Id"          INTEGER <span class="k">NOT NULL</span>
+                  CONSTRAINT "PK_Articles" PRIMARY KEY AUTOINCREMENT,
+    "Title"       TEXT <span class="k">NOT NULL</span>,
+    "Summary"     TEXT <span class="k">NULL</span>,
+    "Body"        TEXT <span class="k">NOT NULL</span>,
+    "PublishedOn" TEXT <span class="k">NOT NULL</span>
+);</pre>
+    <p class="sm muted">This closes the loop with Session 07's SQL primer. We can always ask to see the statement — and on a production database, this script is what a database administrator reviews before anything runs.</p>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 27 ─ database update -->
+<section class="slide">
+  <p class="eyebrow">Applying it</p>
+  <h2>Now the database exists</h2>
+  <div class="rule"></div>
+  <div class="content">
+<pre><span class="k">dotnet ef</span> database update
+<span class="ok">Done.</span></pre>
+    <div class="cols cols-3 cols--auto">
+      <div class="card"><h3><code class="inline">Articles</code></h3><p>The columns, types and nullability we predicted from the annotations. We open the file in a SQLite viewer and check every one.</p></div>
+      <div class="card card--brand"><h3><code class="inline">__EFMigrationsHistory</code></h3><p>One row: <code class="inline">InitialCreate</code>. This is the whole trick — the database's own record of what it has run.</p></div>
+      <div class="card"><h3>Run it again</h3><p>Nothing happens. The list already contains everything on disk. Safe, and boring, exactly as designed.</p></div>
+    </div>
+    <div class="callout">We run the application. The Session 07 error is gone and the page loads with an empty list. An empty list is a success.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 28 ─ Changing the schema -->
+<section class="slide">
+  <p class="eyebrow">Changing the schema</p>
+  <h2>A second migration adds a column — it does not rebuild the table</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <div class="stack">
+<pre><span class="k">[MaxLength(50)]</span>
+<span class="k">public string?</span> Tags { get; set; }</pre>
+<pre><span class="k">dotnet ef</span> migrations add <span class="h">AddTagsToArticle</span>
+<span class="k">dotnet ef</span> database update</pre>
+      </div>
+      <div class="stack">
+<pre>b.<span class="h">AddColumn</span>&lt;<span class="k">string</span>&gt;(
+    name: "Tags",
+    table: "Articles",
+    maxLength: 50,
+    nullable: <span class="k">true</span>);</pre>
+        <div class="callout"><code class="inline">AddColumn</code>, not <code class="inline">CreateTable</code>. Existing rows survive untouched, with <code class="inline">NULL</code> in the new column. <strong>That</strong> is the point of migrations.</div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 29 ─ Going back -->
+<section class="slide">
+  <p class="eyebrow">Going back</p>
+  <h2>Three levers, in increasing order of damage</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+      <div class="stack">
+<pre><span class="k">dotnet ef</span> database update <span class="h">InitialCreate</span>
+<span class="c">// move the database to that migration — Down() runs</span>
+
+<span class="k">dotnet ef</span> migrations remove
+<span class="c">// delete the last migration file, if never applied</span>
+
+<span class="k">dotnet ef</span> database drop
+<span class="c">// deletes the whole database. Development only.</span></pre>
+        <div class="callout callout--warn"><code class="inline">database drop</code> on anything with real rows in it is not a rollback. It is data loss with a friendly command name.</div>
+      </div>
+      <table>
+        <thead><tr><th>CLI</th><th>Package Manager Console</th></tr></thead>
+        <tbody>
+          <tr><td>migrations add</td><td>Add-Migration</td></tr>
+          <tr><td>database update</td><td>Update-Database</td></tr>
+          <tr><td>migrations remove</td><td>Remove-Migration</td></tr>
+          <tr><td>migrations script</td><td>Script-Migration</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 30 ─ The daily cycle -->
+<section class="slide">
+  <p class="eyebrow">The cycle</p>
+  <h2>Five steps, in this order, every time</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <div class="cols cols-2-1">
+      <ol class="list">
+        <li>Change the model class.</li>
+        <li><code class="inline">dotnet ef migrations add &lt;DescriptiveName&gt;</code></li>
+        <li><strong>Read</strong> the generated migration.</li>
+        <li><code class="inline">dotnet ef database update</code></li>
+        <li>Run the application.</li>
+      </ol>
+      <div class="card card--elevated center">
+        <h3>Step 3 is the one people skip</h3>
+        <p>Steps 1, 2, 4 and 5 fail loudly when they go wrong. Step 3 is the only one that catches a mistake <em>before</em> it reaches data — which is the only moment at which it is still cheap.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 31 ─ Section: seeding -->
+<section class="slide slide--dark">
+  <div class="section-no">05</div>
+  <p class="eyebrow">Block 6 · 15 min · demo</p>
+  <h2>Seeding initial data</h2>
+  <p class="lead" style="margin-top:var(--space-4)">An empty database makes for a poor demo and slower development.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 32 ─ Seeding -->
+<section class="slide">
+  <p class="eyebrow">Seeding</p>
+  <h2>Known starting data, recorded in the schema history</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre><span class="k">protected override void</span> OnModelCreating(ModelBuilder b)
+{
+    b.Entity&lt;Article&gt;().<span class="h">HasData</span>(
+        <span class="k">new</span> Article { Id = <span class="h">1</span>, Title = "How the web works",
+              Author = "Ada", Body = "...",
+              PublishedOn = <span class="k">new</span> DateTime(2026, 1, 10) },
+        <span class="k">new</span> Article { Id = <span class="h">2</span>, Title = "Getting started",
+              Author = "Grace", Body = "...",
+              PublishedOn = <span class="k">new</span> DateTime(2026, 2, 2) }
+    );
+}</pre>
+      <div class="stack">
+<pre><span class="k">dotnet ef</span> migrations add <span class="h">SeedArticles</span>
+<span class="k">dotnet ef</span> database update</pre>
+        <div class="callout"><strong>The one surprise:</strong> with <code class="inline">HasData</code> we must set <code class="inline">Id</code> ourselves, even though the database normally generates it. EF Core needs stable identities to tell an insert from an update across migrations.</div>
+      </div>
+    </div>
+    <div class="callout">The alternative — a seeding method called at application start — suits data that should not live in migration history at all. We name it; we use <code class="inline">HasData</code>.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 33 ─ Section: querying -->
+<section class="slide slide--dark">
+  <div class="section-no">06</div>
+  <p class="eyebrow">Block 8 · 20 min · demo</p>
+  <h2>Querying: LINQ in, SQL out</h2>
+  <p class="lead" style="margin-top:var(--space-4)">The payoff from Session 02 — with the generated SQL on screen the whole time.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 34 ─ Four query shapes -->
+<section class="slide">
+  <p class="eyebrow">Querying</p>
+  <h2>Four shapes cover almost everything we need</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+<pre><span class="c">// all, newest first</span>
+<span class="k">var</span> all = <span class="k">await</span> _context.Articles
+    .OrderByDescending(a =&gt; a.PublishedOn)
+    .<span class="h">ToListAsync</span>();
+
+<span class="c">// one, or null</span>
+<span class="k">var</span> article = <span class="k">await</span> _context.Articles
+    .<span class="h">FirstOrDefaultAsync</span>(a =&gt; a.Id == id);</pre>
+<pre><span class="c">// filtered and projected</span>
+<span class="k">var</span> titles = <span class="k">await</span> _context.Articles
+    .Where(a =&gt; a.Author == author)
+    .OrderBy(a =&gt; a.Title)
+    .Select(a =&gt; a.Title)
+    .<span class="h">ToListAsync</span>();
+
+<span class="c">// read-only listing, measurably faster</span>
+<span class="k">var</span> list = <span class="k">await</span> _context.Articles
+    .<span class="h">AsNoTracking</span>().ToListAsync();</pre>
+    </div>
+    <div class="callout"><code class="inline">AsNoTracking</code> tells EF Core we are not going to change these objects, so it need not keep a copy to compare against later. For a page that only displays rows, that is free speed.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 35 ─ async -->
+<section class="slide">
+  <p class="eyebrow">Querying</p>
+  <h2>Why every one of those had <code class="inline">await</code> in front of it</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <div class="cols cols-3">
+      <div class="card"><h3>A database call waits</h3><p>The query leaves the machine and the answer takes milliseconds to come back. Without <code class="inline">await</code>, a thread sits and stares at the network for all of them.</p></div>
+      <div class="card card--brand"><h3><code class="inline">await</code> frees the thread</h3><p>It goes and serves somebody else's request in the meantime, and picks ours back up when the answer arrives.</p></div>
+      <div class="card"><h3>The rule for this course</h3><p>Use the <code class="inline">…Async</code> methods, and make the action <code class="inline">public async Task&lt;IActionResult&gt;</code>. The theory can wait; the pattern cannot.</p></div>
+    </div>
+    <div class="callout"><code class="inline">async</code> does not make one request faster. It makes the server able to handle more of them at once.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 36 ─ Deferred execution and the trap -->
+<section class="slide">
+  <p class="eyebrow">Querying</p>
+  <h2>Deferred execution — and the trap it sets</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <p class="lead"><code class="inline">.Where(…)</code> builds a query. <code class="inline">.ToListAsync()</code> runs it. One round trip happens, at the end, with everything combined.</p>
+    <div class="cols cols-2">
+      <div class="stack">
+        <span class="badge badge--success badge--mono">.Where(…).ToList()</span>
+<pre><span class="k">SELECT</span> "a"."Id", "a"."Title", "a"."Author"
+<span class="k">FROM</span> "Articles" AS "a"
+<span class="k">WHERE</span> "a"."Author" = @__author_0
+<span class="k">ORDER BY</span> "a"."Title"</pre>
+      </div>
+      <div class="stack">
+        <span class="badge badge--danger badge--mono">.ToList().Where(…)</span>
+<pre><span class="k">SELECT</span> "a"."Id", "a"."Title", "a"."Author",
+       "a"."Body", "a"."Summary", ...
+<span class="k">FROM</span> "Articles" AS "a"
+
+<span class="c">-- 500 000 rows, then filtered in memory</span></pre>
+      </div>
+    </div>
+    <div class="callout">EF Core logs its generated SQL to the console in Development. We keep that terminal window visible for the rest of the session — reading it is how the trap becomes obvious rather than theoretical.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 37 ─ The controller -->
+<section class="slide">
+  <p class="eyebrow">Closing the loop</p>
+  <h2>The controller changed. The view did not.</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre><span class="k">public async</span> Task&lt;IActionResult&gt; Index(<span class="k">string?</span> author)
+{
+    <span class="k">var</span> q = _context.Articles.AsNoTracking();
+    <span class="k">if</span> (!<span class="k">string</span>.IsNullOrWhiteSpace(author))
+        q = q.Where(a =&gt; a.Author == author);
+
+    <span class="k">var</span> articles = <span class="k">await</span> q
+        .OrderByDescending(a =&gt; a.PublishedOn)
+        .ToListAsync();
+
+    <span class="k">return</span> View(<span class="k">new</span> ArticleListViewModel
+        { Articles = articles });
+}</pre>
+      <div class="card card--elevated center">
+        <h3>Separation of concerns, paying a dividend</h3>
+        <p>Session 06's view model insulated the page from where its data came from. The rows now arrive from a real database instead of a hard-coded list, and the Bootstrap card grid and table render them without a single edit.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 38 ─ Optional: a second entity -->
+<section class="slide">
+  <p class="eyebrow">Optional · if time allows</p>
+  <h2>A second entity, and a one-to-many relationship</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+<pre><span class="k">public class</span> <span class="h">Category</span>
+{
+    <span class="k">public int</span> Id { get; set; }
+
+    <span class="k">[Required, MaxLength(50)]</span>
+    <span class="k">public string</span> Name { get; set; } = "";
+
+    <span class="k">public</span> List&lt;Article&gt; Articles { get; set; }
+}</pre>
+<pre><span class="k">public class</span> <span class="h">Article</span>
+{
+    <span class="c">// ...</span>
+
+    <span class="k">public int?</span> CategoryId { get; set; }
+    <span class="c">// the foreign key — Session 07's diagram</span>
+
+    <span class="k">public</span> Category? Category { get; set; }
+    <span class="c">// the navigation property</span>
+}</pre>
+    </div>
+    <div class="callout">This is the extension task, not core material. If we run it, it is one more turn of the same cycle: change the classes, <code class="inline">migrations add AddCategory</code>, read the file — and find the foreign key constraint in it by name.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 39 ─ Optional: Include -->
+<section class="slide">
+  <p class="eyebrow">Optional · if time allows</p>
+  <h2>Related rows do not load by themselves</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <div class="cols cols-2-1">
+<pre><span class="k">var</span> articles = <span class="k">await</span> _context.Articles
+    .<span class="h">Include</span>(a =&gt; a.Category)
+    .OrderByDescending(a =&gt; a.PublishedOn)
+    .ToListAsync();</pre>
+      <div class="card card--elevated center">
+        <span class="badge badge--warning">Forget it and…</span>
+        <h3 style="margin-top:var(--space-3)"><code class="inline">a.Category</code> is <code class="inline">null</code></h3>
+        <p>Not an error, not an empty object — <code class="inline">null</code>, and the page falls over on the first attempt to read a name from it. EF Core does not fetch what we did not ask for.</p>
+      </div>
+    </div>
+    <div class="callout">We watch the generated SQL with and without <code class="inline">Include</code>: one is a <code class="inline">JOIN</code>, the other is not. That is the entire mechanism.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 40 ─ Misconceptions -->
+<section class="slide">
+  <p class="eyebrow">Common misconceptions</p>
+  <h2>Ten things that are almost right</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <table>
+        <thead><tr><th style="width:44%">Misconception</th><th>Correction</th></tr></thead>
+        <tbody>
+          <tr><td>"A migration is the database."</td><td>It is one recorded <em>change</em> to it.</td></tr>
+          <tr><td>"Migrations run automatically."</td><td>We run them. Production is Session 10.</td></tr>
+          <tr><td>"Edit the migration if it's wrong."</td><td>Only if it was never shared or applied.</td></tr>
+          <tr><td>"Delete the database and start over."</td><td>Fine on day one, catastrophic with real data.</td></tr>
+          <tr><td>"<code class="inline">[MaxLength]</code> is just validation."</td><td>It changes the column too.</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <thead><tr><th style="width:44%">Misconception</th><th>Correction</th></tr></thead>
+        <tbody>
+          <tr><td>"Annotations only matter to the database."</td><td>They drive forms and validation — Session 09.</td></tr>
+          <tr><td>"<code class="inline">.Where()</code> runs immediately."</td><td>Nothing runs until <code class="inline">ToList</code>, <code class="inline">First</code>, <code class="inline">Count</code>.</td></tr>
+          <tr><td>"<code class="inline">.ToList().Where()</code> is the same."</td><td>The first loads the whole table into memory.</td></tr>
+          <tr><td>"<code class="inline">async</code> makes it faster."</td><td>It lets the server serve more requests.</td></tr>
+          <tr><td>"Related data loads by itself."</td><td>Not without <code class="inline">Include</code>. It will be <code class="inline">null</code>.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 41 ─ Check for understanding -->
+<section class="slide">
+  <p class="eyebrow">Check for understanding</p>
+  <h2>Seven questions</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <ol class="list list--tight">
+        <li>Why can't we just delete and recreate the database whenever a class changes?</li>
+        <li>What is <code class="inline">__EFMigrationsHistory</code> for? What would break without it?</li>
+        <li>Which annotations changed the <em>shape</em> of our columns, and which changed nothing in the database at all?</li>
+        <li>We added a property and ran <code class="inline">database update</code> without running <code class="inline">migrations add</code>. What happens, and why?</li>
+      </ol>
+      <ol class="list list--tight" style="counter-reset:step 4">
+        <li>Explain deferred execution using <code class="inline">Where</code> and <code class="inline">ToList</code>. Which one talks to the database?</li>
+        <li><code class="inline">.Include()</code> — what problem does it solve, and what happens if we forget it?</li>
+        <li>We need to rename a column. What must we check in the generated migration before applying it?</li>
+      </ol>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 42 ─ Walkthrough -->
+<section class="slide">
+  <p class="eyebrow">Walkthrough · 30 min · from the front</p>
+  <h2>Our database, our article list</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <ol class="list list--tight">
+        <li>We annotate <code class="inline">Article</code>: title required and at most 200, author required and at most 100, summary optional and at most 500, body multiline, <code class="inline">PublishedOn</code> a date labelled "Published on".</li>
+        <li>We run <code class="inline">migrations add InitialCreate</code> and — before applying anything — open the file and name the line each annotation produced.</li>
+        <li>We skim <code class="inline">migrations script</code>, then run <code class="inline">database update</code>.</li>
+        <li>We open the database file, confirm the columns and their nullability, and find <code class="inline">__EFMigrationsHistory</code>.</li>
+      </ol>
+      <ol class="list list--tight" style="counter-reset:step 4">
+        <li>We seed five articles by two authors with <code class="inline">HasData</code> and a new migration.</li>
+        <li>We make <code class="inline">Index</code> and <code class="inline">Details</code> async and watch Session 06's view render real rows, unchanged.</li>
+        <li>We add <code class="inline">Tags</code>, migrate, apply, and confirm the seeded rows survived.</li>
+        <li>We read the generated SQL in the terminal, then compare <code class="inline">.ToList().Where(…)</code> with <code class="inline">.Where(…).ToList()</code>.</li>
+      </ol>
+    </div>
+    <div class="callout"><strong>By the end we will have</strong> a SQLite database created entirely by migrations, seeded rows on the list page, a second migration that preserved them, and the generated SQL for our own query on screen.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 43 ─ Before we move on -->
+<section class="slide">
+  <p class="eyebrow">Wrap-up</p>
+  <h2>Before we move on</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-3">
+      <div class="card card--brand">
+        <span class="badge">Where SimpleBlog is</span>
+        <h3 style="margin-top:var(--space-2)">Reading works end to end</h3>
+        <p>A real database, created by migrations and seeded, driving the responsive list and details pages.</p>
+        <p>Writing — forms, creating, editing, deleting — is Session 09.</p>
+      </div>
+      <div class="card">
+        <span class="badge badge--neutral">Together</span>
+        <h3 style="margin-top:var(--space-2)">One more round trip</h3>
+        <p>We add a nullable <code class="inline">UpdatedOn</code> date, migrate, and confirm existing rows hold <code class="inline">NULL</code>.</p>
+        <p>Then the question worth the minute: why would making it <code class="inline">[Required]</code> have failed on a table that already has rows?</p>
+      </div>
+      <div class="card">
+        <span class="badge badge--neutral">Together</span>
+        <h3 style="margin-top:var(--space-2)">There and back</h3>
+        <p>We roll the database back to <code class="inline">InitialCreate</code> and forward again, saying out loud what each command did to <code class="inline">__EFMigrationsHistory</code>.</p>
+        <p>Then: what goes wrong for a team of four sharing one database with no migrations?</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 44 ─ Glossary -->
+<section class="slide">
+  <p class="eyebrow">Glossary</p>
+  <h2>Речник · EN → BG</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <table>
+        <thead><tr><th style="width:48%">English</th><th>Български</th></tr></thead>
+        <tbody>
+          <tr><td>code-first / database-first</td><td>първо код / първо база данни</td></tr>
+          <tr><td>migration</td><td>миграция</td></tr>
+          <tr><td>schema change</td><td>промяна на схемата</td></tr>
+          <tr><td>rollback / revert</td><td>връщане назад</td></tr>
+          <tr><td>data annotation</td><td>атрибут за данни</td></tr>
+          <tr><td>constraint (NOT NULL, UNIQUE)</td><td>ограничение</td></tr>
+          <tr><td>seeding</td><td>начално зареждане на данни</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <thead><tr><th style="width:48%">English</th><th>Български</th></tr></thead>
+        <tbody>
+          <tr><td>deferred execution</td><td>отложено изпълнение</td></tr>
+          <tr><td>change tracking</td><td>проследяване на промените</td></tr>
+          <tr><td>eager loading (<code class="inline">Include</code>)</td><td>ранно зареждане</td></tr>
+          <tr><td>navigation property</td><td>навигационно свойство</td></tr>
+          <tr><td>asynchronous / await</td><td>асинхронен / изчакване</td></tr>
+          <tr><td>generated SQL</td><td>генериран SQL</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 45 ─ References -->
+<section class="slide">
+  <p class="eyebrow">References</p>
+  <h2>Where to read more</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <ul class="list list--tight">
+      <li><strong>EF Core — Migrations</strong><br><span class="sm muted">learn.microsoft.com/ef/core/managing-schemas/migrations/</span></li>
+      <li><strong>EF Core — the <code class="inline">dotnet ef</code> CLI reference</strong><br><span class="sm muted">learn.microsoft.com/ef/core/cli/dotnet</span></li>
+      <li><strong>EF Core — Data seeding</strong><br><span class="sm muted">learn.microsoft.com/ef/core/modeling/data-seeding</span></li>
+      <li><strong>EF Core — Querying data</strong><br><span class="sm muted">learn.microsoft.com/ef/core/querying/</span></li>
+      <li><strong>EF Core — Tracking vs. no-tracking queries</strong><br><span class="sm muted">learn.microsoft.com/ef/core/querying/tracking</span></li>
+      <li><strong>.NET — Data annotations reference</strong><br><span class="sm muted">learn.microsoft.com/dotnet/api/system.componentmodel.dataannotations</span></li>
+    </ul>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 46 ─ Closing -->
+<section class="slide slide--brand">
+  <p class="eyebrow">Next session</p>
+  <h1 style="font-size:var(--fs-title-1);line-height:var(--lh-title-1)">09 · Forms, CRUD and Validation</h1>
+  <div class="rule"></div>
+  <p class="lead">Reading is done. Next we write: forms that post back, creating, editing and deleting rows —<br>and the second job those annotations have been waiting to do.</p>
+  <div class="foot"><span>Questions?</span><span class="spacer"></span><span>Microsoft Web Technologies</span></div>
+</section>
+</div></div>
+<div id="hint">← → navigate · F fullscreen · P print</div>
+
+<script>
+(function(){
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var deck = document.getElementById('deck');
+  var progress = document.getElementById('progress');
+  var hint = document.getElementById('hint');
+  var total = slides.length;
+  var i = 0;
+
+  slides.forEach(function(s, n){
+    var num = s.querySelector('.num');
+    if (num) num.textContent = (n + 1) + ' / ' + total;
+  });
+
+  function show(n){
+    i = Math.max(0, Math.min(total - 1, n));
+    slides.forEach(function(s, k){ s.classList.toggle('is-active', k === i); });
+    progress.style.width = ((i + 1) / total * 100) + '%';
+    if (location.hash !== '#' + (i + 1)) history.replaceState(null, '', '#' + (i + 1));
+  }
+
+  function fit(){
+    var scale = Math.min(window.innerWidth / 1280, window.innerHeight / 720);
+    deck.style.transform = 'scale(' + scale + ')';
+  }
+
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); show(i + 1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(i - 1); }
+    else if (e.key === 'Home') { show(0); }
+    else if (e.key === 'End') { show(total - 1); }
+    else if (e.key === 'f' || e.key === 'F') {
+      if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen();
+    }
+    else if (e.key === 'p' || e.key === 'P') { window.print(); }
+  });
+
+  document.getElementById('stage').addEventListener('click', function(e){
+    show(e.clientX < window.innerWidth / 3 ? i - 1 : i + 1);
+  });
+
+  window.addEventListener('resize', fit);
+  window.addEventListener('hashchange', function(){ show((parseInt(location.hash.slice(1), 10) || 1) - 1); });
+
+  fit();
+  show((parseInt(location.hash.slice(1), 10) || 1) - 1);
+  setTimeout(function(){ hint.classList.add('is-hidden'); }, 4000);
+})();
+</script>
+</body>
+</html>

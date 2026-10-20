@@ -1,0 +1,17 @@
+:root{
+--brand-shade-30:#001526;--brand-shade-20:#002848;--brand-shade-10:#003d6b;
+--brand-base:#0078d4;--brand-hover:#106ebe;--brand-pressed:#005a9e;
+--brand-tint-10:#2b88d8;--brand-tint-20:#c7e0f4;--brand-tint-30:#deecf9;--brand-tint-40:#eff6fc;
+--neutral-black:#000000;--neutral-grey-190:#201f1e;--neutral-grey-160:#323130;--neutral-grey-130:#605e5c;
+--neutral-grey-110:#8a8886;--neutral-grey-90:#a19f9d;--neutral-grey-60:#c8c6c4;--neutral-grey-40:#e1dfdd;
+--neutral-grey-20:#f3f2f1;--neutral-grey-10:#faf9f8;--neutral-white:#ffffff;
+--color-success:#107c10;--color-success-bg:#dff6dd;
+--color-warning:#9d5d00;--color-warning-bg:#fff4ce;
+--color-danger:#d13438;--color-danger-bg:#fde7e9;
+--color-info:var(--brand-base);--color-info-bg:var(--brand-tint-40);
+--text-primary:var(--neutral-grey-190);--text-secondary:var(--neutral-grey-130);
+--text-disabled:var(--neutral-grey-90);--text-on-brand:var(--neutral-white);
+--surface-page:var(--neutral-grey-10);--surface-card:var(--neutral-white);--surface-subtle:var(--neutral-grey-20);
+--border-default:var(--neutral-grey-40);--border-strong:var(--neutral-grey-60);
+--brand-default:var(--brand-base);
+}

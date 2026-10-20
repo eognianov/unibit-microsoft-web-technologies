@@ -22,4 +22,8 @@
       <Folder Include="Entities\" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Compile Remove="Models\VacationRequest.cs" />
+    </ItemGroup>
+
 </Project>

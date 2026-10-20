@@ -1,0 +1,1301 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Session 09 — Forms, CRUD and Validation</title>
+<link rel="stylesheet" href="../../design-system/styles.css">
+<style>
+/* ── Deck-level extensions to the design system ────────────────────────────
+   Slides are authored on a fixed 1280×720 stage and scaled to the viewport,
+   so every size below is a *slide* size, not a screen size. Body copy is
+   stepped up from --fs-body (14px, UI density) to projection density. */
+:root{
+  --stage-w:1280px; --stage-h:720px;
+  --fs-slide-body:20px;  --lh-slide-body:30px;
+  --fs-slide-lead:24px;  --lh-slide-lead:34px;
+  --fs-slide-sm:16px;    --lh-slide-sm:24px;
+  --fs-slide-code:16px;  --lh-slide-code:26px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  background:var(--neutral-grey-160);
+  font-family:var(--font-sans-text);
+  color:var(--text-primary);
+  overflow:hidden;
+}
+
+/* ── Stage ─────────────────────────────────────────────────────────────── */
+#stage{position:fixed;inset:0;display:grid;place-items:center}
+#deck{width:var(--stage-w);height:var(--stage-h);position:relative;transform-origin:center center}
+.slide{
+  position:absolute;inset:0;
+  width:var(--stage-w);height:var(--stage-h);
+  background:var(--surface-page);
+  display:none;flex-direction:column;
+  padding:var(--space-16) var(--space-16) var(--space-10);
+  overflow:hidden;
+}
+.slide.is-active{display:flex}
+
+/* ── Slide chrome ──────────────────────────────────────────────────────── */
+.eyebrow{
+  margin:0 0 var(--space-3);
+  font-family:var(--font-sans-text);
+  font-size:var(--fs-body-sm);line-height:var(--lh-body-sm);
+  font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--brand-pressed);
+}
+h1,h2,h3{margin:0;font-family:var(--font-sans);color:var(--text-primary)}
+h1{font-size:var(--fs-display);line-height:var(--lh-display);font-weight:var(--fw-display);letter-spacing:-.02em}
+h2{font-size:var(--fs-title-1);line-height:var(--lh-title-1);font-weight:var(--fw-title-1);letter-spacing:-.01em}
+h3{font-size:var(--fs-title-3);line-height:var(--lh-title-3);font-weight:var(--fw-title-3)}
+.rule{width:56px;height:3px;background:var(--brand-base);border-radius:var(--radius-pill);margin:var(--space-4) 0 var(--space-6)}
+.body{margin:0;font-size:var(--fs-slide-body);line-height:var(--lh-slide-body);color:var(--text-primary)}
+.lead{margin:0;font-size:var(--fs-slide-lead);line-height:var(--lh-slide-lead);color:var(--text-secondary)}
+.muted{color:var(--text-secondary)}
+.sm{font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm)}
+strong{font-weight:600}
+.content{flex:1;min-height:0;display:flex;flex-direction:column;gap:var(--space-5)}
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.foot{
+  display:flex;align-items:center;gap:var(--space-4);
+  padding-top:var(--space-5);margin-top:auto;
+  border-top:1px solid var(--border-default);
+  font-size:var(--fs-caption);line-height:var(--lh-caption);
+  letter-spacing:.06em;text-transform:uppercase;color:var(--text-disabled);
+}
+.foot .spacer{flex:1}
+
+/* ── Brand-block slides (title + section dividers) ─────────────────────── */
+.slide--brand{background:var(--brand-base);color:var(--text-on-brand);justify-content:center}
+.slide--brand h1,.slide--brand h2{color:var(--text-on-brand)}
+.slide--brand .eyebrow{color:var(--brand-tint-20)}
+.slide--brand .lead,.slide--brand .body{color:var(--brand-tint-30)}
+.slide--brand .rule{background:var(--neutral-white)}
+.slide--brand .foot{border-top-color:rgba(255,255,255,.24);color:var(--brand-tint-20)}
+.slide--dark{background:var(--brand-shade-20)}
+.slide--dark h1,.slide--dark h2{color:var(--text-on-brand)}
+.slide--dark .eyebrow{color:var(--brand-tint-10)}
+.slide--dark .lead,.slide--dark .body{color:var(--brand-tint-30)}
+.slide--dark .foot{border-top-color:rgba(255,255,255,.18);color:var(--brand-tint-10)}
+.section-no{
+  font-family:var(--font-sans);font-size:120px;line-height:1;font-weight:600;
+  color:rgba(255,255,255,.22);letter-spacing:-.03em;margin-bottom:var(--space-4);
+}
+
+/* ── Layout helpers ────────────────────────────────────────────────────── */
+.cols{display:grid;gap:var(--space-6);flex:1;min-height:0}
+.cols-2{grid-template-columns:1fr 1fr}
+.cols-3{grid-template-columns:repeat(3,1fr)}
+.cols-2-1{grid-template-columns:1.4fr 1fr}
+.cols--auto{flex:0 0 auto;min-height:auto}
+.stack{display:flex;flex-direction:column;gap:var(--space-4);min-height:0}
+.center{justify-content:center}
+
+/* ── Card (design-system surfaces/Card, slide-scaled) ──────────────────── */
+.card{
+  background:var(--surface-card);border:1px solid var(--border-default);
+  border-radius:var(--radius-lg);padding:var(--space-5);
+  display:flex;flex-direction:column;gap:var(--space-2);
+}
+.card--elevated{border:none;box-shadow:var(--shadow-8)}
+.card--brand{background:var(--brand-tint-40);border-color:var(--brand-tint-20)}
+.card h3{font-size:var(--fs-title-3);line-height:var(--lh-title-3)}
+.card p{margin:0;font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm);color:var(--text-secondary)}
+
+/* ── Badge (design-system feedback/Badge, slide-scaled) ────────────────── */
+.badge{
+  display:inline-flex;align-items:center;align-self:flex-start;height:26px;padding:0 var(--space-3);
+  border-radius:var(--radius-pill);font-size:var(--fs-slide-sm);font-weight:600;
+  background:var(--brand-tint-40);color:var(--brand-pressed);white-space:nowrap;
+}
+.badge--neutral{background:var(--surface-subtle);color:var(--text-secondary)}
+.badge--success{background:var(--color-success-bg);color:var(--color-success)}
+.badge--warning{background:var(--color-warning-bg);color:var(--color-warning)}
+.badge--danger{background:var(--color-danger-bg);color:var(--color-danger)}
+.badge--mono{font-family:var(--font-mono);font-weight:600}
+
+/* ── Lists ─────────────────────────────────────────────────────────────── */
+ul.list,ol.list{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:var(--space-4)}
+ul.list li,ol.list li{
+  position:relative;padding-left:var(--space-8);
+  font-size:var(--fs-slide-body);line-height:var(--lh-slide-body);
+}
+ul.list li::before{
+  content:"";position:absolute;left:var(--space-2);top:11px;
+  width:8px;height:8px;border-radius:var(--radius-circular);background:var(--brand-base);
+}
+ol.list{counter-reset:step}
+ol.list li{counter-increment:step;padding-left:var(--space-10)}
+ol.list li::before{
+  content:counter(step);position:absolute;left:0;top:2px;
+  width:28px;height:28px;border-radius:var(--radius-circular);
+  background:var(--brand-tint-40);color:var(--brand-pressed);
+  font-family:var(--font-sans);font-size:var(--fs-slide-sm);font-weight:600;
+  display:grid;place-items:center;
+}
+.list--tight li{font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm)}
+.list--tight{gap:var(--space-3)}
+
+/* ── Table ─────────────────────────────────────────────────────────────── */
+table{
+  width:100%;border-collapse:collapse;
+  background:var(--surface-card);border:1px solid var(--border-default);
+  border-radius:var(--radius-lg);overflow:hidden;
+  font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm);
+}
+thead th{
+  text-align:left;background:var(--surface-subtle);color:var(--text-secondary);
+  font-weight:600;font-size:var(--fs-body-sm);letter-spacing:.06em;text-transform:uppercase;
+  padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border-default);
+}
+tbody td{padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border-default);vertical-align:top}
+tbody tr:last-child td{border-bottom:none}
+tbody th{
+  text-align:left;padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border-default);
+  font-weight:600;white-space:nowrap;
+}
+tbody tr:last-child th{border-bottom:none}
+td.center,th.center{text-align:center}
+
+/* ── Code ──────────────────────────────────────────────────────────────── */
+pre,code{font-family:var(--font-mono)}
+pre{
+  margin:0;background:var(--brand-shade-30);color:var(--brand-tint-30);
+  border-radius:var(--radius-lg);padding:var(--space-5) var(--space-6);
+  font-size:var(--fs-slide-code);line-height:var(--lh-slide-code);
+  overflow:hidden;white-space:pre;
+}
+pre .k{color:#4fc3f7;font-weight:600}
+pre .h{color:var(--neutral-white)}
+pre .c{color:var(--neutral-grey-90)}
+pre .ok{color:#6bd66b;font-weight:600}
+code.inline{
+  background:var(--surface-subtle);border:1px solid var(--border-default);
+  border-radius:var(--radius-sm);padding:1px 6px;font-size:.92em;color:var(--brand-pressed);
+}
+.slide--brand code.inline,.slide--dark code.inline{
+  background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.24);color:var(--neutral-white);
+}
+
+/* ── Callout ───────────────────────────────────────────────────────────── */
+.callout{
+  background:var(--brand-tint-40);border:1px solid var(--brand-tint-20);
+  border-radius:var(--radius-lg);padding:var(--space-4) var(--space-5);
+  font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm);color:var(--brand-shade-10);
+}
+.callout--warn{background:var(--color-warning-bg);border-color:#f0d98a;color:var(--color-warning)}
+
+/* ── Big statement ─────────────────────────────────────────────────────── */
+.statement{margin:0;font-family:var(--font-sans);font-size:var(--fs-title-1);line-height:var(--lh-title-1);font-weight:600}
+
+/* ── Progress bar ──────────────────────────────────────────────────────── */
+#progress{position:fixed;left:0;top:0;height:3px;background:var(--brand-tint-10);width:0;
+  transition:width var(--duration-normal) var(--ease-standard);z-index:10}
+
+/* ── Help hint ─────────────────────────────────────────────────────────── */
+#hint{
+  position:fixed;right:16px;bottom:14px;z-index:10;
+  font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--neutral-grey-90);font-family:var(--font-sans-text);
+  transition:opacity var(--duration-slow) var(--ease-standard);
+}
+#hint.is-hidden{opacity:0}
+
+/* ── Print / PDF export: one slide per landscape page ──────────────────── */
+@media print{
+  @page{size:1280px 720px;margin:0}
+  body{background:var(--neutral-white);overflow:visible}
+  #stage{position:static;display:block}
+  #deck{width:auto;height:auto;transform:none!important}
+  #progress,#hint{display:none}
+  .slide{position:static;display:flex!important;page-break-after:always;break-after:page}
+}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<div id="stage"><div id="deck">
+
+
+<!-- 1 ─ Title -->
+<section class="slide slide--brand">
+  <p class="eyebrow">Microsoft Web Technologies · Session 09</p>
+  <h1>Forms, CRUD and Validation</h1>
+  <div class="rule"></div>
+  <p class="lead">Sending data to the server, saving it, checking it,<br>and refusing everything we did not ask for.</p>
+  <div class="foot"><span>Lecture 5 · CRUD, forms, validation, CSRF</span><span class="spacer"></span><span>~180 min</span></div>
+</section>
+
+<!-- 2 ─ Framing -->
+<section class="slide">
+  <p class="eyebrow">Where we are</p>
+  <h2>Everything we have built so far only reads.</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <p class="lead">In this session the site gains the ability to <strong>change</strong> — which is also
+      the moment it gains the ability to be <strong>attacked</strong>.</p>
+    <div class="cols cols-3 cols--auto">
+      <div class="card"><h3>What we already have</h3><p>A list page and a details page, reading real rows out of a database through the model classes we annotated in Session 08.</p></div>
+      <div class="card"><h3>What is missing</h3><p>Three of the four operations: creating a record, editing one, deleting one. All three need data to travel <em>from</em> the browser.</p></div>
+      <div class="card card--brand"><h3>What that costs</h3><p>Anything the browser can send, anyone can send. Half of this session is about not trusting it.</p></div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 3 ─ Learning objectives -->
+<section class="slide">
+  <p class="eyebrow">Learning objectives</p>
+  <h2>By the end of this session you can…</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <ol class="list list--tight">
+        <li>Name the four CRUD operations and map each to an HTTP method and a URL.</li>
+        <li>Explain the GET/POST action pair and the POST/Redirect/GET pattern.</li>
+        <li>Build a Razor form with tag helpers bound to a model.</li>
+      </ol>
+      <ol class="list list--tight" style="counter-reset:step 3">
+        <li>Validate input on the server with data annotations and <code class="inline">ModelState</code>, and display the errors.</li>
+        <li>Explain CSRF and protect a form with an anti-forgery token.</li>
+        <li>Use scaffolding deliberately, and read what it generated.</li>
+      </ol>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 4 ─ Agenda -->
+<section class="slide">
+  <p class="eyebrow">Agenda</p>
+  <h2>Three hours, two breaks</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <table>
+        <thead><tr><th style="width:34px">#</th><th>Block</th><th class="center" style="width:64px">Min</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Recap and objectives</td><td class="center">10</td></tr>
+          <tr><td>2</td><td>CRUD; forms; the two-request dance</td><td class="center">30</td></tr>
+          <tr><td>3</td><td>Never trust the client; POST/Redirect/GET</td><td class="center">20</td></tr>
+          <tr><td>4</td><td class="muted">Break</td><td class="center">10</td></tr>
+          <tr><td>5</td><td>Razor forms and tag helpers</td><td class="center">25</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <thead><tr><th style="width:34px">#</th><th>Block</th><th class="center" style="width:64px">Min</th></tr></thead>
+        <tbody>
+          <tr><td>6</td><td>Validation: annotations, <code class="inline">ModelState</code>, summaries</td><td class="center">25</td></tr>
+          <tr><td>7</td><td class="muted">Break</td><td class="center">10</td></tr>
+          <tr><td>8</td><td>CSRF and the token; Edit and Delete</td><td class="center">20</td></tr>
+          <tr><td>9</td><td>Walkthrough: full CRUD for Article</td><td class="center">25</td></tr>
+          <tr><td>10</td><td>Scaffolding and wrap-up</td><td class="center">5</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 5 ─ Section: CRUD and forms -->
+<section class="slide slide--dark">
+  <div class="section-no">01</div>
+  <p class="eyebrow">Block 2 · 30 min</p>
+  <h2>CRUD, forms, and the two-request dance</h2>
+  <p class="lead" style="margin-top:var(--space-4)">Four operations, one HTML element, and why creating one record takes three requests.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 6 ─ CRUD -->
+<section class="slide">
+  <p class="eyebrow">CRUD</p>
+  <h2>Four operations, in every language ever written</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <table>
+      <thead><tr><th style="width:70px">Letter</th><th style="width:150px">Operation</th><th style="width:330px">HTTP</th><th>Typical URL</th></tr></thead>
+      <tbody>
+        <tr><th><span class="badge badge--mono">C</span></th><td>Create</td><td><code class="inline">GET</code> the form, then <code class="inline">POST</code> the data</td><td><code class="inline">/articles/create</code></td></tr>
+        <tr><th><span class="badge badge--mono badge--success">R</span></th><td>Read</td><td><code class="inline">GET</code></td><td><code class="inline">/articles</code>, <code class="inline">/articles/42</code></td></tr>
+        <tr><th><span class="badge badge--mono">U</span></th><td>Update</td><td><code class="inline">GET</code> the filled form, then <code class="inline">POST</code> the changes</td><td><code class="inline">/articles/42/edit</code></td></tr>
+        <tr><th><span class="badge badge--mono badge--danger">D</span></th><td>Delete</td><td><code class="inline">GET</code> the confirmation, then <code class="inline">POST</code> the deletion</td><td><code class="inline">/articles/42/delete</code></td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><strong>Read is already done</strong> — that was Sessions 03 to 08. This session is the other three letters.
+      Notice that every one of them needs <em>two</em> requests, and that even delete is a <code class="inline">POST</code>.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 7 ─ What a form is -->
+<section class="slide">
+  <p class="eyebrow">Forms</p>
+  <h2>A form is the browser's built-in way to send data</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre><span class="k">&lt;form</span> <span class="h">action</span>=<span class="ok">"/articles/create"</span> <span class="h">method</span>=<span class="ok">"post"</span><span class="k">&gt;</span>
+
+  <span class="k">&lt;label</span> for=<span class="ok">"title"</span><span class="k">&gt;</span>Title<span class="k">&lt;/label&gt;</span>
+  <span class="k">&lt;input</span> type=<span class="ok">"text"</span> id=<span class="ok">"title"</span>
+         <span class="h">name</span>=<span class="ok">"title"</span> <span class="k">/&gt;</span>
+
+  <span class="k">&lt;button</span> type=<span class="ok">"submit"</span><span class="k">&gt;</span>Save<span class="k">&lt;/button&gt;</span>
+
+<span class="k">&lt;/form&gt;</span></pre>
+      <ul class="list list--tight">
+        <li><strong>action</strong> — <em>where</em> the data goes.</li>
+        <li><strong>method</strong> — <em>how</em>: <code class="inline">get</code> puts the values in the query string, <code class="inline">post</code> puts them in the request body. A form can only do these two — which is why delete is a <code class="inline">POST</code>.</li>
+        <li><strong>name</strong> — the key each value is sent under.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 8 ─ No name, no value -->
+<section class="slide slide--brand">
+  <p class="eyebrow">The single most common beginner bug</p>
+  <p class="statement" style="color:var(--neutral-white)">No <code class="inline">name</code>, no value sent.</p>
+  <div class="rule"></div>
+  <div class="content">
+    <p class="lead">A field with no <code class="inline">name</code> attribute still looks perfect on screen, still accepts typing,
+      still submits with the form — and contributes <strong style="color:#fff">nothing</strong> to the request body.
+      The server sees an empty field and you go looking for the bug in the wrong place.</p>
+    <p class="lead">We remove one <code class="inline">name</code> on screen, submit, and read the request body together. Once seen, never forgotten.</p>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 9 ─ The two-request dance -->
+<section class="slide">
+  <p class="eyebrow">The crucial insight</p>
+  <h2>Creating one record takes three requests</h2>
+  <div class="rule"></div>
+  <div class="content center">
+<pre><span class="k">1.  GET </span> /articles/create   <span class="c">→</span> an empty form        <span class="ok">200</span> + HTML
+    <span class="c">… the user types …</span>
+<span class="k">2.  POST</span> /articles/create   <span class="c">→</span> data received, saved <span class="h">302</span> redirect
+<span class="k">3.  GET </span> /articles         <span class="c">→</span> the browser follows  <span class="ok">200</span> + HTML</pre>
+    <div class="cols cols-3 cols--auto" style="margin-top:var(--space-8)">
+      <div class="card"><h3>Two of them are ours to write</h3><p>One request shows the form; a second one receives it. The third the browser makes on its own.</p></div>
+      <div class="card card--brand"><h3>One URL, two handlers</h3><p>The same address answers both — told apart by the <em>method</em>, exactly as previewed in Session 04.</p></div>
+      <div class="card"><h3>Nothing is remembered in between</h3><p>Every request is independent (Session 01). Everything the second request needs, the form must carry.</p></div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 10 ─ Section: never trust the client -->
+<section class="slide slide--dark">
+  <div class="section-no">02</div>
+  <p class="eyebrow">Block 3 · 20 min</p>
+  <h2>Never trust the client</h2>
+  <p class="lead" style="margin-top:var(--space-4)">The most important idea of the session — and the pattern that keeps a refresh from doing damage.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 12 ─ Three ways past the browser -->
+<section class="slide">
+  <p class="eyebrow">Never trust the client · say it slowly</p>
+  <h2>Every rule in the page is advice to a cooperating browser</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-3 cols--auto">
+      <div class="card"><span class="badge badge--warning">1</span><h3 style="margin-top:var(--space-2)">Edit the page</h3><p>Open the developer tools, delete the attribute that says the field is required, submit the form. It took four seconds.</p></div>
+      <div class="card"><span class="badge badge--warning">2</span><h3 style="margin-top:var(--space-2)">Skip the page</h3><p>Send the request from a command-line tool and never load the form at all. The server cannot tell the difference — it only receives a request.</p></div>
+      <div class="card"><span class="badge badge--warning">3</span><h3 style="margin-top:var(--space-2)">Replay it, changed</h3><p>Capture a request that worked, alter a value, send it again.</p></div>
+    </div>
+    <div class="callout callout--warn" style="font-size:var(--fs-slide-body);line-height:var(--lh-slide-body)">
+      Checking in the page is a <strong>convenience</strong>: it gives instant feedback and saves a round trip.
+      Checking on the server is the <strong>security boundary</strong>. Have both — but if you may only have one, keep the server.
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 13 ─ Diagram: the two walls -->
+<section class="slide">
+  <p class="eyebrow">Never trust the client</p>
+  <h2>The two walls, and why only one of them counts</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <svg viewBox="0 0 1160 360" style="width:auto;height:330px;align-self:center" role="img"
+         aria-label="Three submissions approach two walls: the browser check stops the first, the server check stops the second and third; a crafted request passes below the browser wall entirely but is still stopped by the server wall">
+      <g style="font-family:var(--font-sans-text)">
+        <defs>
+          <marker id="a-b" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+            <path d="M0,0 L10,4 L0,8 Z" style="fill:var(--brand-base)"/>
+          </marker>
+          <marker id="a-g" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+            <path d="M0,0 L10,4 L0,8 Z" style="fill:var(--neutral-grey-60)"/>
+          </marker>
+        </defs>
+
+        <rect x="430" y="50" width="20" height="190" rx="4" style="fill:var(--neutral-grey-60)"/>
+        <text x="440" y="34" text-anchor="middle" font-size="19" font-weight="600" style="fill:var(--text-secondary)">Check in the page</text>
+        <text x="440" y="266" text-anchor="middle" font-size="16" style="fill:var(--text-secondary)">a convenience</text>
+
+        <rect x="790" y="50" width="20" height="285" rx="4" style="fill:var(--brand-base)"/>
+        <text x="800" y="34" text-anchor="middle" font-size="19" font-weight="600" style="fill:var(--brand-pressed)">Check on the server</text>
+        <text x="800" y="356" text-anchor="middle" font-size="16" font-weight="600" style="fill:var(--brand-pressed)">the security boundary</text>
+
+        <rect x="900" y="120" width="240" height="90" rx="8" stroke-dasharray="6 5" style="fill:var(--surface-card);stroke:var(--border-default)"/>
+        <text x="1020" y="160" text-anchor="middle" font-size="20" font-weight="600" style="fill:var(--text-disabled)">Our data</text>
+        <text x="1020" y="186" text-anchor="middle" font-size="15" style="fill:var(--text-disabled)">only valid input arrives</text>
+        <line x1="818" y1="165" x2="890" y2="165" stroke-width="2.5" stroke-dasharray="6 5" marker-end="url(#a-g)" style="stroke:var(--neutral-grey-60)"/>
+
+        <text x="40" y="84" font-size="17" style="fill:var(--text-primary)">An empty title, sent from our own form</text>
+        <line x1="40" y1="100" x2="420" y2="100" stroke-width="2.5" marker-end="url(#a-b)" style="stroke:var(--brand-base)"/>
+        <path d="M428,88 L452,112 M452,88 L428,112" stroke-width="4" stroke-linecap="round" style="stroke:var(--color-danger)"/>
+
+        <text x="40" y="159" font-size="17" style="fill:var(--text-primary)">The same, with the rule deleted in the developer tools</text>
+        <line x1="40" y1="175" x2="780" y2="175" stroke-width="2.5" marker-end="url(#a-b)" style="stroke:var(--brand-base)"/>
+        <path d="M788,163 L812,187 M812,163 L788,187" stroke-width="4" stroke-linecap="round" style="stroke:var(--color-danger)"/>
+
+        <text x="40" y="274" font-size="17" style="fill:var(--text-primary)">A crafted request — no browser involved at all</text>
+        <line x1="40" y1="290" x2="780" y2="290" stroke-width="2.5" marker-end="url(#a-b)" style="stroke:var(--brand-base)"/>
+        <path d="M788,278 L812,302 M812,278 L788,302" stroke-width="4" stroke-linecap="round" style="stroke:var(--color-danger)"/>
+        <text x="470" y="316" font-size="15" font-style="italic" style="fill:var(--text-secondary)">the first wall is not even on this path</text>
+      </g>
+    </svg>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 14 ─ The refresh bug -->
+<section class="slide">
+  <p class="eyebrow">POST/Redirect/GET</p>
+  <h2>What goes wrong if we just answer a POST with a page</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <p class="lead">The user saves an article. We send back the list page as the response to that <code class="inline">POST</code>.
+      The address bar now holds a URL that was reached by posting data.</p>
+    <div class="cols cols-2 cols--auto">
+      <div class="card"><h3>Then they press Refresh</h3><p>Refresh means "do that request again" — and that request was the <code class="inline">POST</code>. A second article appears. Nobody asked for it.</p></div>
+      <div class="card"><h3>Then they press Back</h3><p>Same problem, plus a URL nobody can bookmark, share or reload.</p></div>
+    </div>
+    <div class="callout callout--warn" style="font-size:var(--fs-slide-body);line-height:var(--lh-slide-body)">
+      Everyone in this room has seen a browser ask <em>"Confirm form resubmission"</em>.
+      That dialogue is not a browser feature — it is a browser apologising for this bug, in the wild.
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 15 ─ Diagram: POST/Redirect/GET -->
+<section class="slide">
+  <p class="eyebrow">POST/Redirect/GET</p>
+  <h2>Answer a POST with a redirect, never with a page</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <svg viewBox="0 0 1160 360" style="width:auto;height:300px;align-self:center" role="img"
+         aria-label="On the left, the correct pattern: POST, then a 302 with a Location header, then a GET, then 200. On the right, the broken variant: POST answered with 200 directly, so a refresh re-sends the POST and a second record is created">
+      <g style="font-family:var(--font-sans-text)">
+        <defs>
+          <marker id="p-b" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+            <path d="M0,0 L10,4 L0,8 Z" style="fill:var(--brand-base)"/>
+          </marker>
+          <marker id="p-o" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+            <path d="M0,0 L10,4 L0,8 Z" style="fill:var(--color-success)"/>
+          </marker>
+          <marker id="p-r" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+            <path d="M0,0 L10,4 L0,8 Z" style="fill:var(--color-danger)"/>
+          </marker>
+        </defs>
+
+        <text x="295" y="22" text-anchor="middle" font-size="19" font-weight="600" style="fill:var(--color-success)">Correct · POST → 302 → GET</text>
+        <text x="90" y="60" text-anchor="middle" font-size="17" font-weight="600" style="fill:var(--text-secondary)">Browser</text>
+        <text x="500" y="60" text-anchor="middle" font-size="17" font-weight="600" style="fill:var(--text-secondary)">Server</text>
+        <line x1="90" y1="74" x2="90" y2="320" stroke-width="1.5" stroke-dasharray="5 5" style="stroke:var(--border-strong)"/>
+        <line x1="500" y1="74" x2="500" y2="320" stroke-width="1.5" stroke-dasharray="5 5" style="stroke:var(--border-strong)"/>
+
+        <text x="295" y="100" text-anchor="middle" font-size="16" font-weight="600" style="font-family:var(--font-mono);fill:var(--brand-pressed)">POST /articles/create</text>
+        <line x1="94" y1="114" x2="492" y2="114" stroke-width="2.5" marker-end="url(#p-b)" style="stroke:var(--brand-base)"/>
+        <text x="295" y="160" text-anchor="middle" font-size="16" font-weight="600" style="font-family:var(--font-mono);fill:var(--brand-pressed)">302 · Location: /articles</text>
+        <line x1="496" y1="174" x2="98" y2="174" stroke-width="2.5" marker-end="url(#p-b)" style="stroke:var(--brand-base)"/>
+        <text x="295" y="220" text-anchor="middle" font-size="16" font-weight="600" style="font-family:var(--font-mono);fill:var(--brand-pressed)">GET /articles</text>
+        <line x1="94" y1="234" x2="492" y2="234" stroke-width="2.5" marker-end="url(#p-b)" style="stroke:var(--brand-base)"/>
+        <text x="295" y="280" text-anchor="middle" font-size="16" font-weight="600" style="font-family:var(--font-mono);fill:var(--color-success)">200 · the list page</text>
+        <line x1="496" y1="294" x2="98" y2="294" stroke-width="2.5" marker-end="url(#p-o)" style="stroke:var(--color-success)"/>
+        <text x="295" y="342" text-anchor="middle" font-size="16" style="fill:var(--text-secondary)">Refresh now repeats a harmless GET</text>
+
+        <line x1="600" y1="10" x2="600" y2="350" stroke-width="1" style="stroke:var(--border-default)"/>
+
+        <text x="895" y="22" text-anchor="middle" font-size="19" font-weight="600" style="fill:var(--color-danger)">Broken · POST → 200</text>
+        <text x="690" y="60" text-anchor="middle" font-size="17" font-weight="600" style="fill:var(--text-secondary)">Browser</text>
+        <text x="1100" y="60" text-anchor="middle" font-size="17" font-weight="600" style="fill:var(--text-secondary)">Server</text>
+        <line x1="690" y1="74" x2="690" y2="320" stroke-width="1.5" stroke-dasharray="5 5" style="stroke:var(--border-strong)"/>
+        <line x1="1100" y1="74" x2="1100" y2="320" stroke-width="1.5" stroke-dasharray="5 5" style="stroke:var(--border-strong)"/>
+
+        <text x="895" y="100" text-anchor="middle" font-size="16" font-weight="600" style="font-family:var(--font-mono);fill:var(--brand-pressed)">POST /articles/create</text>
+        <line x1="694" y1="114" x2="1092" y2="114" stroke-width="2.5" marker-end="url(#p-b)" style="stroke:var(--brand-base)"/>
+        <text x="895" y="160" text-anchor="middle" font-size="16" font-weight="600" style="font-family:var(--font-mono);fill:var(--color-danger)">200 · the list page itself</text>
+        <line x1="1096" y1="174" x2="698" y2="174" stroke-width="2.5" marker-end="url(#p-r)" style="stroke:var(--color-danger)"/>
+        <text x="895" y="220" text-anchor="middle" font-size="16" font-weight="600" style="fill:var(--color-danger)">the user presses Refresh</text>
+        <text x="895" y="256" text-anchor="middle" font-size="16" font-weight="600" style="font-family:var(--font-mono);fill:var(--color-danger)">POST /articles/create · again</text>
+        <line x1="694" y1="270" x2="1092" y2="270" stroke-width="2.5" stroke-dasharray="7 5" marker-end="url(#p-r)" style="stroke:var(--color-danger)"/>
+        <path d="M760,290 L784,314 M784,290 L760,314" stroke-width="4" stroke-linecap="round" style="stroke:var(--color-danger)"/>
+        <text x="800" y="310" font-size="17" font-weight="600" style="fill:var(--color-danger)">a second article is created</text>
+      </g>
+    </svg>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 16 ─ PRG named -->
+<section class="slide">
+  <p class="eyebrow">POST/Redirect/GET</p>
+  <h2>The pattern has a name because it is universal</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <p class="lead">After a successful <code class="inline">POST</code>, never return HTML. Return a <strong>redirect</strong>,
+      so the browser goes and asks for the result page with a fresh <code class="inline">GET</code>.</p>
+    <div class="cols cols-3 cols--auto">
+      <div class="card card--brand"><span class="badge badge--mono">302</span><h3 style="margin-top:var(--space-2)">The callback from Session 01</h3><p>The status-code table in Session 01 said: <em>302 Found — temporary redirect, for example after submitting a form (Session 09).</em> This is that form.</p></div>
+      <div class="card"><h3>Refresh becomes harmless</h3><p>The last request the browser made was a <code class="inline">GET</code>. Repeating it changes nothing — it is <strong>safe</strong>, in Session 01's exact sense of the word.</p></div>
+      <div class="card"><h3>The URL is honest again</h3><p>What sits in the address bar is the page the user is looking at. It can be bookmarked, shared and reloaded, and Back behaves.</p></div>
+    </div>
+    <div class="callout">The redirect carries a <code class="inline">Location</code> header naming where to go. The browser follows it by itself —
+      the user never sees the intermediate response, only two rows in the network log.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 17 ─ Section: Razor forms and tag helpers -->
+<section class="slide slide--dark">
+  <div class="section-no">03</div>
+  <p class="eyebrow">Block 5 · 25 min · demo</p>
+  <h2>Razor forms and tag helpers</h2>
+  <p class="lead" style="margin-top:var(--space-4)">The same three ideas, now in ASP.NET Core MVC on .NET 10 — the action pair, model binding, and attributes that write the HTML for us.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 18 ─ The action pair -->
+<section class="slide">
+  <p class="eyebrow">The action pair</p>
+  <h2>Two methods, one URL, told apart by the verb</h2>
+  <div class="rule"></div>
+  <div class="content center">
+<pre><span class="k">[HttpGet]</span>                          <span class="c">// GET /articles/create</span>
+<span class="k">public</span> IActionResult <span class="h">Create</span>() =&gt; View();
+
+<span class="k">[HttpPost]</span>                         <span class="c">// POST /articles/create</span>
+<span class="k">[ValidateAntiForgeryToken]</span>
+<span class="k">public async</span> Task&lt;IActionResult&gt; <span class="h">Create</span>(Article article)
+{
+    <span class="k">if</span> (!ModelState.IsValid)
+        <span class="k">return</span> View(article);      <span class="c">// keep what they typed</span>
+
+    _context.Articles.Add(article);
+    <span class="k">await</span> _context.SaveChangesAsync();
+
+    <span class="k">return</span> <span class="ok">RedirectToAction</span>(nameof(Index));
+}</pre>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 19 ─ Reading the pair -->
+<section class="slide">
+  <p class="eyebrow">The action pair</p>
+  <h2>Five things to notice, in order</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <ol class="list list--tight">
+      <li>Two methods with the <strong>same name</strong>, separated by <code class="inline">[HttpGet]</code> and <code class="inline">[HttpPost]</code>. This is what the method attributes in Session 04 were for.</li>
+      <li><strong>Model binding</strong> (Session 03) now fills a <em>whole object</em>, matching form field names to property names. We never read the request body by hand.</li>
+      <li><code class="inline">return View(article)</code> on failure — <strong>not</strong> <code class="inline">return View()</code>. Otherwise everything the user typed is wiped and they will never forgive us.</li>
+      <li><code class="inline">nameof(Index)</code> rather than <code class="inline">"Index"</code>: renaming the action becomes a compile error instead of a broken link.</li>
+      <li><code class="inline">SaveChangesAsync</code> is the line that actually issues the <code class="inline">INSERT</code> — we watch it appear in the SQL log from Session 08.</li>
+    </ol>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 20 ─ Over-posting -->
+<section class="slide">
+  <p class="eyebrow">Model binding · the sharp edge</p>
+  <h2>Over-posting: binding fills fields we never put on the form</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <p class="lead"><code class="inline">Article</code> has an <code class="inline">Id</code>. Our form does not show it — but if someone adds
+      <code class="inline">Id=999</code> to the request body, model binding sets it anyway. On a richer model the same trick sets
+      <code class="inline">IsAdmin</code> or <code class="inline">IsPublished</code>.</p>
+<pre><span class="c">// Defence 1 — an allow-list of bindable properties</span>
+<span class="k">public async</span> Task&lt;IActionResult&gt; Create(
+    <span class="k">[Bind(</span><span class="ok">"Title,Author,Summary,Body,PublishedOn"</span><span class="k">)]</span> Article article)
+
+<span class="c">// Defence 2 — bind to a view model holding only those fields</span>
+<span class="k">public async</span> Task&lt;IActionResult&gt; Create(<span class="h">ArticleFormViewModel</span> form)</pre>
+    <div class="callout">Both work. The second is better, and is the reason Session 06 exists: the form binds to a type that
+      <em>cannot</em> express the fields we are protecting, then we copy across to the entity by hand.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 21 ─ Tag helpers -->
+<section class="slide">
+  <p class="eyebrow">Tag helpers</p>
+  <h2>Server-side attributes that generate the right HTML</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre><span class="k">@model</span> SimpleBlog.Models.Article
+
+<span class="k">&lt;form</span> <span class="h">asp-action</span>=<span class="ok">"Create"</span> method=<span class="ok">"post"</span><span class="k">&gt;</span>
+  <span class="k">&lt;div</span> <span class="h">asp-validation-summary</span>=<span class="ok">"ModelOnly"</span><span class="k">&gt;&lt;/div&gt;</span>
+  <span class="k">&lt;div</span> class=<span class="ok">"mb-3"</span><span class="k">&gt;</span>
+    <span class="k">&lt;label</span> <span class="h">asp-for</span>=<span class="ok">"Title"</span> class=<span class="ok">"form-label"</span><span class="k">&gt;&lt;/label&gt;</span>
+    <span class="k">&lt;input</span> <span class="h">asp-for</span>=<span class="ok">"Title"</span> class=<span class="ok">"form-control"</span> <span class="k">/&gt;</span>
+    <span class="k">&lt;span</span> <span class="h">asp-validation-for</span>=<span class="ok">"Title"</span><span class="k">&gt;&lt;/span&gt;</span>
+  <span class="k">&lt;/div&gt;</span>
+  <span class="c">&lt;!-- Author, Body, PublishedOn: three lines each --&gt;</span>
+  <span class="k">&lt;button</span> type=<span class="ok">"submit"</span><span class="k">&gt;</span>Save<span class="k">&lt;/button&gt;</span>
+  <span class="k">&lt;a</span> <span class="h">asp-action</span>=<span class="ok">"Index"</span><span class="k">&gt;</span>Cancel<span class="k">&lt;/a&gt;</span>
+<span class="k">&lt;/form&gt;</span></pre>
+      <ul class="list list--tight">
+        <li>Hand-written HTML forms are verbose, and drift out of step with the model the moment either changes.</li>
+        <li>A tag helper is an ordinary HTML element with an extra attribute the server understands and removes.</li>
+        <li>The browser never sees <code class="inline">asp-for</code>. It sees plain HTML.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 22 ─ What asp-for generated -->
+<section class="slide">
+  <p class="eyebrow">Tag helpers</p>
+  <h2>We open View source and read what one attribute produced</h2>
+  <div class="rule"></div>
+  <div class="content">
+<pre><span class="k">&lt;input</span> class=<span class="ok">"form-control"</span> <span class="h">type</span>=<span class="ok">"text"</span> <span class="h">id</span>=<span class="ok">"Title"</span> <span class="h">name</span>=<span class="ok">"Title"</span>
+       <span class="h">value</span>=<span class="ok">"How the web works"</span> <span class="h">maxlength</span>=<span class="ok">"200"</span>
+       data-val=<span class="ok">"true"</span>
+       data-val-required=<span class="ok">"Please enter a title."</span>
+       data-val-length-max=<span class="ok">"200"</span> <span class="k">/&gt;</span></pre>
+    <div class="cols cols-3 cols--auto">
+      <div class="card"><h3><code class="inline">name</code>, <code class="inline">id</code>, <code class="inline">value</code></h3><p>From the property name and the current model value. The <code class="inline">name</code> is what model binding will match on the way back.</p></div>
+      <div class="card"><h3><code class="inline">type</code>, <code class="inline">maxlength</code></h3><p>From the data annotations we wrote in Session 08 — <code class="inline">[DataType]</code>, <code class="inline">[MaxLength]</code>.</p></div>
+      <div class="card card--brand"><h3><code class="inline">data-val-*</code></h3><p>The same rules, restated so the browser can check them before submitting.</p></div>
+    </div>
+    <div class="callout">We wrote those rules <strong>once</strong>, on the model. They now shape the database column, the form field,
+      the check in the browser and the check on the server. This is the moment data annotations pay for themselves.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 23 ─ Tag helper reference -->
+<section class="slide">
+  <p class="eyebrow">Tag helpers</p>
+  <h2>The five we use in this course</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <table>
+      <thead><tr><th style="width:36%">Tag helper</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><th><code class="inline">asp-for</code></th><td>Name, id, value, input type, and the client-validation attributes — all from one property.</td></tr>
+        <tr><th><code class="inline">asp-action</code> · <code class="inline">asp-controller</code> · <code class="inline">asp-route-*</code></th><td>Generates the URL from the routing table, rather than us typing a string (Session 04).</td></tr>
+        <tr><th><code class="inline">asp-validation-for</code></th><td>The error message for one field.</td></tr>
+        <tr><th><code class="inline">asp-validation-summary</code></th><td>A block of messages: <code class="inline">All</code>, <code class="inline">ModelOnly</code> or <code class="inline">None</code>.</td></tr>
+        <tr><th><code class="inline">asp-items</code></th><td>The <code class="inline">&lt;option&gt;</code> elements of a <code class="inline">&lt;select&gt;</code>.</td></tr>
+      </tbody>
+    </table>
+    <div class="callout">Every one of them disappears before the response leaves the server. Nothing on this list is a browser feature.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 24 ─ Client-side validation scripts -->
+<section class="slide">
+  <p class="eyebrow">Tag helpers</p>
+  <h2>Turning on the messages that appear as you type</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <p class="lead">Those <code class="inline">data-val-*</code> attributes do nothing on their own. A small script library reads them
+      and shows the messages before the form is submitted — the project template already ships it as a partial view.</p>
+<pre><span class="k">@section</span> Scripts {
+    <span class="k">&lt;partial</span> name=<span class="ok">"_ValidationScriptsPartial"</span> <span class="k">/&gt;</span>
+}</pre>
+    <div class="cols cols-2 cols--auto">
+      <div class="card"><h3>With it</h3><p>Errors appear the moment the field loses focus. No request is sent at all.</p></div>
+      <div class="card"><h3>Without it</h3><p>The same errors appear after a round trip to the server. Same messages, later moment.</p></div>
+    </div>
+    <div class="callout callout--warn">We show the form both ways on screen. The point is that the
+      <strong>server check runs in both cases</strong> — removing the script removes the convenience, not the protection.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 25 ─ Section: validation -->
+<section class="slide slide--dark">
+  <div class="section-no">04</div>
+  <p class="eyebrow">Block 6 · 25 min · demo</p>
+  <h2>Validation on the server</h2>
+  <p class="lead" style="margin-top:var(--space-4)">Annotations for the rules a type can express, <code class="inline">ModelState</code> for everything else.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 26 ─ Data annotations -->
+<section class="slide">
+  <p class="eyebrow">Validation</p>
+  <h2>The rules live on the model, next to the data</h2>
+  <div class="rule"></div>
+  <div class="content center">
+<pre><span class="k">[Required(</span>ErrorMessage = <span class="ok">"Please enter a title."</span><span class="k">)]</span>
+<span class="k">[StringLength(</span><span class="h">200</span>, MinimumLength = <span class="h">5</span>,
+    ErrorMessage = <span class="ok">"The title must be 5 to 200 characters."</span><span class="k">)]</span>
+<span class="k">public string</span> Title { <span class="k">get</span>; <span class="k">set</span>; } = <span class="ok">""</span>;
+
+<span class="k">[Required, EmailAddress]</span>
+<span class="k">public string</span> ContactEmail { <span class="k">get</span>; <span class="k">set</span>; } = <span class="ok">""</span>;
+
+<span class="k">[Range(</span><span class="h">0</span>, <span class="h">10_000</span><span class="k">)]</span>
+<span class="k">public int</span> ReadingMinutes { <span class="k">get</span>; <span class="k">set</span>; }
+
+<span class="k">[RegularExpression(</span><span class="ok">@"^[a-z0-9-]+$"</span><span class="k">)]</span>
+<span class="k">public string</span> Slug { <span class="k">get</span>; <span class="k">set</span>; } = <span class="ok">""</span>;</pre>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 27 ─ ModelState -->
+<section class="slide">
+  <p class="eyebrow">Validation</p>
+  <h2>ModelState is the record of what arrived and what was wrong with it</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+      <ul class="list">
+        <li>It is filled in <strong>automatically during model binding</strong> — before a single line of our action runs.</li>
+        <li>It holds, per field: the raw value that arrived, and any error messages attached to it.</li>
+        <li><code class="inline">IsValid</code> is simply "is that error list empty".</li>
+        <li>Because it holds the raw values too, <code class="inline">return View(article)</code> can redisplay exactly what the user typed, error messages and all.</li>
+      </ul>
+<pre><span class="k">if</span> (!ModelState.IsValid)
+    <span class="k">return</span> View(article);</pre>
+    </div>
+    <div class="callout">Two lines. They are the entire security boundary for input in this application — the wall
+      the crafted request in our diagram ran into.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 28 ─ Custom rules -->
+<section class="slide">
+  <p class="eyebrow">Validation</p>
+  <h2>The rules an annotation cannot express</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <p class="lead">Anything needing the database, another field or the current date, we check ourselves — reporting it into the same <code class="inline">ModelState</code>.</p>
+<pre><span class="k">if</span> (<span class="k">await</span> _context.Articles.AnyAsync(a =&gt; a.Title == article.Title))
+    ModelState.<span class="h">AddModelError</span>(nameof(article.Title),
+        <span class="ok">"An article with this title already exists."</span>);
+
+<span class="k">if</span> (article.PublishedOn &gt; DateTime.Today.AddYears(<span class="h">1</span>))
+    ModelState.<span class="h">AddModelError</span>(nameof(article.PublishedOn),
+        <span class="ok">"That date is too far in the future."</span>);
+
+<span class="k">if</span> (!ModelState.IsValid) <span class="k">return</span> View(article);</pre>
+    <div class="callout">An error added with an <strong>empty key</strong> — <code class="inline">AddModelError("", "…")</code> — belongs to no field, so it appears in the <code class="inline">ModelOnly</code> summary at the top of the form.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 29 ─ Section: CSRF, edit, delete -->
+<section class="slide slide--dark">
+  <div class="section-no">05</div>
+  <p class="eyebrow">Block 8 · 20 min · demo</p>
+  <h2>CSRF, and the rest of CRUD</h2>
+  <p class="lead" style="margin-top:var(--space-4)">An attack that uses nothing but a form and your own cookies — then Edit and Delete.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 30 ─ The attack -->
+<section class="slide">
+  <p class="eyebrow">CSRF · cross-site request forgery</p>
+  <h2>The attack, told as a story</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre><span class="c">&lt;!-- a page on someone else's site,
+     open in another tab --&gt;</span>
+<span class="k">&lt;form</span> action=<span class="ok">"https://yourblog.example/articles/5/delete"</span>
+      method=<span class="ok">"post"</span> id=<span class="ok">"f"</span><span class="k">&gt;&lt;/form&gt;</span>
+
+<span class="k">&lt;script&gt;</span>
+  document.getElementById(<span class="ok">'f'</span>).submit();
+<span class="k">&lt;/script&gt;</span></pre>
+      <ol class="list list--tight">
+        <li>We are logged in to our own blog in one tab.</li>
+        <li>We open an unrelated page in another tab. It submits that form by itself.</li>
+        <li>The browser sends it — <strong>and attaches our cookies</strong>, because it always sends that site's cookies to that site.</li>
+        <li>Our server sees a valid, authenticated request to delete article 5. Nothing about it is malformed.</li>
+      </ol>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 31 ─ Diagram: the token round trip -->
+<section class="slide">
+  <p class="eyebrow">CSRF · the defence</p>
+  <h2>A secret the attacker's page cannot know</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <svg viewBox="0 0 1160 360" style="width:auto;height:320px;align-self:center" role="img"
+         aria-label="Our server issues a form with a hidden token, our page returns the fields with that token and is accepted with a 200, while the attacker page posts cookies but no token and is rejected with 400 Bad Request">
+      <g style="font-family:var(--font-sans-text)">
+        <defs>
+          <marker id="c-b" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+            <path d="M0,0 L10,4 L0,8 Z" style="fill:var(--brand-base)"/>
+          </marker>
+          <marker id="c-r" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+            <path d="M0,0 L10,4 L0,8 Z" style="fill:var(--color-danger)"/>
+          </marker>
+        </defs>
+
+        <rect x="860" y="30" width="280" height="310" rx="8" style="fill:var(--brand-base)"/>
+        <text x="1000" y="76" text-anchor="middle" font-size="24" font-weight="600" style="fill:#ffffff">Our server</text>
+        <rect x="884" y="120" width="232" height="52" rx="8" style="fill:var(--color-success-bg)"/>
+        <text x="1000" y="144" text-anchor="middle" font-size="16" font-weight="600" style="fill:var(--color-success)">token matches</text>
+        <text x="1000" y="164" text-anchor="middle" font-size="16" font-weight="600" style="fill:var(--color-success)">200 · saved</text>
+        <rect x="884" y="252" width="232" height="52" rx="8" style="fill:var(--color-danger-bg)"/>
+        <text x="1000" y="276" text-anchor="middle" font-size="16" font-weight="600" style="fill:var(--color-danger)">no valid token</text>
+        <text x="1000" y="296" text-anchor="middle" font-size="16" font-weight="600" style="fill:var(--color-danger)">400 Bad Request</text>
+
+        <rect x="20" y="30" width="290" height="120" rx="8" style="fill:var(--surface-card);stroke:var(--border-default)"/>
+        <text x="165" y="74" text-anchor="middle" font-size="21" font-weight="600" style="fill:var(--text-primary)">Our own form page</text>
+        <text x="165" y="104" text-anchor="middle" font-size="15" style="fill:var(--text-secondary)">served by us, carries the</text>
+        <text x="165" y="126" text-anchor="middle" font-size="15" style="fill:var(--text-secondary)">hidden token we issued</text>
+
+        <rect x="20" y="230" width="290" height="120" rx="8" stroke-dasharray="6 5" style="fill:var(--color-danger-bg);stroke:var(--color-danger)"/>
+        <text x="165" y="274" text-anchor="middle" font-size="21" font-weight="600" style="fill:var(--color-danger)">The attacker's page</text>
+        <text x="165" y="304" text-anchor="middle" font-size="15" style="fill:var(--color-danger)">has our cookies, cannot</text>
+        <text x="165" y="326" text-anchor="middle" font-size="15" style="fill:var(--color-danger)">read or guess the token</text>
+
+        <text x="580" y="176" text-anchor="middle" font-size="16" font-weight="600" style="fill:var(--brand-pressed)">1 · the form, with a hidden token</text>
+        <line x1="852" y1="192" x2="320" y2="192" stroke-width="2.5" marker-end="url(#c-b)" style="stroke:var(--brand-base)"/>
+        <path d="M320,192 L320,150" fill="none" stroke-width="2.5" style="stroke:var(--brand-base)"/>
+        <text x="580" y="216" text-anchor="middle" font-size="16" font-weight="600" style="fill:var(--brand-pressed)">2 · the fields, plus the token</text>
+        <line x1="320" y1="232" x2="852" y2="232" stroke-width="2.5" marker-end="url(#c-b)" style="stroke:var(--brand-base)"/>
+        <path d="M320,150 L320,232" fill="none" stroke-width="2.5" stroke-dasharray="4 4" style="stroke:var(--brand-tint-10)"/>
+
+        <text x="580" y="298" text-anchor="middle" font-size="16" font-weight="600" style="fill:var(--color-danger)">3 · cookies, but no token</text>
+        <line x1="320" y1="314" x2="852" y2="314" stroke-width="2.5" stroke-dasharray="7 5" marker-end="url(#c-r)" style="stroke:var(--color-danger)"/>
+      </g>
+    </svg>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 32 ─ The defence in practice -->
+<section class="slide">
+  <p class="eyebrow">CSRF · the defence</p>
+  <h2>In ASP.NET Core this is nearly automatic</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2 cols--auto">
+      <div class="card"><h3>The form already emits it</h3><p>Any <code class="inline">&lt;form&gt;</code> using a tag helper writes a hidden field for us. We find it in View source:</p>
+        <p><code class="inline">&lt;input name="__RequestVerificationToken" type="hidden" value="CfDJ8…" /&gt;</code></p></div>
+      <div class="card card--brand"><h3>The action demands it</h3><p><code class="inline">[ValidateAntiForgeryToken]</code> on the POST action makes the server require the field and check it before our code runs.</p></div>
+    </div>
+<pre><span class="k">[HttpPost]</span>
+<span class="k">[ValidateAntiForgeryToken]</span>
+<span class="k">public async</span> Task&lt;IActionResult&gt; Delete(<span class="k">int</span> id) { <span class="c">…</span> }</pre>
+    <div class="callout">We delete the hidden field in the developer tools and submit: <strong>400 Bad Request</strong> —
+      Session 01's status code, now with a reason attached to it.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 33 ─ Two rules -->
+<section class="slide slide--brand">
+  <p class="eyebrow">Two rules, no exceptions in this course</p>
+  <div class="content center">
+    <p class="statement" style="color:var(--neutral-white)">1 · Every state-changing POST carries<br><code class="inline">[ValidateAntiForgeryToken]</code>.</p>
+    <div class="rule"></div>
+    <p class="statement" style="color:var(--neutral-white)">2 · A GET never changes state.</p>
+    <p class="lead" style="margin-top:var(--space-6)">A token cannot protect a <code class="inline">GET</code>: an <code class="inline">&lt;img src="…"&gt;</code> on any page
+      in the world triggers one, and there is no form to put a token in. That is Session 01's rule about <strong style="color:#fff">safe</strong> methods, arriving with teeth.</p>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 34 ─ Three attacks, where we stand -->
+<section class="slide">
+  <p class="eyebrow">Security · where we already stand</p>
+  <h2>Three attacks this session touches</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-3 cols--auto">
+      <div class="card"><span class="badge badge--success">Already safe</span><h3 style="margin-top:var(--space-2)">SQL injection</h3><p>Input concatenated into a query changes what the query means. EF Core parameterises everything — we saw <code class="inline">@__p_0</code> in the Session 08 log. Never build SQL with string concatenation.</p></div>
+      <div class="card"><span class="badge badge--success">Already safe</span><h3 style="margin-top:var(--space-2)">XSS</h3><p>Input rendered back as HTML runs as code. Razor encodes output by default (Session 05). <code class="inline">@Html.Raw</code> switches that protection off — which is the only reason it is worth knowing it exists.</p></div>
+      <div class="card"><span class="badge badge--warning">We must act</span><h3 style="margin-top:var(--space-2)">CSRF</h3><p>Nothing protects us by default except the token, and the token only works if the attribute is on the action.</p></div>
+    </div>
+    <div class="callout callout--warn" style="font-size:var(--fs-slide-body);line-height:var(--lh-slide-body)">
+      Being safe from one attack is not being safe. Over-posting is a fourth, and it is closed by neither the ORM nor the encoder —
+      only by the allow-list or the view model.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 35 ─ Edit -->
+<section class="slide">
+  <p class="eyebrow">Update</p>
+  <h2>Edit is the same shape, with the form pre-filled</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre><span class="c">// the GET is Find, 404 if missing, View(article) —
+// exactly the shape we used for Details in Session 03</span>
+
+<span class="k">[HttpPost, ValidateAntiForgeryToken]</span>
+<span class="k">public async</span> Task&lt;IActionResult&gt; Edit(<span class="k">int</span> id, Article a)
+{
+    <span class="k">if</span> (id != a.Id) <span class="k">return</span> BadRequest();
+    <span class="k">if</span> (!ModelState.IsValid) <span class="k">return</span> View(a);
+    _context.Update(a); <span class="k">await</span> _context.SaveChangesAsync();
+    <span class="k">return</span> <span class="ok">RedirectToAction</span>(nameof(Index));
+}</pre>
+      <ul class="list list--tight">
+        <li>The GET loads the row and passes it to the view, so every field starts filled. An unknown id returns <code class="inline">NotFound()</code> — Session 03's rule, unchanged.</li>
+        <li>The URL and the body must agree about which row this is, or we refuse.</li>
+        <li>The form needs a hidden <code class="inline">&lt;input asp-for="Id" /&gt;</code>, or the id never comes back.</li>
+      </ul>
+    </div>
+    <div class="callout">Wrapping <code class="inline">SaveChangesAsync</code> in <code class="inline">try/catch (DbUpdateConcurrencyException)</code>
+      is Session 02's exception handling with a real purpose: someone else may have deleted the row while this user was typing.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 36 ─ Delete step 1 -->
+<section class="slide">
+  <p class="eyebrow">Delete · step 1 of 2</p>
+  <h2>First a confirmation page — and it is a GET</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre><span class="k">[HttpGet]</span>
+<span class="k">public async</span> Task&lt;IActionResult&gt; Delete(<span class="k">int</span> id)
+{
+    <span class="k">var</span> article = <span class="k">await</span> _context.Articles
+        .AsNoTracking()
+        .FirstOrDefaultAsync(a =&gt; a.Id == id);
+
+    <span class="k">if</span> (article <span class="k">is null</span>) <span class="k">return</span> NotFound();
+
+    <span class="c">// a page showing what is about to be lost</span>
+    <span class="k">return</span> View(article);
+}</pre>
+      <ul class="list list--tight">
+        <li>This request only <em>reads</em>. It is safe, it is idempotent, and it may be repeated freely.</li>
+        <li><code class="inline">AsNoTracking()</code> because we are displaying, not modifying — Session 07.</li>
+        <li>The page it returns holds a form with a single red button, and nothing else that can be clicked by accident.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 37 ─ Delete step 2 -->
+<section class="slide">
+  <p class="eyebrow">Delete · step 2 of 2</p>
+  <h2>Then the deletion — a POST, with a token</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre><span class="k">[HttpPost, ActionName(</span><span class="ok">"Delete"</span><span class="k">)]</span>
+<span class="k">[ValidateAntiForgeryToken]</span>
+<span class="k">public async</span> Task&lt;IActionResult&gt; <span class="h">DeleteConfirmed</span>(<span class="k">int</span> id)
+{
+    <span class="k">var</span> a = <span class="k">await</span> _context.Articles.FindAsync(id);
+
+    <span class="k">if</span> (a <span class="k">is not null</span>)
+    {
+        _context.Articles.Remove(a);
+        <span class="k">await</span> _context.SaveChangesAsync();
+    }
+
+    <span class="k">return</span> <span class="ok">RedirectToAction</span>(nameof(Index));
+}</pre>
+      <ul class="list list--tight">
+        <li><code class="inline">[ActionName("Delete")]</code> lets a differently named method answer the <code class="inline">Delete</code> URL — needed because C# cannot have two methods with the same name and the same signature.</li>
+        <li>Deleting something already gone is not an error. We redirect either way.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 38 ─ Never delete on a GET -->
+<section class="slide">
+  <p class="eyebrow">Delete</p>
+  <h2>Why the deletion can never be a GET</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <p class="lead">Session 01 put it as a warning: <em>"if your delete is a <code class="inline">GET</code>, a crawler can wipe your database
+      just by following links."</em> Here is the concrete version of that sentence.</p>
+    <div class="cols cols-3 cols--auto">
+      <div class="card"><h3>Crawlers follow links</h3><p>A search engine visits every link it finds, unasked. A link that deletes is a link it will click.</p></div>
+      <div class="card"><h3>Browsers repeat GETs</h3><p>Prefetch, the back button, refresh, a restored tab. All of them re-issue a <code class="inline">GET</code> without telling anyone.</p></div>
+      <div class="card"><h3>A token cannot help</h3><p>There is no form, so there is nothing to carry a token. The only defence is that the URL is not destructive.</p></div>
+    </div>
+    <div class="callout">Real systems often <strong>soft delete</strong> instead: set <code class="inline">IsDeleted = true</code> and filter it out of every query,
+      rather than removing the row. Worth considering for a final project — it makes "undo" possible.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 39 ─ Scaffolding -->
+<section class="slide">
+  <p class="eyebrow">Scaffolding · after, not before</p>
+  <h2>Only now do we show the generator</h2>
+  <div class="rule"></div>
+  <div class="content">
+<pre>$ <span class="k">dotnet tool install</span> --global dotnet-aspnet-codegenerator
+$ <span class="k">dotnet add package</span> Microsoft.VisualStudio.Web.CodeGeneration.Design
+
+$ <span class="k">dotnet aspnet-codegenerator</span> controller \
+    -name ArticlesController -m <span class="h">Article</span> \
+    -dc <span class="h">ApplicationDbContext</span> --relativeFolderPath Controllers \
+    --useDefaultLayout --referenceScriptLibraries</pre>
+    <div class="callout">In Visual Studio: right-click <code class="inline">Controllers</code> → Add → New Scaffolded Item → MVC Controller with views, using Entity Framework.
+      Five actions and five views in seconds. We read it together and name every pattern in it — <strong>nothing there should be a surprise.</strong></div>
+    <div class="callout callout--warn">Scaffolding is a fast first draft, not a finished feature: it binds to the entity rather than a view model,
+      its views are plain, and it makes no product decisions. It is useful <strong>because we can now read it and fix it</strong> — which we could not have done an hour ago.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 39 ─ Misconceptions 1 -->
+<section class="slide">
+  <p class="eyebrow">Wrap-up</p>
+  <h2>Common misconceptions · 1 of 2</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <table>
+      <thead><tr><th style="width:44%">Misconception</th><th>Correction</th></tr></thead>
+      <tbody>
+        <tr><td>"Client-side validation is enough."</td><td>It is a convenience. Anyone can bypass it. The server is the boundary.</td></tr>
+        <tr><td>"One action per page, so one action per form."</td><td>A form needs a pair: a GET to show it, a POST to receive it.</td></tr>
+        <tr><td>"Return the page after a POST."</td><td>Redirect. Otherwise a refresh re-submits it.</td></tr>
+        <tr><td>"<code class="inline">return View()</code> after a validation failure."</td><td><code class="inline">return View(model)</code> — otherwise the user's input is wiped.</td></tr>
+        <tr><td>"An input without <code class="inline">name</code> still submits."</td><td>It sends nothing at all.</td></tr>
+        <tr><td>"Model binding only fills simple parameters."</td><td>It fills whole objects by property name — including fields we did not intend (over-posting).</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 40 ─ Misconceptions 2 -->
+<section class="slide">
+  <p class="eyebrow">Wrap-up</p>
+  <h2>Common misconceptions · 2 of 2</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <table>
+      <thead><tr><th style="width:44%">Misconception</th><th>Correction</th></tr></thead>
+      <tbody>
+        <tr><td>"<code class="inline">[ValidateAntiForgeryToken]</code> is optional for small sites."</td><td>CSRF does not care how small the site is.</td></tr>
+        <tr><td>"The token protects GET requests too."</td><td>It cannot. A <code class="inline">GET</code> must not change state.</td></tr>
+        <tr><td>"Delete needs one action."</td><td>Two: a GET confirmation and a POST that deletes.</td></tr>
+        <tr><td>"Scaffolding writes production code."</td><td>It writes a first draft bound to the entity, with no product decisions in it.</td></tr>
+        <tr><td>"EF Core makes me safe from SQL injection, so I am safe."</td><td>From that one attack. XSS, CSRF and over-posting are separate problems with separate defences.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 41 ─ Check for understanding -->
+<section class="slide">
+  <p class="eyebrow">Check for understanding</p>
+  <h2>Seven questions</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <ol class="list list--tight">
+        <li>Creating one article takes three HTTP requests. Name each one with its method, URL and status code.</li>
+        <li>Why does <code class="inline">return View(article)</code> matter more than <code class="inline">return View()</code> when validation fails?</li>
+        <li>A user opens the developer tools and deletes <code class="inline">required</code> from the form. What stops the bad data?</li>
+        <li>What exactly does <code class="inline">asp-for="Title"</code> generate, and where did each generated attribute come from?</li>
+      </ol>
+      <ol class="list list--tight" style="counter-reset:step 4">
+        <li>Explain CSRF to someone who has never heard of it, in three sentences. What stops it here?</li>
+        <li>Why must delete be a POST? What could go wrong with a GET?</li>
+        <li>The form has a <code class="inline">Body</code> field but the model also has <code class="inline">Id</code>. How could a user set <code class="inline">Id</code>, and how do we prevent it?</li>
+      </ol>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 42 ─ Walkthrough -->
+<section class="slide">
+  <p class="eyebrow">Walkthrough · 25 min · on screen</p>
+  <h2>Full CRUD for Article, by hand</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <ol class="list list--tight">
+        <li>We write <strong>Create</strong>: a GET showing an empty form with a tag helper for every field, and a POST that validates, saves and redirects to the list.</li>
+        <li>We add the rules: <code class="inline">Title</code> required and 5–200 characters with our own message, <code class="inline">Author</code> and <code class="inline">Body</code> required, plus a custom error rejecting a duplicate title.</li>
+        <li>We write <strong>Edit</strong>: GET pre-filled with the hidden <code class="inline">Id</code> field, 404 for an unknown id, POST updating and redirecting.</li>
+        <li>We write <strong>Delete</strong>: a GET confirmation page, and a POST that removes the row behind a red button.</li>
+      </ol>
+      <ol class="list list--tight" style="counter-reset:step 4">
+        <li>We put <code class="inline">[ValidateAntiForgeryToken]</code> on every POST and find the hidden field in each form.</li>
+        <li>We add <code class="inline">_ValidationScriptsPartial</code> and watch the messages appear before submission.</li>
+        <li>We wire Create, Edit and Delete buttons onto the list page with <code class="inline">asp-action</code> and <code class="inline">asp-route-id</code>.</li>
+        <li>We break it three ways on purpose: an empty title; <code class="inline">required</code> removed in the developer tools; the anti-forgery field deleted.</li>
+      </ol>
+    </div>
+    <div class="callout"><strong>By the end we will have</strong> all four operations working end to end against the database: invalid input rejected by the
+      <em>server</em> with the user's typing preserved, every POST carrying and checking a token, and nothing changing state on a GET.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 43 ─ Before we move on -->
+<section class="slide">
+  <p class="eyebrow">Wrap-up</p>
+  <h2>Before we move on</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2 cols--auto">
+      <div class="card card--brand"><span class="badge">SimpleBlog state</span><h3 style="margin-top:var(--space-2)">Where the app now stands</h3>
+        <p>List, details, create, edit and delete, on a real SQLite database — with server-side validation, client-side hints, an anti-forgery token on every POST, POST/Redirect/GET everywhere, and Bootstrap-styled forms.</p></div>
+      <div class="card"><span class="badge badge--neutral">Worth trying in your own project</span><h3 style="margin-top:var(--space-2)">Four extensions</h3>
+        <p>· Bind Create and Edit to an <code class="inline">ArticleFormViewModel</code> instead of the entity, and name the attack that closes.</p>
+        <p>· Add a <code class="inline">Slug</code> field with a <code class="inline">[RegularExpression]</code> rule and your own message.</p>
+        <p>· Add a search form on the list page with <code class="inline">method="get"</code> — and be able to say why <code class="inline">GET</code> is right there when everything else here was <code class="inline">POST</code>.</p>
+        <p>· Show a success message after each operation with <code class="inline">TempData</code>, and work out why not <code class="inline">ViewData</code>.</p></div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 44 ─ Glossary -->
+<section class="slide">
+  <p class="eyebrow">Glossary</p>
+  <h2>Речник · EN → BG</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <table>
+        <thead><tr><th style="width:45%">English</th><th>Български</th></tr></thead>
+        <tbody>
+          <tr><td>CRUD</td><td>създаване, четене, редактиране, изтриване</td></tr>
+          <tr><td>form / field / submit</td><td>форма / поле / изпращане</td></tr>
+          <tr><td>tag helper</td><td>помощен етикет</td></tr>
+          <tr><td>model binding</td><td>обвързване на модела</td></tr>
+          <tr><td>over-posting</td><td>подаване на непозволени полета</td></tr>
+          <tr><td>validation (client / server)</td><td>валидация (от страна на клиента / сървъра)</td></tr>
+          <tr><td>validation summary</td><td>обобщение на грешките</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <thead><tr><th style="width:45%">English</th><th>Български</th></tr></thead>
+        <tbody>
+          <tr><td><code class="inline">ModelState</code></td><td>състояние на модела</td></tr>
+          <tr><td>POST/Redirect/GET</td><td>POST → пренасочване → GET</td></tr>
+          <tr><td>CSRF</td><td>подправяне на заявки между сайтове</td></tr>
+          <tr><td>anti-forgery token</td><td>защитен токен</td></tr>
+          <tr><td>XSS / SQL injection</td><td>XSS / SQL инжекция</td></tr>
+          <tr><td>scaffolding</td><td>автоматично генериране на код</td></tr>
+          <tr><td>soft delete</td><td>логическо изтриване</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 45 ─ References -->
+<section class="slide">
+  <p class="eyebrow">References</p>
+  <h2>Where to read more</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <ul class="list list--tight">
+      <li><strong>Forms and tag helpers</strong><br><span class="sm muted">learn.microsoft.com/aspnet/core/mvc/views/working-with-forms</span></li>
+      <li><strong>Model validation</strong><br><span class="sm muted">learn.microsoft.com/aspnet/core/mvc/models/validation</span></li>
+      <li><strong>Prevent cross-site request forgery attacks</strong><br><span class="sm muted">learn.microsoft.com/aspnet/core/security/anti-request-forgery</span></li>
+      <li><strong>Prevent over-posting</strong><br><span class="sm muted">learn.microsoft.com/aspnet/core/data/ef-mvc/crud#overposting</span></li>
+      <li><strong>Scaffolding a model</strong><br><span class="sm muted">learn.microsoft.com/aspnet/core/tutorials/first-mvc-app/adding-model</span></li>
+      <li><strong>OWASP Top Ten</strong><br><span class="sm muted">owasp.org/www-project-top-ten</span></li>
+    </ul>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 46 ─ Closing -->
+<section class="slide slide--brand">
+  <p class="eyebrow">Next session</p>
+  <h1 style="font-size:var(--fs-title-1);line-height:var(--lh-title-1)">10 · Debugging, Logging and Deployment</h1>
+  <div class="rule"></div>
+  <p class="lead">Finding out what our code actually did, recording it on purpose,<br>and putting the finished application somewhere other people can reach it.</p>
+  <div class="foot"><span>Questions?</span><span class="spacer"></span><span>Microsoft Web Technologies</span></div>
+</section>
+</div></div>
+<div id="hint">← → navigate · F fullscreen · P print</div>
+
+<script>
+(function(){
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var deck = document.getElementById('deck');
+  var progress = document.getElementById('progress');
+  var hint = document.getElementById('hint');
+  var total = slides.length;
+  var i = 0;
+
+  slides.forEach(function(s, n){
+    var num = s.querySelector('.num');
+    if (num) num.textContent = (n + 1) + ' / ' + total;
+  });
+
+  function show(n){
+    i = Math.max(0, Math.min(total - 1, n));
+    slides.forEach(function(s, k){ s.classList.toggle('is-active', k === i); });
+    progress.style.width = ((i + 1) / total * 100) + '%';
+    if (location.hash !== '#' + (i + 1)) history.replaceState(null, '', '#' + (i + 1));
+  }
+
+  function fit(){
+    var scale = Math.min(window.innerWidth / 1280, window.innerHeight / 720);
+    deck.style.transform = 'scale(' + scale + ')';
+  }
+
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); show(i + 1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(i - 1); }
+    else if (e.key === 'Home') { show(0); }
+    else if (e.key === 'End') { show(total - 1); }
+    else if (e.key === 'f' || e.key === 'F') {
+      if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen();
+    }
+    else if (e.key === 'p' || e.key === 'P') { window.print(); }
+  });
+
+  document.getElementById('stage').addEventListener('click', function(e){
+    show(e.clientX < window.innerWidth / 3 ? i - 1 : i + 1);
+  });
+
+  window.addEventListener('resize', fit);
+  window.addEventListener('hashchange', function(){ show((parseInt(location.hash.slice(1), 10) || 1) - 1); });
+
+  fit();
+  show((parseInt(location.hash.slice(1), 10) || 1) - 1);
+  setTimeout(function(){ hint.classList.add('is-hidden'); }, 4000);
+})();
+</script>
+</body>
+</html>

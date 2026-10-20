@@ -1,0 +1,1272 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Session 04 — Routing and URL Design</title>
+<link rel="stylesheet" href="../../design-system/styles.css">
+<style>
+/* ── Deck-level extensions to the design system ────────────────────────────
+   Slides are authored on a fixed 1280×720 stage and scaled to the viewport,
+   so every size below is a *slide* size, not a screen size. Body copy is
+   stepped up from --fs-body (14px, UI density) to projection density. */
+:root{
+  --stage-w:1280px; --stage-h:720px;
+  --fs-slide-body:20px;  --lh-slide-body:30px;
+  --fs-slide-lead:24px;  --lh-slide-lead:34px;
+  --fs-slide-sm:16px;    --lh-slide-sm:24px;
+  --fs-slide-code:16px;  --lh-slide-code:26px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  background:var(--neutral-grey-160);
+  font-family:var(--font-sans-text);
+  color:var(--text-primary);
+  overflow:hidden;
+}
+
+/* ── Stage ─────────────────────────────────────────────────────────────── */
+#stage{position:fixed;inset:0;display:grid;place-items:center}
+#deck{width:var(--stage-w);height:var(--stage-h);position:relative;transform-origin:center center}
+.slide{
+  position:absolute;inset:0;
+  width:var(--stage-w);height:var(--stage-h);
+  background:var(--surface-page);
+  display:none;flex-direction:column;
+  padding:var(--space-16) var(--space-16) var(--space-10);
+  overflow:hidden;
+}
+.slide.is-active{display:flex}
+
+/* ── Slide chrome ──────────────────────────────────────────────────────── */
+.eyebrow{
+  margin:0 0 var(--space-3);
+  font-family:var(--font-sans-text);
+  font-size:var(--fs-body-sm);line-height:var(--lh-body-sm);
+  font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--brand-pressed);
+}
+h1,h2,h3{margin:0;font-family:var(--font-sans);color:var(--text-primary)}
+h1{font-size:var(--fs-display);line-height:var(--lh-display);font-weight:var(--fw-display);letter-spacing:-.02em}
+h2{font-size:var(--fs-title-1);line-height:var(--lh-title-1);font-weight:var(--fw-title-1);letter-spacing:-.01em}
+h3{font-size:var(--fs-title-3);line-height:var(--lh-title-3);font-weight:var(--fw-title-3)}
+.rule{width:56px;height:3px;background:var(--brand-base);border-radius:var(--radius-pill);margin:var(--space-4) 0 var(--space-6)}
+.body{margin:0;font-size:var(--fs-slide-body);line-height:var(--lh-slide-body);color:var(--text-primary)}
+.lead{margin:0;font-size:var(--fs-slide-lead);line-height:var(--lh-slide-lead);color:var(--text-secondary)}
+.muted{color:var(--text-secondary)}
+.sm{font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm)}
+strong{font-weight:600}
+.content{flex:1;min-height:0;display:flex;flex-direction:column;gap:var(--space-5)}
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.foot{
+  display:flex;align-items:center;gap:var(--space-4);
+  padding-top:var(--space-5);margin-top:auto;
+  border-top:1px solid var(--border-default);
+  font-size:var(--fs-caption);line-height:var(--lh-caption);
+  letter-spacing:.06em;text-transform:uppercase;color:var(--text-disabled);
+}
+.foot .spacer{flex:1}
+
+/* ── Brand-block slides (title + section dividers) ─────────────────────── */
+.slide--brand{background:var(--brand-base);color:var(--text-on-brand);justify-content:center}
+.slide--brand h1,.slide--brand h2{color:var(--text-on-brand)}
+.slide--brand .eyebrow{color:var(--brand-tint-20)}
+.slide--brand .lead,.slide--brand .body{color:var(--brand-tint-30)}
+.slide--brand .rule{background:var(--neutral-white)}
+.slide--brand .foot{border-top-color:rgba(255,255,255,.24);color:var(--brand-tint-20)}
+.slide--dark{background:var(--brand-shade-20)}
+.slide--dark h1,.slide--dark h2{color:var(--text-on-brand)}
+.slide--dark .eyebrow{color:var(--brand-tint-10)}
+.slide--dark .lead,.slide--dark .body{color:var(--brand-tint-30)}
+.slide--dark .foot{border-top-color:rgba(255,255,255,.18);color:var(--brand-tint-10)}
+.section-no{
+  font-family:var(--font-sans);font-size:120px;line-height:1;font-weight:600;
+  color:rgba(255,255,255,.22);letter-spacing:-.03em;margin-bottom:var(--space-4);
+}
+
+/* ── Layout helpers ────────────────────────────────────────────────────── */
+.cols{display:grid;gap:var(--space-6);flex:1;min-height:0}
+.cols-2{grid-template-columns:1fr 1fr}
+.cols-3{grid-template-columns:repeat(3,1fr)}
+.cols-2-1{grid-template-columns:1.4fr 1fr}
+.cols--auto{flex:0 0 auto;min-height:auto}
+.stack{display:flex;flex-direction:column;gap:var(--space-4);min-height:0}
+.center{justify-content:center}
+
+/* ── Card (design-system surfaces/Card, slide-scaled) ──────────────────── */
+.card{
+  background:var(--surface-card);border:1px solid var(--border-default);
+  border-radius:var(--radius-lg);padding:var(--space-5);
+  display:flex;flex-direction:column;gap:var(--space-2);
+}
+.card--elevated{border:none;box-shadow:var(--shadow-8)}
+.card--brand{background:var(--brand-tint-40);border-color:var(--brand-tint-20)}
+.card h3{font-size:var(--fs-title-3);line-height:var(--lh-title-3)}
+.card p{margin:0;font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm);color:var(--text-secondary)}
+
+/* ── Badge (design-system feedback/Badge, slide-scaled) ────────────────── */
+.badge{
+  display:inline-flex;align-items:center;align-self:flex-start;height:26px;padding:0 var(--space-3);
+  border-radius:var(--radius-pill);font-size:var(--fs-slide-sm);font-weight:600;
+  background:var(--brand-tint-40);color:var(--brand-pressed);white-space:nowrap;
+}
+.badge--neutral{background:var(--surface-subtle);color:var(--text-secondary)}
+.badge--success{background:var(--color-success-bg);color:var(--color-success)}
+.badge--warning{background:var(--color-warning-bg);color:var(--color-warning)}
+.badge--danger{background:var(--color-danger-bg);color:var(--color-danger)}
+.badge--mono{font-family:var(--font-mono);font-weight:600}
+
+/* ── Lists ─────────────────────────────────────────────────────────────── */
+ul.list,ol.list{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:var(--space-4)}
+ul.list li,ol.list li{
+  position:relative;padding-left:var(--space-8);
+  font-size:var(--fs-slide-body);line-height:var(--lh-slide-body);
+}
+ul.list li::before{
+  content:"";position:absolute;left:var(--space-2);top:11px;
+  width:8px;height:8px;border-radius:var(--radius-circular);background:var(--brand-base);
+}
+ol.list{counter-reset:step}
+ol.list li{counter-increment:step;padding-left:var(--space-10)}
+ol.list li::before{
+  content:counter(step);position:absolute;left:0;top:2px;
+  width:28px;height:28px;border-radius:var(--radius-circular);
+  background:var(--brand-tint-40);color:var(--brand-pressed);
+  font-family:var(--font-sans);font-size:var(--fs-slide-sm);font-weight:600;
+  display:grid;place-items:center;
+}
+.list--tight li{font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm)}
+.list--tight{gap:var(--space-3)}
+
+/* ── Table ─────────────────────────────────────────────────────────────── */
+table{
+  width:100%;border-collapse:collapse;
+  background:var(--surface-card);border:1px solid var(--border-default);
+  border-radius:var(--radius-lg);overflow:hidden;
+  font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm);
+}
+thead th{
+  text-align:left;background:var(--surface-subtle);color:var(--text-secondary);
+  font-weight:600;font-size:var(--fs-body-sm);letter-spacing:.06em;text-transform:uppercase;
+  padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border-default);
+}
+tbody td{padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border-default);vertical-align:top}
+tbody tr:last-child td{border-bottom:none}
+tbody th{
+  text-align:left;padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border-default);
+  font-weight:600;white-space:nowrap;
+}
+tbody tr:last-child th{border-bottom:none}
+td.center,th.center{text-align:center}
+
+/* ── Code ──────────────────────────────────────────────────────────────── */
+pre,code{font-family:var(--font-mono)}
+pre{
+  margin:0;background:var(--brand-shade-30);color:var(--brand-tint-30);
+  border-radius:var(--radius-lg);padding:var(--space-5) var(--space-6);
+  font-size:var(--fs-slide-code);line-height:var(--lh-slide-code);
+  overflow:hidden;white-space:pre;
+}
+pre .k{color:#4fc3f7;font-weight:600}
+pre .h{color:var(--neutral-white)}
+pre .c{color:var(--neutral-grey-90)}
+pre .ok{color:#6bd66b;font-weight:600}
+code.inline{
+  background:var(--surface-subtle);border:1px solid var(--border-default);
+  border-radius:var(--radius-sm);padding:1px 6px;font-size:.92em;color:var(--brand-pressed);
+}
+.slide--brand code.inline,.slide--dark code.inline{
+  background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.24);color:var(--neutral-white);
+}
+
+/* ── Callout ───────────────────────────────────────────────────────────── */
+.callout{
+  background:var(--brand-tint-40);border:1px solid var(--brand-tint-20);
+  border-radius:var(--radius-lg);padding:var(--space-4) var(--space-5);
+  font-size:var(--fs-slide-sm);line-height:var(--lh-slide-sm);color:var(--brand-shade-10);
+}
+.callout--warn{background:var(--color-warning-bg);border-color:#f0d98a;color:var(--color-warning)}
+
+/* ── Big statement ─────────────────────────────────────────────────────── */
+.statement{margin:0;font-family:var(--font-sans);font-size:var(--fs-title-1);line-height:var(--lh-title-1);font-weight:600}
+
+/* ── Progress bar ──────────────────────────────────────────────────────── */
+#progress{position:fixed;left:0;top:0;height:3px;background:var(--brand-tint-10);width:0;
+  transition:width var(--duration-normal) var(--ease-standard);z-index:10}
+
+/* ── Help hint ─────────────────────────────────────────────────────────── */
+#hint{
+  position:fixed;right:16px;bottom:14px;z-index:10;
+  font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--neutral-grey-90);font-family:var(--font-sans-text);
+  transition:opacity var(--duration-slow) var(--ease-standard);
+}
+#hint.is-hidden{opacity:0}
+
+/* ── Print / PDF export: one slide per landscape page ──────────────────── */
+@media print{
+  @page{size:1280px 720px;margin:0}
+  body{background:var(--neutral-white);overflow:visible}
+  #stage{position:static;display:block}
+  #deck{width:auto;height:auto;transform:none!important}
+  #progress,#hint{display:none}
+  .slide{position:static;display:flex!important;page-break-after:always;break-after:page}
+}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<div id="stage"><div id="deck">
+
+
+<!-- 1 ─ Title -->
+<section class="slide slide--brand">
+  <p class="eyebrow">Microsoft Web Technologies · Session 04</p>
+  <h1>Routing and URL Design</h1>
+  <div class="rule"></div>
+  <p class="lead">Who decides which code answers a path,<br>and how we choose the paths in the first place.</p>
+  <div class="foot"><span>Lecture 2 · Routing</span><span class="spacer"></span><span>~180 min</span></div>
+</section>
+
+<!-- 2 ─ Where we left off -->
+<section class="slide">
+  <p class="eyebrow">Where we left off</p>
+  <h2>We promised this session twice already</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+      <ul class="list">
+        <li>In Session 01 we took a URL apart and reached the <strong>path</strong>. The slide said: <em>this is what we will design — Session 04</em>. This is Session 04.</li>
+        <li>In Session 03 we wrote the code that answers <code class="inline">/Articles/Details/2</code>. Nobody explained why <em>that</em> URL, and not <code class="inline">/a/2</code> or <code class="inline">/read?what=2</code>.</li>
+        <li>Two questions, then: <strong>who decides</strong>, and <strong>how do we decide well</strong>.</li>
+      </ul>
+      <div class="card card--elevated center">
+        <span class="badge badge--mono">/articles/42</span>
+        <h3 style="margin-top:var(--space-3)">The path is a name we choose</h3>
+        <p>Nothing forces it on us. That is the whole of this session in one sentence.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 3 ─ Learning objectives -->
+<section class="slide">
+  <p class="eyebrow">Learning objectives</p>
+  <h2>By the end of this session you can…</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <ol class="list">
+        <li>Explain what routing is, and why URLs are a design decision rather than an accident.</li>
+        <li>Design readable, stable URLs for a set of features.</li>
+        <li>Read and modify a conventional route template, including defaults and optional segments.</li>
+      </ol>
+      <ol class="list" style="counter-reset:step 3">
+        <li>Use attribute routing to give one action a specific URL.</li>
+        <li>Constrain route parameters, and predict which route wins when several match.</li>
+        <li>Generate URLs in code instead of hard-coding them.</li>
+      </ol>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 4 ─ Agenda -->
+<section class="slide">
+  <p class="eyebrow">Agenda</p>
+  <h2>Three hours, two breaks</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <table>
+        <thead><tr><th style="width:34px">#</th><th>Block</th><th class="center" style="width:64px">Min</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Recap and objectives</td><td class="center">10</td></tr>
+          <tr><td>2</td><td>What routing is; URLs as a public interface</td><td class="center">25</td></tr>
+          <tr><td>3</td><td>URL design principles</td><td class="center">20</td></tr>
+          <tr><td>4</td><td class="muted">Break</td><td class="center">10</td></tr>
+          <tr><td>5</td><td>Conventional routing in ASP.NET Core</td><td class="center">30</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <thead><tr><th style="width:34px">#</th><th>Block</th><th class="center" style="width:64px">Min</th></tr></thead>
+        <tbody>
+          <tr><td>6</td><td>Attribute routing and constraints</td><td class="center">25</td></tr>
+          <tr><td>7</td><td class="muted">Break</td><td class="center">10</td></tr>
+          <tr><td>8</td><td>Generating URLs; route order and conflicts</td><td class="center">15</td></tr>
+          <tr><td>9</td><td>Walkthrough: we design and implement the blog's URLs</td><td class="center">30</td></tr>
+          <tr><td>10</td><td>Wrap-up and Q&amp;A</td><td class="center">5</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 5 ─ Section: what routing is -->
+<section class="slide slide--dark">
+  <div class="section-no">01</div>
+  <p class="eyebrow">Block 2 · 25 min</p>
+  <h2>What routing is</h2>
+  <p class="lead" style="margin-top:var(--space-4)">A method, a path, and a decision to make.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 6 ─ A request carries a method and a path -->
+<section class="slide">
+  <p class="eyebrow">What routing is</p>
+  <h2>The request tells us almost nothing</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+      <div class="stack">
+<pre><span class="k">GET</span> <span class="h">/articles/42</span> HTTP/1.1
+<span class="k">Host:</span> simpleblog.example.com</pre>
+        <p class="body">A request arrives carrying a <strong>method</strong> and a <strong>path</strong>. Somewhere, something has to decide <em>which piece of our code answers it</em>.</p>
+      </div>
+      <div class="stack">
+        <div class="card card--brand">
+          <h3>Routing</h3>
+          <p>That decision — matching an incoming method and path to the code that handles it.</p>
+        </div>
+        <div class="card">
+          <h3>A route</h3>
+          <p>One piece of configuration describing part of that decision. An application has several; together they are the routing table.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 7 ─ Switchboard analogy -->
+<section class="slide">
+  <p class="eyebrow">What routing is</p>
+  <h2>Analogy: the switchboard</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+      <ul class="list">
+        <li>A call comes in asking for extension 42.</li>
+        <li>The operator does not know what happens on extension 42, does not do the work, and does not care what it is about.</li>
+        <li>The operator knows exactly one thing: how to connect a <strong>number</strong> to a <strong>desk</strong>.</li>
+        <li>Routing is the switchboard between URLs and code.</li>
+      </ul>
+      <div class="card card--elevated center">
+        <h3>Two separate jobs</h3>
+        <p>Deciding <em>who</em> answers is one job. <em>Answering</em> is a different one — that was Session 03, and it stays untouched here.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 8 ─ Historical detour -->
+<section class="slide">
+  <p class="eyebrow">What routing is</p>
+  <h2>Why this is a topic at all</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <div class="card">
+        <span class="badge badge--neutral">1995</span>
+        <h3 style="margin-top:var(--space-2)">A URL was a file path</h3>
+        <p><code class="inline">/products/shoes.html</code> meant a file named <code class="inline">shoes.html</code> inside a folder named <code class="inline">products</code>, on a disk.</p>
+        <p>Adding a page meant adding a file. Renaming a page meant renaming a file. Nobody designed URLs, because the folder layout designed them.</p>
+      </div>
+      <div class="card card--brand">
+        <span class="badge">Now</span>
+        <h3 style="margin-top:var(--space-2)">A URL is a name we choose</h3>
+        <p>The path is interpreted by our program. Nothing on disk has to match it. <code class="inline">/articles/42</code> is not a folder, and <code class="inline">42</code> is not a file.</p>
+        <p>That freedom is exactly why routing exists — and why URL design became a job someone has to do.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 9 ─ URLs are a public interface -->
+<section class="slide">
+  <p class="eyebrow">URLs as a public interface</p>
+  <h2>Why URLs deserve design effort</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <div class="stack">
+        <div class="card"><h3>They are the most public part of the app</h3><p>People read them, type them, paste them into chats, print them on posters and read them aloud over the phone.</p></div>
+        <div class="card"><h3>They are permanent</h3><p>The moment someone bookmarks or links to a URL, changing it breaks their link — and we never find out.</p></div>
+      </div>
+      <div class="stack">
+        <div class="card"><h3>They are the table of contents</h3><p>A good URL tells a stranger what the page is <em>before</em> it loads.</p></div>
+        <div class="card"><h3>Search engines read them</h3><p>The path is one of the few pieces of text a search engine sees for every single page.</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 10 ─ Cool URIs -->
+<section class="slide slide--brand">
+  <p class="eyebrow">URLs as a public interface</p>
+  <p class="statement" style="color:var(--neutral-white)">"Cool URIs don't change."</p>
+  <div class="rule"></div>
+  <p class="lead">Tim Berners-Lee, 1998. The person who invented the URL spent an essay
+    on the argument that the hardest part is choosing one you will not want to change.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 11 ─ Bad vs good -->
+<section class="slide">
+  <p class="eyebrow">URLs as a public interface</p>
+  <h2>The same four pages, twice</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <table>
+      <thead><tr><th style="width:42%">Bad</th><th style="width:36%">Good</th><th>What changed</th></tr></thead>
+      <tbody>
+        <tr><td><code class="inline">/page.aspx?id=42&amp;t=3</code></td><td><code class="inline">/articles/42</code></td><td>The path identifies the thing; no file extension, no mystery letters.</td></tr>
+        <tr><td><code class="inline">/GetArticleByIdAction</code></td><td><code class="inline">/articles/42</code></td><td>A name of a thing, not a name of a function inside our code.</td></tr>
+        <tr><td><code class="inline">/a/x/9</code></td><td><code class="inline">/articles/2026/03/routing-basics</code></td><td>Readable and guessable by a human being.</td></tr>
+        <tr><td><code class="inline">/Articles/Details/42</code></td><td><code class="inline">/articles/42</code></td><td>Lowercase, and no repeated internal jargon.</td></tr>
+      </tbody>
+    </table>
+    <div class="callout">Be honest about the last row: it is what many frameworks hand us by default, and it is
+      perfectly acceptable for a course project or an internal tool. The point is that it is a <strong>choice</strong> — and by the end of this session we can change it.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 12 ─ Section: principles -->
+<section class="slide slide--dark">
+  <div class="section-no">02</div>
+  <p class="eyebrow">Block 3 · 20 min</p>
+  <h2>URL design principles</h2>
+  <p class="lead" style="margin-top:var(--space-4)">Six rules that survive any language, any framework, any decade.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 13 ─ Principles 1-3 -->
+<section class="slide">
+  <p class="eyebrow">URL design principles · 1 of 2</p>
+  <h2>Nouns, hierarchy, lowercase</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <ol class="list">
+      <li><strong>Nouns for things, not verbs.</strong> <code class="inline">/articles/42</code>, not <code class="inline">/getArticle?id=42</code>.
+        The verb is already in the method — Session 01.</li>
+      <li><strong>Hierarchy with <code class="inline">/</code>, filters with <code class="inline">?</code>.</strong> The path says <em>which</em> resource;
+        the query string says <em>how we want it</em>. <code class="inline">/articles/42/comments</code> is a thing;
+        <code class="inline">/articles?author=ada&amp;sort=new</code> is a filtered view.</li>
+      <li><strong>Lowercase, hyphen-separated.</strong> <code class="inline">/article-archive</code>, not <code class="inline">/ArticleArchive</code>
+        and not <code class="inline">/article_archive</code>. Paths are case-sensitive on many servers; nobody should have to guess.</li>
+    </ol>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 14 ─ Principles 4-6 -->
+<section class="slide">
+  <p class="eyebrow">URL design principles · 2 of 2</p>
+  <h2>Guessable, honest, consistent</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <ol class="list" style="counter-reset:step 3">
+      <li><strong>Stable and guessable.</strong> If <code class="inline">/articles/42</code> exists, then <code class="inline">/articles/43</code>
+        should mean the analogous thing. Predictability is a feature, not a coincidence.</li>
+      <li><strong>No implementation leakage.</strong> <code class="inline">.php</code>, <code class="inline">.aspx</code>,
+        <code class="inline">/api/v2/internal/</code> — nobody outside the team should be able to tell what we built it in,
+        or which of our layers they have landed on.</li>
+      <li><strong>Plural collections.</strong> <code class="inline">/articles</code> is the many;
+        <code class="inline">/articles/42</code> is one of them. Pick one style across the whole site and never mix.</li>
+    </ol>
+    <div class="callout">All six are conventions, not laws. Their value is that thousands of sites already follow them,
+      so a visitor arrives already knowing how to read our URLs.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 15 ─ Exercise -->
+<section class="slide">
+  <p class="eyebrow">Together · 10 min</p>
+  <h2>We design these nine URLs on the board</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <table>
+        <thead><tr><th>Feature</th><th style="width:34%">URL?</th><th class="center" style="width:22%">Method?</th></tr></thead>
+        <tbody>
+          <tr><td>The home page</td><td></td><td></td></tr>
+          <tr><td>All articles</td><td></td><td></td></tr>
+          <tr><td>One article</td><td></td><td></td></tr>
+          <tr><td>All articles by one author</td><td></td><td></td></tr>
+          <tr><td>The archive for March 2026</td><td></td><td></td></tr>
+        </tbody>
+      </table>
+      <table>
+        <thead><tr><th>Feature</th><th style="width:34%">URL?</th><th class="center" style="width:22%">Method?</th></tr></thead>
+        <tbody>
+          <tr><td>The form to write a new article</td><td></td><td></td></tr>
+          <tr><td>Actually saving that new article</td><td></td><td></td></tr>
+          <tr><td>Deleting an article</td><td></td><td></td></tr>
+          <tr><td>The "about us" page</td><td></td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout">We fill both columns for every row, out loud, and we argue about the ones we disagree on.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 16 ─ The interesting disagreements -->
+<section class="slide">
+  <p class="eyebrow">Together · the answers</p>
+  <h2>The last three rows are the interesting ones</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-3 cols--auto">
+      <div class="card">
+        <span class="badge badge--mono">the form</span>
+        <h3 style="margin-top:var(--space-2)">Showing vs. saving</h3>
+        <p>The form that <em>shows</em> the fields and the request that <em>saves</em> them can share one URL and differ only in method — <code class="inline">GET</code> then <code class="inline">POST</code>. That pairing is every form we write in Session 09.</p>
+      </div>
+      <div class="card">
+        <span class="badge badge--mono badge--warning">delete</span>
+        <h3 style="margin-top:var(--space-2)">DELETE or POST?</h3>
+        <p><code class="inline">DELETE</code> is the honest method, but browser forms only ever send <code class="inline">GET</code> and <code class="inline">POST</code> — Session 01. In a browser app we send a <code class="inline">POST</code>. Never a <code class="inline">GET</code>.</p>
+      </div>
+      <div class="card">
+        <span class="badge badge--mono">/about</span>
+        <h3 style="margin-top:var(--space-2)">The odd one out</h3>
+        <p>"About us" is not one of a collection of things. It is a single page with a single name, and it should sit at the root — not underneath the articles.</p>
+      </div>
+    </div>
+    <div class="callout">Notice what we have just done: designed a public interface for the whole application, on paper,
+      before writing a line of code. That order is deliberate.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 17 ─ Section: conventional routing -->
+<section class="slide slide--dark">
+  <div class="section-no">03</div>
+  <p class="eyebrow">Block 5 · 30 min</p>
+  <h2>Conventional routing in ASP.NET Core</h2>
+  <p class="lead" style="margin-top:var(--space-4)">One template, described centrally, that covers the whole application.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 18 ─ The default route -->
+<section class="slide">
+  <p class="eyebrow">Conventional routing</p>
+  <h2>The line that has been there since Session 02</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+      <div class="stack">
+<pre><span class="c">// Program.cs</span>
+app.<span class="h">MapControllerRoute</span>(
+    name: <span class="h">"default"</span>,
+    pattern: <span class="h">"{controller=Home}/{action=Index}/{id?}"</span>);</pre>
+        <p class="body">Every URL our project has answered so far was matched by that one string.
+          It is not generated, not hidden, and not special — it is a string in a file we can edit.</p>
+      </div>
+      <div class="card card--brand center">
+        <h3>Route template</h3>
+        <p>A pattern describing a shape of path, written in segments separated by <code class="inline">/</code>, with the variable parts in braces.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 19 ─ Template decoded -->
+<section class="slide">
+  <p class="eyebrow">Conventional routing</p>
+  <h2>The template, piece by piece</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <table>
+      <thead><tr><th style="width:26%">Piece</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><th><code class="inline">{controller}</code></th><td>A <strong>route parameter</strong> — whatever is in this segment names the controller.</td></tr>
+        <tr><th><code class="inline">=Home</code></th><td>Its <strong>default</strong>, used when the segment is absent from the URL.</td></tr>
+        <tr><th><code class="inline">{action}</code></th><td>Whatever is in this segment names the action method.</td></tr>
+        <tr><th><code class="inline">=Index</code></th><td>Its default, on the same terms.</td></tr>
+        <tr><th><code class="inline">{id?}</code></th><td>The <code class="inline">?</code> makes this segment <strong>optional</strong> — the URL may simply stop before it.</td></tr>
+      </tbody>
+    </table>
+    <div class="callout">Two of the three segments are not names of anything real. They are placeholders filled in from the URL at the moment the request arrives.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 20 ─ DIAGRAM 1: route matching -->
+<section class="slide">
+  <p class="eyebrow">Conventional routing</p>
+  <h2>How a path is matched against a template</h2>
+  <div class="rule"></div>
+  <div class="content center">
+    <svg viewBox="0 0 1000 400" style="width:auto;height:352px;align-self:center" role="img"
+         aria-label="The path /Articles/Details/42 split into three segments, each tied to a token of the template controller slash action slash optional id, producing controller=Articles, action=Details, id=42; a fourth segment would fail to match">
+      <g style="font-family:var(--font-sans-text)">
+        <defs>
+          <marker id="tie" markerWidth="8" markerHeight="7" refX="7" refY="3.5" orient="auto">
+            <path d="M0,0 L8,3.5 L0,7 Z" style="fill:var(--brand-base)"/>
+          </marker>
+        </defs>
+
+        <text x="0" y="66" font-size="13" font-weight="600" letter-spacing="1.4" style="fill:var(--text-secondary)">URL PATH</text>
+        <text x="234" y="70" font-size="26" style="font-family:var(--font-mono);fill:var(--text-disabled)">/</text>
+        <rect x="250" y="34" width="250" height="52" rx="8" style="fill:var(--surface-card);stroke:var(--border-default)"/>
+        <text x="375" y="68" text-anchor="middle" font-size="21" font-weight="600" style="font-family:var(--font-mono);fill:var(--text-primary)">Articles</text>
+        <text x="514" y="70" font-size="26" style="font-family:var(--font-mono);fill:var(--text-disabled)">/</text>
+        <rect x="530" y="34" width="250" height="52" rx="8" style="fill:var(--surface-card);stroke:var(--border-default)"/>
+        <text x="655" y="68" text-anchor="middle" font-size="21" font-weight="600" style="font-family:var(--font-mono);fill:var(--text-primary)">Details</text>
+        <text x="794" y="70" font-size="26" style="font-family:var(--font-mono);fill:var(--text-disabled)">/</text>
+        <rect x="810" y="34" width="160" height="52" rx="8" style="fill:var(--surface-card);stroke:var(--border-default)"/>
+        <text x="890" y="68" text-anchor="middle" font-size="21" font-weight="600" style="font-family:var(--font-mono);fill:var(--text-primary)">42</text>
+
+        <line x1="375" y1="88" x2="375" y2="146" stroke-width="2.5" marker-end="url(#tie)" style="stroke:var(--brand-base)"/>
+        <line x1="655" y1="88" x2="655" y2="146" stroke-width="2.5" marker-end="url(#tie)" style="stroke:var(--brand-base)"/>
+        <line x1="890" y1="88" x2="890" y2="146" stroke-width="2.5" marker-end="url(#tie)" style="stroke:var(--brand-base)"/>
+
+        <text x="0" y="182" font-size="13" font-weight="600" letter-spacing="1.4" style="fill:var(--text-secondary)">ROUTE TEMPLATE</text>
+        <text x="234" y="186" font-size="26" style="font-family:var(--font-mono);fill:var(--text-disabled)">/</text>
+        <rect x="250" y="150" width="250" height="52" rx="8" style="fill:var(--brand-base)"/>
+        <text x="375" y="184" text-anchor="middle" font-size="21" font-weight="600" style="font-family:var(--font-mono);fill:#ffffff">{controller}</text>
+        <text x="514" y="186" font-size="26" style="font-family:var(--font-mono);fill:var(--text-disabled)">/</text>
+        <rect x="530" y="150" width="250" height="52" rx="8" style="fill:var(--brand-base)"/>
+        <text x="655" y="184" text-anchor="middle" font-size="21" font-weight="600" style="font-family:var(--font-mono);fill:#ffffff">{action}</text>
+        <text x="794" y="186" font-size="26" style="font-family:var(--font-mono);fill:var(--text-disabled)">/</text>
+        <rect x="810" y="150" width="160" height="52" rx="8" stroke-dasharray="6 5" stroke-width="2" style="fill:var(--brand-tint-40);stroke:var(--brand-base)"/>
+        <text x="890" y="184" text-anchor="middle" font-size="21" font-weight="600" style="font-family:var(--font-mono);fill:var(--brand-pressed)">{id?}</text>
+        <text x="890" y="224" text-anchor="middle" font-size="15" style="fill:var(--brand-pressed)">optional — may be absent</text>
+
+        <line x1="375" y1="204" x2="375" y2="258" stroke-width="2" stroke-dasharray="4 4" style="stroke:var(--neutral-grey-110)"/>
+        <line x1="655" y1="204" x2="655" y2="258" stroke-width="2" stroke-dasharray="4 4" style="stroke:var(--neutral-grey-110)"/>
+        <line x1="890" y1="238" x2="890" y2="258" stroke-width="2" stroke-dasharray="4 4" style="stroke:var(--neutral-grey-110)"/>
+
+        <text x="0" y="294" font-size="13" font-weight="600" letter-spacing="1.4" style="fill:var(--text-secondary)">MATCHED VALUES</text>
+        <rect x="250" y="262" width="250" height="48" rx="8" style="fill:var(--surface-subtle);stroke:var(--border-default)"/>
+        <text x="375" y="292" text-anchor="middle" font-size="18" style="font-family:var(--font-mono);fill:var(--text-primary)">controller = Articles</text>
+        <rect x="530" y="262" width="250" height="48" rx="8" style="fill:var(--surface-subtle);stroke:var(--border-default)"/>
+        <text x="655" y="292" text-anchor="middle" font-size="18" style="font-family:var(--font-mono);fill:var(--text-primary)">action = Details</text>
+        <rect x="810" y="262" width="160" height="48" rx="8" style="fill:var(--surface-subtle);stroke:var(--border-default)"/>
+        <text x="890" y="292" text-anchor="middle" font-size="18" style="font-family:var(--font-mono);fill:var(--text-primary)">id = 42</text>
+
+        <rect x="0" y="346" width="970" height="48" rx="8" style="fill:var(--color-danger-bg);stroke:#e8b3b3"/>
+        <text x="20" y="376" font-size="18" font-weight="600" style="font-family:var(--font-mono);fill:var(--color-danger)">/Articles/Details/42/extra</text>
+        <text x="330" y="376" font-size="17" style="fill:var(--color-danger)">a fourth segment, and no token left to bind it to &#8212; no match, 404</text>
+      </g>
+    </svg>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 21 ─ URL table -->
+<section class="slide">
+  <p class="eyebrow">Conventional routing</p>
+  <h2>The same template, five URLs</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <p class="body"><code class="inline">"{controller=Home}/{action=Index}/{id?}"</code></p>
+    <table>
+      <thead><tr><th style="width:36%">URL</th><th style="width:20%">controller</th><th style="width:20%">action</th><th>id</th></tr></thead>
+      <tbody>
+        <tr><th><code class="inline">/</code></th><td>Home</td><td>Index</td><td class="muted">—</td></tr>
+        <tr><th><code class="inline">/Articles</code></th><td>Articles</td><td>Index</td><td class="muted">—</td></tr>
+        <tr><th><code class="inline">/Articles/Details</code></th><td>Articles</td><td>Details</td><td class="muted">—</td></tr>
+        <tr><th><code class="inline">/Articles/Details/42</code></th><td>Articles</td><td>Details</td><td>42</td></tr>
+        <tr><th><code class="inline">/Articles/Details/42/extra</code></th><td colspan="3"><span class="badge badge--danger">no match → 404</span></td></tr>
+      </tbody>
+    </table>
+    <div class="callout">Row 1 is worth a pause: the empty path matches because <em>both</em> missing segments have defaults.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 22 ─ Contract with model binding -->
+<section class="slide">
+  <p class="eyebrow">Conventional routing</p>
+  <h2>Two halves of one contract</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <div class="stack">
+<pre>pattern: <span class="h">"{controller}/{action}/{id?}"</span>
+
+<span class="k">public</span> IActionResult <span class="h">Details</span>(<span class="k">int</span> <span class="h">id</span>)
+{
+    <span class="c">// id == 42</span>
+}</pre>
+        <p class="body">Routing extracts the value. Model binding — Session 03 — hands it to the parameter <strong>by name</strong>.</p>
+      </div>
+      <div class="stack">
+        <div class="card card--brand">
+          <h3>Rename one, rename both</h3>
+          <p>Change the template to <code class="inline">{articleId?}</code> and leave <code class="inline">Details(int id)</code> alone, and nothing crashes — <code class="inline">id</code> quietly becomes <code class="inline">0</code>.</p>
+        </div>
+        <div class="callout callout--warn">We break it on screen, watch article <strong>0</strong> come back, then put it right.
+          Silent zeros are far more expensive to find than errors.</div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 23 ─ Editing the default route -->
+<section class="slide">
+  <p class="eyebrow">Conventional routing · demo</p>
+  <h2>These are just strings we control</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+      <div class="stack">
+<pre><span class="c">// Make Articles the home page of the site</span>
+app.MapControllerRoute(
+    name: <span class="h">"default"</span>,
+    pattern: <span class="h">"{controller=Articles}/{action=Index}/{id?}"</span>);</pre>
+        <p class="body">One word changed. We save with <code class="inline">dotnet watch</code> running, reload <code class="inline">/</code>,
+          and the blog is the front page of the site.</p>
+      </div>
+      <div class="card card--elevated center">
+        <h3>Nothing else moved</h3>
+        <p>No controller, no action and no file was renamed. The URL changed because the <em>route</em> changed. That is the whole idea of routing, demonstrated in one edit.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 24 ─ Adding a named route -->
+<section class="slide">
+  <p class="eyebrow">Conventional routing · demo</p>
+  <h2>Adding a route of our own</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre>app.MapControllerRoute(
+    name: <span class="h">"archive"</span>,
+    pattern: <span class="h">"archive/{year:int}/{month:int}"</span>,
+    defaults: <span class="k">new</span> { controller = <span class="h">"Articles"</span>, action = <span class="h">"Archive"</span> });
+
+app.MapControllerRoute(
+    name: <span class="h">"default"</span>,
+    pattern: <span class="h">"{controller=Home}/{action=Index}/{id?}"</span>);</pre>
+      <div class="stack">
+        <div class="card">
+          <h3>What it buys us</h3>
+          <p><code class="inline">/archive/2026/3</code> now reaches <code class="inline">Articles.Archive(int year, int month)</code> — a URL with no controller or action name in it at all.</p>
+        </div>
+        <div class="card card--brand">
+          <h3>Note the order</h3>
+          <p>The specific route is registered <em>above</em> the general one. The next slide explains why that is not a matter of taste.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 25 ─ DIAGRAM 2: routing table, first match wins -->
+<section class="slide">
+  <p class="eyebrow">Conventional routing</p>
+  <h2>Routes are tried in order, and the first match wins</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+      <svg viewBox="0 0 640 330" style="width:auto;height:290px" role="img"
+           aria-label="The path /archive/2026/3 is tried against three routes top to bottom: about does not match, archive year month matches and wins, and the default route is never reached">
+        <g style="font-family:var(--font-sans-text)">
+          <text x="0" y="14" font-size="13" font-weight="600" letter-spacing="1.4" style="fill:var(--text-secondary)">REQUEST PATH</text>
+          <rect x="0" y="26" width="300" height="44" rx="8" style="fill:var(--surface-card);stroke:var(--border-default)"/>
+          <text x="20" y="55" font-size="19" font-weight="600" style="font-family:var(--font-mono);fill:var(--text-primary)">/archive/2026/3</text>
+
+          <line x1="14" y1="104" x2="14" y2="300" stroke-width="2" style="stroke:var(--neutral-grey-110)"/>
+          <path d="M9,300 L14,312 L19,300 Z" style="fill:var(--neutral-grey-110)"/>
+
+          <rect x="36" y="100" width="604" height="52" rx="8" style="fill:var(--surface-subtle);stroke:var(--border-default)"/>
+          <text x="56" y="132" font-size="17" style="font-family:var(--font-mono);fill:var(--text-disabled)">1  about</text>
+          <text x="620" y="132" text-anchor="end" font-size="16" style="fill:var(--text-disabled)">tried &#183; no match</text>
+
+          <rect x="36" y="164" width="604" height="52" rx="8" style="fill:var(--brand-base)"/>
+          <text x="56" y="196" font-size="17" font-weight="600" style="font-family:var(--font-mono);fill:#ffffff">2  archive/{year:int}/{month:int}</text>
+          <text x="620" y="196" text-anchor="end" font-size="16" font-weight="600" style="fill:#ffffff">match &#183; wins</text>
+
+          <rect x="36" y="228" width="604" height="52" rx="8" style="fill:var(--surface-subtle);stroke:var(--border-default)"/>
+          <text x="56" y="260" font-size="17" style="font-family:var(--font-mono);fill:var(--text-disabled)">3  {controller}/{action}/{id?}</text>
+          <text x="620" y="260" text-anchor="end" font-size="16" style="fill:var(--text-disabled)">never reached</text>
+        </g>
+      </svg>
+      <div class="stack">
+        <div class="card card--brand">
+          <h3>The rule</h3>
+          <p>Routes are tried in the order they are registered. The first one that matches answers the request; the rest are never consulted.</p>
+        </div>
+        <div class="card">
+          <h3>The consequence</h3>
+          <p>Specific routes go above general ones. A general route placed first will swallow every path that a later, better route was written for.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 26 ─ The route-order bug -->
+<section class="slide">
+  <p class="eyebrow">Conventional routing · demo</p>
+  <h2>The bug we cause on purpose</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <div class="stack">
+        <p class="body">We register <code class="inline">default</code> <strong>first</strong> and <code class="inline">archive</code> second, then request <code class="inline">/archive/2026/3</code>.</p>
+<pre><span class="c">// what the default route makes of it</span>
+controller = <span class="h">archive</span>
+action     = <span class="h">2026</span>
+id         = <span class="h">3</span>
+
+<span class="c">&#8594; no ArchiveController exists &#8594; 404</span></pre>
+      </div>
+      <div class="stack">
+        <div class="card card--elevated">
+          <h3>Why this is worth ten minutes</h3>
+          <p>The error message says <em>not found</em>. The template that caused it is thirty lines away and looks entirely innocent.</p>
+          <p>Nothing in the failure points at ordering — which is exactly why the rule has to be memorised rather than debugged.</p>
+        </div>
+        <div class="callout">Then we move the two lines back and watch the same URL start working, with no other change.</div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 27 ─ Section: attribute routing -->
+<section class="slide slide--dark">
+  <div class="section-no">04</div>
+  <p class="eyebrow">Block 6 · 25 min</p>
+  <h2>Attribute routing and constraints</h2>
+  <p class="lead" style="margin-top:var(--space-4)">Describing a URL next to the code that answers it.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 28 ─ Central vs local -->
+<section class="slide">
+  <p class="eyebrow">Attribute routing</p>
+  <h2>Two places to put the same decision</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <div class="card">
+        <span class="badge badge--neutral">Conventional</span>
+        <h3 style="margin-top:var(--space-2)">Described centrally</h3>
+        <p>One list of templates in <code class="inline">Program.cs</code> describes the shape of every URL in the application.</p>
+        <p>Open one file and see the whole URL space. Change one line and a hundred URLs move.</p>
+      </div>
+      <div class="card card--brand">
+        <span class="badge">Attribute</span>
+        <h3 style="margin-top:var(--space-2)">Described locally</h3>
+        <p>Each action carries its own URL, written directly above it as an <strong>attribute</strong> — a labelled note attached to a class or a method that the framework reads.</p>
+        <p>The URL and the code that answers it are never out of sight of each other.</p>
+      </div>
+    </div>
+    <div class="callout">Both are valid, and most real projects mix them: conventional for the broad shape, attributes wherever a specific URL is wanted.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 29 ─ Attribute routing code -->
+<section class="slide">
+  <p class="eyebrow">Attribute routing · demo</p>
+  <h2>The blog's URLs, written where the code is</h2>
+  <div class="rule"></div>
+  <div class="content center">
+<pre><span class="k">[Route(</span><span class="h">"articles"</span><span class="k">)]</span>              <span class="c">// prefix for every action here</span>
+<span class="k">public class</span> ArticlesController : Controller
+{
+    <span class="k">[HttpGet(</span><span class="h">""</span><span class="k">)]</span>                <span class="c">// GET /articles</span>
+    <span class="k">public</span> IActionResult Index() { ... }
+
+    <span class="k">[HttpGet(</span><span class="h">"{id:int}"</span><span class="k">)]</span>        <span class="c">// GET /articles/42</span>
+    <span class="k">public</span> IActionResult Details(<span class="k">int</span> id) { ... }
+
+    <span class="k">[HttpGet(</span><span class="h">"by/{author}"</span><span class="k">)]</span>     <span class="c">// GET /articles/by/ada</span>
+    <span class="k">public</span> IActionResult ByAuthor(<span class="k">string</span> author) { ... }
+
+    <span class="k">[HttpGet(</span><span class="h">"/about"</span><span class="k">)]</span>          <span class="c">// leading / = absolute: /about</span>
+    <span class="k">public</span> IActionResult About() { ... }
+}</pre>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 30 ─ Four things to know -->
+<section class="slide">
+  <p class="eyebrow">Attribute routing</p>
+  <h2>Four things to take from that file</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <ol class="list">
+      <li><code class="inline">[Route]</code> on the class is a <strong>prefix</strong>; <code class="inline">[HttpGet("…")]</code> on the action completes it. The two are concatenated with a <code class="inline">/</code>.</li>
+      <li>A <strong>leading <code class="inline">/</code></strong> escapes the prefix entirely and gives an absolute path — that is how <code class="inline">/about</code> avoids becoming <code class="inline">/articles/about</code>.</li>
+      <li><code class="inline">[HttpGet]</code>, <code class="inline">[HttpPost]</code>, <code class="inline">[HttpPut]</code> and <code class="inline">[HttpDelete]</code> bind the <strong>method</strong> as well as the path. The same URL can have one action for <code class="inline">GET</code> and another for <code class="inline">POST</code> — the shape of every form in Session 09.</li>
+      <li>Once a controller has attribute routes, <strong>conventional routes no longer reach it</strong>. <code class="inline">/Articles/Details/42</code> stops working the moment we do this. That is intended, and it surprises everyone once.</li>
+    </ol>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 31 ─ Which do we reach for -->
+<section class="slide">
+  <p class="eyebrow">Attribute routing</p>
+  <h2>Which one do we reach for?</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <table>
+      <thead><tr><th style="width:34%">Situation</th><th style="width:24%">Reach for</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>Dozens of controllers, all with ordinary list / detail / edit pages</td><td><span class="badge badge--neutral">Conventional</span></td><td>One template covers all of them. Adding a controller costs no routing work at all.</td></tr>
+        <tr><td>A URL that must read a particular way — <code class="inline">/articles/by/ada</code></td><td><span class="badge">Attribute</span></td><td>The shape is unique to that action, and belongs next to it.</td></tr>
+        <tr><td>Several actions sharing one path, split by method</td><td><span class="badge">Attribute</span></td><td>Method and path are declared together, in one place.</td></tr>
+        <tr><td>Segments that must be numbers, ranges, or a fixed length</td><td><span class="badge">Attribute</span></td><td>Constraints sit inline, right where the parameter is named.</td></tr>
+        <tr><td>A whole site whose URL shape may change later</td><td><span class="badge badge--neutral">Conventional</span></td><td>One central edit moves everything, as we saw two slides ago.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 32 ─ Constraints -->
+<section class="slide">
+  <p class="eyebrow">Route constraints</p>
+  <h2>Saying what kind of value a segment may hold</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2-1">
+<pre><span class="k">[HttpGet(</span><span class="h">"{id:int}"</span><span class="k">)]</span>              <span class="c">// only digits</span>
+<span class="k">[HttpGet(</span><span class="h">"{slug:alpha}"</span><span class="k">)]</span>          <span class="c">// only letters</span>
+<span class="k">[HttpGet(</span><span class="h">"{year:int:min(2000)}"</span><span class="k">)]</span>  <span class="c">// a minimum</span>
+<span class="k">[HttpGet(</span><span class="h">"{month:int:range(1,12)}"</span><span class="k">)]</span>
+<span class="k">[HttpGet(</span><span class="h">"{code:length(3)}"</span><span class="k">)]</span>      <span class="c">// exact length</span>
+<span class="k">[HttpGet(</span><span class="h">"{id:guid}"</span><span class="k">)]</span></pre>
+      <div class="stack">
+        <div class="card card--brand">
+          <h3>A filter, not validation</h3>
+          <p>A constraint decides whether this route <em>matches at all</em>. It is not a check on user input — that is Session 09, and it is a different job with different error messages.</p>
+        </div>
+        <div class="callout">Constraints can be stacked: <code class="inline">int</code> and then <code class="inline">range(1,12)</code>, separated by colons.</div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 33 ─ Why constraints earn their keep -->
+<section class="slide">
+  <p class="eyebrow">Route constraints · demo</p>
+  <h2>Why they earn their keep</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <div class="stack">
+        <div class="card">
+          <span class="badge badge--danger">Without</span>
+          <h3 style="margin-top:var(--space-2)"><code class="inline">/articles/banana</code></h3>
+          <p>Matches <code class="inline">Details(int id)</code>, binding fails, <code class="inline">id</code> silently becomes <code class="inline">0</code>, and the visitor gets a confusing 404 for "article 0".</p>
+        </div>
+        <div class="card">
+          <span class="badge badge--success">With</span>
+          <h3 style="margin-top:var(--space-2)"><code class="inline">{id:int}</code></h3>
+          <p>The same URL does not match this route at all, so it can <strong>fall through</strong> to a different one.</p>
+        </div>
+      </div>
+      <div class="stack">
+<pre><span class="k">[HttpGet(</span><span class="h">"{id:int}"</span><span class="k">)]</span>
+<span class="k">public</span> IActionResult Details(<span class="k">int</span> id) { ... }
+
+<span class="k">[HttpGet(</span><span class="h">"{slug}"</span><span class="k">)]</span>
+<span class="k">public</span> IActionResult BySlug(<span class="k">string</span> slug) { ... }</pre>
+        <div class="callout"><code class="inline">/articles/42</code> reaches <code class="inline">Details</code>.
+          <code class="inline">/articles/routing-basics</code> reaches <code class="inline">BySlug</code>.
+          One path shape, two meanings, separated only by a constraint.</div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 34 ─ Section: generating URLs -->
+<section class="slide slide--dark">
+  <div class="section-no">05</div>
+  <p class="eyebrow">Block 8 · 15 min</p>
+  <h2>Generating URLs</h2>
+  <p class="lead" style="margin-top:var(--space-4)">Ask the framework for the address. Never type it twice.</p>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 35 ─ Never hard-code -->
+<section class="slide">
+  <p class="eyebrow">Generating URLs</p>
+  <h2>Never hard-code a URL</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <p class="body">If URLs are typed as literal strings across views and controllers, changing a route means hunting through the whole project — and missing some.</p>
+    <div class="cols cols-2">
+      <div class="stack">
+<pre><span class="c">// in a controller</span>
+<span class="k">return</span> RedirectToAction(<span class="h">"Details"</span>, <span class="h">"Articles"</span>,
+                        <span class="k">new</span> { id = 42 });
+
+<span class="c">// "/articles/42"</span>
+<span class="k">var</span> url = Url.Action(<span class="h">"Details"</span>, <span class="h">"Articles"</span>,
+                     <span class="k">new</span> { id = 42 });</pre>
+      </div>
+      <div class="stack">
+<pre><span class="c">@* in a view — the tag helper form, Session 05 *@</span>
+&lt;a asp-controller=<span class="h">"Articles"</span>
+   asp-action=<span class="h">"Details"</span>
+   asp-route-id=<span class="h">"42"</span>&gt;Read&lt;/a&gt;</pre>
+      </div>
+    </div>
+    <div class="callout">We name the <strong>action</strong> and let routing produce the address. The route template stays the single place a URL is decided.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 36 ─ The payoff -->
+<section class="slide">
+  <p class="eyebrow">Generating URLs · demo</p>
+  <h2>The most convincing sixty seconds of the session</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <div class="card card--elevated">
+        <span class="badge badge--mono">articles &#8594; posts</span>
+        <h3 style="margin-top:var(--space-3)">We change one word</h3>
+        <p>The <code class="inline">[Route("articles")]</code> prefix becomes <code class="inline">[Route("posts")]</code>. We save; <code class="inline">dotnet watch</code> rebuilds.</p>
+      </div>
+      <div class="stack">
+        <div class="card"><h3>Every generated link survives</h3><p>Each one asks routing for the address at the moment the page is rendered, and routing now answers <code class="inline">/posts/42</code>.</p></div>
+        <div class="card"><h3>Every hard-coded link breaks</h3><p><code class="inline">href="/articles/42"</code> was a guess frozen into a file. It is now a 404, and nothing warned us.</p></div>
+      </div>
+    </div>
+    <div class="callout">Then we change it back. The lesson is not that <code class="inline">posts</code> is better — it is that a URL should be decided in exactly one place.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 37 ─ Misconceptions -->
+<section class="slide">
+  <p class="eyebrow">Wrap-up</p>
+  <h2>Common misconceptions</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <table>
+      <thead><tr><th style="width:40%">Misconception</th><th>Correction</th></tr></thead>
+      <tbody>
+        <tr><td>"The URL maps to a file on the server."</td><td>It maps to whatever the routes say. Nothing on disk needs to match.</td></tr>
+        <tr><td>"Routes are matched by best fit."</td><td>They are matched <strong>in registration order</strong>; the first match wins.</td></tr>
+        <tr><td>"A constraint validates user input."</td><td>It decides whether the route <em>matches</em>. Input validation is Session 09.</td></tr>
+        <tr><td>"<code class="inline">{id?}</code> makes the parameter optional."</td><td>The <em>segment</em> is optional. A missing <code class="inline">int id</code> becomes <code class="inline">0</code>; use <code class="inline">int?</code> for real optionality.</td></tr>
+        <tr><td>"You must choose conventional or attribute routing."</td><td>Projects routinely use both — but once a controller has attributes, conventional routes skip it.</td></tr>
+        <tr><td>"Query-string values need a route."</td><td>No. Anything after <code class="inline">?</code> is bound by name without appearing in any template.</td></tr>
+        <tr><td>"Changing a URL is harmless."</td><td>Every existing link and bookmark breaks. Use a 301 — Session 01 — when something must move.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 38 ─ Check for understanding -->
+<section class="slide">
+  <p class="eyebrow">Check for understanding</p>
+  <h2>Six questions</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <ol class="list list--tight">
+        <li>With the default template, which controller and action does <code class="inline">/</code> reach? And is <code class="inline">/Articles/42</code> the same as <code class="inline">/Articles/Details/42</code>?</li>
+        <li>We register <code class="inline">default</code> first and <code class="inline">archive/{year}/{month}</code> second. What happens to <code class="inline">/archive/2026/3</code>, and why?</li>
+        <li>What is the difference in behaviour between <code class="inline">{id}</code> and <code class="inline">{id:int}</code> when the request is <code class="inline">/articles/banana</code>?</li>
+      </ol>
+      <ol class="list list--tight" style="counter-reset:step 3">
+        <li>Write the attribute routing needed for <code class="inline">GET /authors/ada/articles</code>.</li>
+        <li>A team renames <code class="inline">/articles</code> to <code class="inline">/posts</code>. Which links break, which fix themselves, and why?</li>
+        <li><code class="inline">/articles?sort=new&amp;page=2</code> — how many of those values appear in the route template? How do they reach the action?</li>
+      </ol>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 39 ─ Lab walkthrough -->
+<section class="slide">
+  <p class="eyebrow">Walkthrough · 30 min · on screen</p>
+  <h2>We design and implement the blog's URLs</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <ol class="list list--tight">
+        <li>We design on paper first: URL and method for all articles, one article, articles by an author, the archive for a year and month, about, contact — against the six principles.</li>
+        <li>We implement that design with attribute routing on <code class="inline">ArticlesController</code>.</li>
+        <li>We constrain <code class="inline">id</code> to an integer and <code class="inline">month</code> to <code class="inline">range(1,12)</code>.</li>
+      </ol>
+      <ol class="list list--tight" style="counter-reset:step 3">
+        <li>We add <code class="inline">/articles/{slug}</code> returning <code class="inline">Content($"slug: {slug}")</code>, and confirm <code class="inline">/articles/42</code> still reaches <code class="inline">Details</code>.</li>
+        <li>We make <code class="inline">/about</code> absolute, not <code class="inline">/articles/about</code>.</li>
+        <li>We replace every hard-coded URL with <code class="inline">Url.Action</code> or <code class="inline">RedirectToAction</code>, then rename the prefix to <code class="inline">posts</code> and back.</li>
+      </ol>
+    </div>
+    <div class="callout"><strong>By the end we will have</strong> a SimpleBlog whose every URL was designed on purpose:
+      <code class="inline">/articles/banana</code> reaches the slug action instead of failing,
+      <code class="inline">/articles/archive/2026/13</code> returns 404 on the range constraint, and renaming the prefix breaks nothing.</div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 40 ─ Before we move on -->
+<section class="slide">
+  <p class="eyebrow">Wrap-up</p>
+  <h2>Before we move on</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-3">
+      <div class="card card--brand">
+        <span class="badge">State of SimpleBlog</span>
+        <h3 style="margin-top:var(--space-2)">Designed URLs</h3>
+        <p><code class="inline">/articles</code>, <code class="inline">/articles/42</code>, <code class="inline">/articles/by/{author}</code>, <code class="inline">/articles/archive/{year}/{month}</code>, <code class="inline">/about</code> — constrained, and with no hard-coded links left.</p>
+        <p>Still returning plain text.</p>
+      </div>
+      <div class="card">
+        <span class="badge badge--neutral">Next</span>
+        <h3 style="margin-top:var(--space-2)">Those URLs get pages</h3>
+        <p>Session 05 replaces every <code class="inline">Content(...)</code> with a real HTML page. The routes we just designed are what those pages will be reached by, and what their links will point at.</p>
+      </div>
+      <div class="card">
+        <span class="badge badge--neutral">Carry forward</span>
+        <h3 style="margin-top:var(--space-2)">Three sentences</h3>
+        <p>The path is a name we choose. The first matching route wins. A URL is decided in one place, and asked for everywhere else.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 41 ─ Glossary -->
+<section class="slide">
+  <p class="eyebrow">Glossary</p>
+  <h2>Речник · EN → BG</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <div class="cols cols-2">
+      <table>
+        <thead><tr><th style="width:45%">English</th><th>Български</th></tr></thead>
+        <tbody>
+          <tr><td>routing / route</td><td>маршрутизиране / маршрут</td></tr>
+          <tr><td>route template</td><td>шаблон на маршрут</td></tr>
+          <tr><td>route parameter</td><td>параметър на маршрута</td></tr>
+          <tr><td>segment (of a path)</td><td>сегмент</td></tr>
+          <tr><td>default value</td><td>стойност по подразбиране</td></tr>
+          <tr><td>optional segment</td><td>незадължителен сегмент</td></tr>
+          <tr><td>constraint</td><td>ограничение</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <thead><tr><th style="width:45%">English</th><th>Български</th></tr></thead>
+        <tbody>
+          <tr><td>conventional routing</td><td>конвенционално маршрутизиране</td></tr>
+          <tr><td>attribute routing</td><td>атрибутно маршрутизиране</td></tr>
+          <tr><td>attribute</td><td>атрибут</td></tr>
+          <tr><td>slug</td><td>текстов идентификатор (slug)</td></tr>
+          <tr><td>URL generation</td><td>генериране на URL адреси</td></tr>
+          <tr><td>permalink</td><td>постоянна връзка</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 42 ─ References -->
+<section class="slide">
+  <p class="eyebrow">References</p>
+  <h2>Where to read more</h2>
+  <div class="rule"></div>
+  <div class="content">
+    <ul class="list">
+      <li><strong>Routing in ASP.NET Core</strong><br><span class="sm muted">learn.microsoft.com/aspnet/core/fundamentals/routing</span></li>
+      <li><strong>Routing to controller actions</strong><br><span class="sm muted">learn.microsoft.com/aspnet/core/mvc/controllers/routing</span></li>
+      <li><strong>Route constraint reference</strong><br><span class="sm muted">learn.microsoft.com/aspnet/core/fundamentals/routing#route-constraint-reference</span></li>
+      <li><strong>Tim Berners-Lee — Cool URIs don't change</strong><br><span class="sm muted">www.w3.org/Provider/Style/URI</span></li>
+    </ul>
+  </div>
+  <div class="foot"><span>Microsoft Web Technologies</span><span class="spacer"></span><span class="num"></span></div>
+</section>
+
+<!-- 43 ─ Closing -->
+<section class="slide slide--brand">
+  <p class="eyebrow">Next session</p>
+  <h1 style="font-size:var(--fs-title-1);line-height:var(--lh-title-1)">05 · HTML, CSS and Razor Templates</h1>
+  <div class="rule"></div>
+  <p class="lead">The URLs we just designed stop returning plain text and start returning pages.<br>Markup, styling, and the template engine that puts our data inside them.</p>
+  <div class="foot"><span>Questions?</span><span class="spacer"></span><span>Microsoft Web Technologies</span></div>
+</section>
+
+</div></div>
+<div id="hint">← → navigate · F fullscreen · P print</div>
+
+<script>
+(function(){
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var deck = document.getElementById('deck');
+  var progress = document.getElementById('progress');
+  var hint = document.getElementById('hint');
+  var total = slides.length;
+  var i = 0;
+
+  slides.forEach(function(s, n){
+    var num = s.querySelector('.num');
+    if (num) num.textContent = (n + 1) + ' / ' + total;
+  });
+
+  function show(n){
+    i = Math.max(0, Math.min(total - 1, n));
+    slides.forEach(function(s, k){ s.classList.toggle('is-active', k === i); });
+    progress.style.width = ((i + 1) / total * 100) + '%';
+    if (location.hash !== '#' + (i + 1)) history.replaceState(null, '', '#' + (i + 1));
+  }
+
+  function fit(){
+    var scale = Math.min(window.innerWidth / 1280, window.innerHeight / 720);
+    deck.style.transform = 'scale(' + scale + ')';
+  }
+
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); show(i + 1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(i - 1); }
+    else if (e.key === 'Home') { show(0); }
+    else if (e.key === 'End') { show(total - 1); }
+    else if (e.key === 'f' || e.key === 'F') {
+      if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen();
+    }
+    else if (e.key === 'p' || e.key === 'P') { window.print(); }
+  });
+
+  document.getElementById('stage').addEventListener('click', function(e){
+    show(e.clientX < window.innerWidth / 3 ? i - 1 : i + 1);
+  });
+
+  window.addEventListener('resize', fit);
+  window.addEventListener('hashchange', function(){ show((parseInt(location.hash.slice(1), 10) || 1) - 1); });
+
+  fit();
+  show((parseInt(location.hash.slice(1), 10) || 1) - 1);
+  setTimeout(function(){ hint.classList.add('is-hidden'); }, 4000);
+})();
+</script>
+</body>
+</html>

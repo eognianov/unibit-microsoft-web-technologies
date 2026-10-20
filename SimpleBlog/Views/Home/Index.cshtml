@@ -1,8 +1,189 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿@model IndexVieModel;
+
+@{
+    ViewData["Title"] = "Табло";
+    var categories = (Model.ArticlesByCategory ?? new Dictionary<string, int>())
+        .OrderByDescending(c => c.Value)
+        .ToList();
+    var topCategory = categories.FirstOrDefault();
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="container py-5">
+
+    <!-- Page Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between
+                align-items-md-center gap-3 mb-5">
+
+        <div>
+            <h1 class="display-5 fw-bold mb-2">Табло</h1>
+            <p class="text-secondary mb-0">
+                Бърз преглед на съдържанието в блога.
+            </p>
+        </div>
+
+        
+        <div class="d-flex gap-2">
+            <a asp-controller="Articles" asp-action="Index"
+               class="btn btn-outline-primary rounded-pill px-4">
+                Всички статии
+            </a>
+            <a asp-controller="Articles" asp-action="Create"
+               class="btn btn-primary rounded-pill px-4">
+                <i class="bi bi-plus-lg me-1"></i>
+                Създай
+            </a>
+        </div>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="row g-4 mb-5">
+
+        <div class="col-12 col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <p class="text-secondary text-uppercase small fw-semibold mb-2">
+                        Общо статии
+                    </p>
+                    <p class="display-6 fw-bold mb-0">@Model.AllArticlesCount</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <p class="text-secondary text-uppercase small fw-semibold mb-2">
+                        Категории
+                    </p>
+                    <p class="display-6 fw-bold mb-0">@categories.Count</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <p class="text-secondary text-uppercase small fw-semibold mb-2">
+                        Най-популярна категория
+                    </p>
+                    @if (categories.Count > 0)
+                    {
+                        <p class="h3 fw-bold text-truncate mb-1">@topCategory.Key</p>
+                        <p class="text-secondary small mb-0">@topCategory.Value статии</p>
+                    }
+                    else
+                    {
+                        <p class="h3 fw-bold text-secondary mb-0">—</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+
+        <!-- Articles by Category -->
+        <div class="col-12 col-lg-6">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h2 class="h5 fw-bold mb-0">Статии по категории</h2>
+                </div>
+                <div class="card-body p-4">
+                    @if (categories.Count == 0)
+                    {
+                        <p class="text-secondary mb-0">Все още няма категории.</p>
+                    }
+                    else
+                    {
+                        <ul class="list-unstyled mb-0">
+                            @foreach (var category in categories)
+                            {
+                                var percent = Model.AllArticlesCount > 0
+                                    ? category.Value * 100 / Model.AllArticlesCount
+                                    : 0;
+
+                                <li class="mb-3">
+                                    <div class="d-flex justify-content-between small mb-1">
+                                        <span class="fw-semibold text-truncate">@category.Key</span>
+                                        <span class="text-secondary">@category.Value</span>
+                                    </div>
+                                    <div class="progress" role="progressbar" style="height: 8px"
+                                         aria-label="@category.Key"
+                                         aria-valuenow="@percent" aria-valuemin="0" aria-valuemax="100">
+                                        <div class="progress-bar" style="width: @percent%"></div>
+                                    </div>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Latest Article -->
+        <div class="col-12 col-lg-6">
+            <div class="card h-100 border-0 shadow-sm overflow-hidden">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h2 class="h5 fw-bold mb-0">Последна статия</h2>
+                </div>
+
+                @if (Model.LastArticle == null)
+                {
+                    <div class="card-body p-4">
+                        <p class="text-secondary mb-0">Все още няма публикувани статии.</p>
+                    </div>
+                }
+                else
+                {
+                    var article = Model.LastArticle;
+
+                    if (!string.IsNullOrEmpty(article.ImagePath))
+                    {
+                        <img src="@article.ImagePath" class="card-img-top object-fit-cover"
+                             style="max-height: 200px" alt="@article.Title">
+                    }
+
+                    <div class="card-body p-4 d-flex flex-column">
+                        <div class="d-flex flex-wrap align-items-center gap-2
+                                    text-secondary small mb-3">
+                            <time datetime="@article.CreatedAt.ToString("yyyy-MM-dd")">
+                                @article.CreatedAt.ToString("dd MMM yyyy")
+                            </time>
+                            <span>·</span>
+                            <span class="text-truncate">@article.Author</span>
+                            @if (!string.IsNullOrEmpty(article.Category))
+                            {
+                                <span class="badge bg-primary-subtle text-primary rounded-pill">
+                                    @article.Category
+                                </span>
+                            }
+                            @if (article.IsSatire)
+                            {
+                                <span class="badge bg-warning-subtle text-warning-emphasis rounded-pill">
+                                    Пародия
+                                </span>
+                            }
+                        </div>
+
+                        <h3 class="h4 fw-bold mb-2">@article.Title</h3>
+
+                        @if (!string.IsNullOrEmpty(article.Subtitle))
+                        {
+                            <p class="fw-semibold text-body-secondary mb-3">@article.Subtitle</p>
+                        }
+
+                        <p class="text-secondary text-truncate mb-4">@article.Body</p>
+
+                        <div class="mt-auto">
+                            <a asp-controller="Articles" asp-action="Details"
+                               asp-route-id="@article.Id"
+                               class="btn btn-outline-primary rounded-pill px-4">
+                                Виж статията
+                            </a>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
 </div>

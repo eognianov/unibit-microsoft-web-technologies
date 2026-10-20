@@ -38,6 +38,13 @@
 
                     <article class="card h-100 border-0 shadow-sm article-card">
 
+                        @if (!string.IsNullOrEmpty(article.ImagePath))
+                        {
+                            <img src="@article.ImagePath"
+                                 class="card-img-top article-image"
+                                 alt="@article.Title" />
+                        }
+
                         <div class="card-body p-4 d-flex flex-column">
 
                             <!-- Metadata -->
@@ -59,10 +66,29 @@
                                 </span>
                             </div>
 
+                            @if (!string.IsNullOrEmpty(article.Category) || article.IsSatire)
+                            {
+                                <div class="d-flex flex-wrap gap-2 mb-3">
+                                    @if (!string.IsNullOrEmpty(article.Category))
+                                    {
+                                        <span class="badge bg-primary-subtle text-primary rounded-pill">@article.Category</span>
+                                    }
+                                    @if (article.IsSatire)
+                                    {
+                                        <span class="badge bg-warning-subtle text-warning-emphasis rounded-pill">Пародия</span>
+                                    }
+                                </div>
+                            }
+
                             <!-- Title -->
-                            <h2 class="h4 fw-bold mb-3">
+                            <h2 class="h4 fw-bold mb-2">
                                 @article.Title
                             </h2>
+
+                            @if (!string.IsNullOrEmpty(article.Subtitle))
+                            {
+                                <p class="fw-semibold text-body-secondary mb-3">@article.Subtitle</p>
+                            }
 
                             <!-- Preview -->
                             <p class="text-secondary article-preview mb-4">
@@ -97,6 +123,14 @@
     .article-card:hover {
         transform: translateY(-5px);
         box-shadow: 0 0.75rem 1.75rem rgba(0, 0, 0, 0.10) !important;
+    }
+
+    .article-image {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+        border-top-left-radius: 1rem;
+        border-top-right-radius: 1rem;
     }
 
     .article-preview {
