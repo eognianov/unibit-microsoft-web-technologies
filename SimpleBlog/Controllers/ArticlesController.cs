@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using SimpleBlog.Data;
 using SimpleBlog.Models;
 
@@ -244,4 +245,26 @@ public class ArticlesController : Controller
             
     }
     
+    public IActionResult Categories(string id)
+    {
+        var articles = _context.Articles.ToList().Where(a => a.Category.ToLower() == id.ToLower()).ToList();
+        return View("Index", articles);
+    }
+    
+    public IActionResult Search(string? title, string? author)
+    {
+        
+        IQueryable<Article> queryable = _context.Articles;
+        if (!string.IsNullOrEmpty(title))
+        {
+            queryable = queryable.Where(a => a.Title == title);
+        }
+        if (!string.IsNullOrEmpty(author))
+        {
+            queryable = queryable.Where(a => a.Author == author);
+        }
+        
+        var articles = queryable.ToList();
+        return View("Index", articles);
+    }
 }

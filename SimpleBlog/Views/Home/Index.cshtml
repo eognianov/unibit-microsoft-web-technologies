@@ -68,7 +68,7 @@
                     </p>
                     @if (categories.Count > 0)
                     {
-                        <p class="h3 fw-bold text-truncate mb-1">@topCategory.Key</p>
+                        <a asp-controller="Articles" asp-action="Categories" asp-route-id="@topCategory.Key" class="h3 fw-bold text-truncate mb-1">@topCategory.Key</a>
                         <p class="text-secondary small mb-0">@topCategory.Value статии</p>
                     }
                     else
@@ -95,26 +95,11 @@
                     }
                     else
                     {
-                        <ul class="list-unstyled mb-0">
-                            @foreach (var category in categories)
-                            {
-                                var percent = Model.AllArticlesCount > 0
-                                    ? category.Value * 100 / Model.AllArticlesCount
-                                    : 0;
-
-                                <li class="mb-3">
-                                    <div class="d-flex justify-content-between small mb-1">
-                                        <span class="fw-semibold text-truncate">@category.Key</span>
-                                        <span class="text-secondary">@category.Value</span>
-                                    </div>
-                                    <div class="progress" role="progressbar" style="height: 8px"
-                                         aria-label="@category.Key"
-                                         aria-valuenow="@percent" aria-valuemin="0" aria-valuemax="100">
-                                        <div class="progress-bar" style="width: @percent%"></div>
-                                    </div>
-                                </li>
-                            }
-                        </ul>
+                        <div style="position: relative; height: 300px">
+                            <canvas id="categoriesChart"
+                                    role="img"
+                                    aria-label="Диаграма на статиите по категории"></canvas>
+                        </div>
                     }
                 </div>
             </div>
@@ -187,3 +172,50 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    @if (categories.Count > 0)
+    {
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+        <script>
+            (function () {
+                const labels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(categories.Select(c => c.Key)));
+                const values = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(categories.Select(c => c.Value)));
+                const urls = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+                    categories.Select(c => Url.Action("Categories", "Articles", new { id = c.Key }))));
+                const canvas = document.getElementById('categoriesChart');
+
+                new Chart(canvas, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: values,
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        onClick: (event, elements) => {
+                            if (elements.length > 0) {
+                                window.location.href = urls[elements[0].index];
+                            }
+                        },
+                        onHover: (event, elements) => {
+                            canvas.style.cursor = elements.length > 0 ? 'pointer' : 'default';
+                        },
+                        plugins: {
+                            legend: { position: 'bottom' },
+                            tooltip: {
+                                callbacks: {
+                                    label: ctx => ` ${ctx.label}: ${ctx.parsed} статии`
+                                }
+                            }
+                        }
+                    }
+                });
+            })();
+        </script>
+    }
+}

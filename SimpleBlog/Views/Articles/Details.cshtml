@@ -9,9 +9,9 @@
 
                     <!-- Article header -->
                     <div class="mb-4">
-                        <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-2 mb-3">
+                        <a asp-controller="Articles" asp-action="Categories" asp-route-id="@Model.Category" class="badge bg-primary-subtle text-primary rounded-pill px-3 py-2 mb-3">
                             @(string.IsNullOrEmpty(Model.Category) ? "Article" : Model.Category)
-                        </span>
+                        </a>
                         @if (Model.IsSatire)
                         {
                             <span class="badge bg-warning-subtle text-warning-emphasis rounded-pill px-3 py-2 mb-3">
